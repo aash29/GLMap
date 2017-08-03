@@ -2,7 +2,5 @@
 <svg version="1.1" baseProfile="tiny">
 <defs>
 </defs>
-<path d="M -0.5 -0.5 H 0.5 V 0.5 H -0.5 Z"/>
-
-
+<polygon points="-0.1,-0.1 0.1,-0.1 0.1,0.1 -0.1,0.1"/>
 </svg>
