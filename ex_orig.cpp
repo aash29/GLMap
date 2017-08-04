@@ -61,7 +61,9 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
 
   GLuint vertexBuffer;
   glGenBuffers(1, &vertexBuffer);
-  
+
+  printf("%u\n", vertexBuffer);
+
   GLuint vao;
   glGenVertexArrays(1, &vao);
   
@@ -72,16 +74,18 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
 			
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts, verts, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts*2, verts, GL_STATIC_DRAW);
 
-  /*
+  
   GLuint ebo;
   glGenBuffers(1, &ebo);
 
+  printf("nelements:%d \n", nelements);
+
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	       sizeof(int)*nelements, elements, GL_STATIC_DRAW);
-  */
+	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
+  
 
   
   const char* vertexSource = R"glsl(
@@ -273,14 +277,9 @@ int main(int argc, char *argv[])
 		-0.5f, -0.5f,  // Vertex 3 (X, Y)
 	};
 
-
-	GLuint elements[] = {
-	  0, 1, 2,
-	  2, 3, 0
-	};
 	
-	//initModernOpenGL( verts,  nverts, elems,  nelems );
-	initModernOpenGL( vertices,  3, elems,  nelems );
+	initModernOpenGL( verts,  nverts, elems,  nelems );
+	//initModernOpenGL( vertices,  3, elems,  nelems );
 
 			
 	printf("num elems: %d \n",nelems);
@@ -317,9 +316,9 @@ int main(int argc, char *argv[])
 
 			//initModernOpenGL( vertices,  3, elems,  nelems );
 			
-			glDrawArrays(GL_TRIANGLES, 0, 3);
+			//glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		        glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
 			/*
 			for (int i = 0; i < nelems2; i++) {
 			  const TESSindex* poly = &elems2[i * polySize];
