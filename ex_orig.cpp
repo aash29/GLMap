@@ -56,8 +56,12 @@ void poolFree( void* userData, void* ptr )
 }
 
 
-void initModernOpenGL(float* verts, int nverts, int* elements, int nelements )
+void initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
 {
+
+  GLuint vertexBuffer;
+  glGenBuffers(1, &vertexBuffer);
+  
   GLuint vao;
   glGenVertexArrays(1, &vao);
   
@@ -70,14 +74,14 @@ void initModernOpenGL(float* verts, int nverts, int* elements, int nelements )
 			
   glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts, verts, GL_STATIC_DRAW);
 
-
+  /*
   GLuint ebo;
   glGenBuffers(1, &ebo);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 	       sizeof(int)*nelements, elements, GL_STATIC_DRAW);
-
+  */
 
   
   const char* vertexSource = R"glsl(
@@ -191,77 +195,14 @@ int main(int argc, char *argv[])
 	TESS_NOTUSED(argc);
 	TESS_NOTUSED(argv);
 
-	if (!glfwInit()) {
-		printf("Failed to init GLFW.");
-		return -1;
-	}
-
 	printf("loading...\n");
 	// Load assets
 	bg = svgParseFromFile("./Bin/bg.svg");
 	if (!bg) return -1;
 
-	//	fg = svgParseFromFile("./Bin/fg.svg");
-	//if (!fg) return -1;
 
 	printf("go...\n");
 	
-	// Flip y
-	for (it = bg; it != NULL; it = it->next)
-		for (i = 0; i < it->npts; ++i)
-			it->pts[i*2+1] = -it->pts[i*2+1];
-	/*
-	for (it = fg; it != NULL; it = it->next)
-		for (i = 0; i < it->npts; ++i)
-			it->pts[i*2+1] = -it->pts[i*2+1];
-	*/
-
-	// Find FG bounds and center.
-	/*
-	bounds[0] = bounds[2] = fg->pts[0];
-	bounds[1] = bounds[3] = fg->pts[1];
-	for (it = fg; it != NULL; it = it->next)
-	{
-		for (i = 0; i < it->npts; ++i)
-		{
-			const float x = it->pts[i*2];
-			const float y = it->pts[i*2+1];
-			if (x < bounds[0]) bounds[0] = x;
-			if (y < bounds[1]) bounds[1] = y;
-			if (x > bounds[2]) bounds[2] = x;
-			if (y > bounds[3]) bounds[3] = y;
-		}
-	}
-	cx = (bounds[0]+bounds[2])/2;
-	cy = (bounds[1]+bounds[3])/2;
-	for (it = fg; it != NULL; it = it->next)
-	{
-		for (i = 0; i < it->npts; ++i)
-		{
-			it->pts[i*2] -= cx;
-			it->pts[i*2+1] -= cy;
-		}
-	}
-	*/
-			
-	// Find BG bounds.
-	/*
-	bounds[0] = bounds[2] = bg->pts[0];
-	bounds[1] = bounds[3] = bg->pts[1];
-	for (it = bg; it != NULL; it = it->next)
-	{
-		for (i = 0; i < it->npts; ++i)
-		{
-			const float x = it->pts[i*2];
-			const float y = it->pts[i*2+1];
-			if (x < bounds[0]) bounds[0] = x;
-			if (y < bounds[1]) bounds[1] = y;
-			if (x > bounds[2]) bounds[2] = x;
-			if (y > bounds[3]) bounds[3] = y;
-		}
-	}
-	*/	
-
 	memset(&ma, 0, sizeof(ma));
 	ma.memalloc = stdAlloc;
 	ma.memfree = stdFree;
@@ -276,31 +217,21 @@ int main(int argc, char *argv[])
 	offx = (bounds[2]+bounds[0])/2;
 	offy = (bounds[3]+bounds[1])/2;
 
-	/*
-	for (it = fg; it != NULL; it = it->next)
-	{
-		for (i = 0; i < it->npts; ++i)
-		{
-			it->pts[i*2] += offx;
-			it->pts[i*2+1] += offy;
-		}
-	}
-	*/
-	
 	// Add contours.
 	for (it = bg; it != NULL; it = it->next)
 		tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
 
-	/*
-	for (it = fg; it != NULL; it = it->next)
-		tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
-	*/
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
 		return -1;
 	printf("Memory used: %.1f kB\n", allocated/1024.0f);
 	
 	
 	//mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+	if (!glfwInit()) {
+		printf("Failed to init GLFW.");
+		return -1;
+	}
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
@@ -310,9 +241,9 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	
-	width = mode->width - 40;
-	height = mode->height - 80;
-	window = glfwCreateWindow(width, height, "Libtess2 Demo", NULL, NULL);
+	//width = mode->width - 40;
+	//height = mode->height - 80;
+	window = glfwCreateWindow(800, 600, "Libtess2 Demo", NULL, NULL);
 	if (!window) {
 		glfwTerminate();
 		return -1;
@@ -326,55 +257,52 @@ int main(int argc, char *argv[])
 
 	glfwSetKeyCallback(window, key);
 	glfwMakeContextCurrent(window);
-
-	// Adjust bounds so that we get nice view of the bg.
-	/*
-	cx = (bounds[0]+bounds[2])/2;
-	cy = (bounds[3]+bounds[1])/2;
-	w = (bounds[2]-bounds[0])/2;
-	view[0] = cx - w*1.2f;
-	view[2] = cx + w*1.2f;
-	view[1] = cy - w*1.2f*(float)height/(float)width;
-	view[3] = cy + w*1.2f*(float)height/(float)width;
-
-	printf("v1:%f,v2:%f,v3:%f,v4:%f",view[0],view[1],view[2],view[3]);
-	*/
 	
 
 	glfwSetTime(0);
 
-         float* verts = tessGetVertices(tess);
-	 int* vinds = tessGetVertexIndices(tess);
-	 int* elems = tessGetElements(tess);
-	 int nverts = tessGetVertexCount(tess);
-	 int nelems = tessGetElementCount(tess);
-				    
-        initModernOpenGL( verts,  nverts, elems,  nelems );
+	const float* verts = tessGetVertices(tess);
+	const int* vinds = tessGetVertexIndices(tess);
+	const TESSindex* elems = tessGetElements(tess);
+	const int nverts = tessGetVertexCount(tess);
+	const int nelems = tessGetElementCount(tess);
+
+	float vertices[] = {
+		0.0f,  0.5f, // Vertex 1 (X, Y)
+		0.5f, -0.5f, // Vertex 2 (X, Y)
+		-0.5f, -0.5f,  // Vertex 3 (X, Y)
+	};
 
 
+	GLuint elements[] = {
+	  0, 1, 2,
+	  2, 3, 0
+	};
+	
+	//initModernOpenGL( verts,  nverts, elems,  nelems );
+	initModernOpenGL( vertices,  3, elems,  nelems );
+
+			
+	printf("num elems: %d \n",nelems);
+	for (int i = 0; i<nelems; i++)
+	  {
+	    for (int j = 0; j < 3; j++) {
+	      printf("%d,",(&elems[i * 3])[j]);
+	    }
+	    printf("\n");
+	  };
+	printf("\n");			
+
+
+	
 	while (!glfwWindowShouldClose(window))
 	{
 		float ct = (float)glfwGetTime();
 		if (run) t += ct - pt;
 		pt = ct;
 		
-		// Update and render
-		glViewport(0, 0, width, height);
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		glDisable(GL_TEXTURE_2D);
-		glMatrixMode(GL_PROJECTION);
-		glLoadIdentity();
-		glOrtho(-1.f,1.f,-1.f,1.f,-1,1);
-		glMatrixMode(GL_MODELVIEW);
-		glLoadIdentity();
-		glDisable(GL_DEPTH_TEST);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
-
-
+		
+		
 		// Draw tesselated pieces.
 		if (tess)
 		{
@@ -382,24 +310,17 @@ int main(int argc, char *argv[])
 			int polySize = 3;
 			int vertexSize = 2;
 
-			  
-			// Draw polygons.
-			glColor4ub(255,255,255,128);
-
-
-			const int nelems2 = tessGetElementCount(tess);
-			const TESSindex* elems2 = tessGetElements(tess);
-
-			printf("num elems: %d \n",nelems2);
-			for (int i = 0; i<nelems2; i++)
-			  {
-			    for (int j = 0; j < polySize; j++) {
-			      printf("%d,",(&elems2[i * polySize])[j]);
-			    }
-			    printf("\n");
-			  };
-			printf("\n");			
 			
+			
+			// Draw polygons.
+			//glColor4ub(255,255,255,128);
+
+			//initModernOpenGL( vertices,  3, elems,  nelems );
+			
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+
+		        //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+			/*
 			for (int i = 0; i < nelems2; i++) {
 			  const TESSindex* poly = &elems2[i * polySize];
 			  glBegin(GL_POLYGON);
@@ -409,7 +330,7 @@ int main(int argc, char *argv[])
 			  }
 			  glEnd();
 			}
-
+			*/
 			/*
 			for (i = 0; i < nelems; ++i)
 			{
@@ -447,7 +368,7 @@ int main(int argc, char *argv[])
 			*/
 		}
 		
-		glEnable(GL_DEPTH_TEST);
+		//glEnable(GL_DEPTH_TEST);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

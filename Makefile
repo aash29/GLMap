@@ -1,2 +1,2 @@
 map: ex_orig.cpp
-	g++ -o map ex_orig.cpp ./Include/nanosvg.c -I./Include -ltess2 -L. -lGLEW -lGL -lglfw
+	g++ -o map -g ex_orig.cpp ./Include/nanosvg.c -I./Include -ltess2 -L. -lGLEW -lGL -lglfw
