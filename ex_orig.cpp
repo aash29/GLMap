@@ -10,6 +10,11 @@
 #include "nanosvg.h"
 #include "tesselator.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+
 #include <thread>
 
 
@@ -58,6 +63,8 @@ void poolFree( void* userData, void* ptr )
 
 void initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
 {
+  
+
 
   GLuint vertexBuffer;
   glGenBuffers(1, &vertexBuffer);
@@ -89,14 +96,17 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
 
   
   const char* vertexSource = R"glsl(
-	#version 150 core
-
 	in vec2 position;
+in vec3 color;
+in vec2 texcoord;
 
-	void main()
-	{
-		gl_Position = vec4(position, 0.0, 1.0);
-	}
+
+uniform mat4 Model;
+
+void main()
+{
+    gl_Position = Model * vec4(position, 0.0, 1.0);
+}
 	)glsl";
 			
   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -149,6 +159,13 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   glLinkProgram(shaderProgram);
 
   glUseProgram(shaderProgram);
+
+
+  glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f));
+
+  GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
 			
   GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
 			
@@ -201,7 +218,7 @@ int main(int argc, char *argv[])
 
 	printf("loading...\n");
 	// Load assets
-	bg = svgParseFromFile("./Bin/bg.svg");
+	bg = svgParseFromFile("./Bin/bg2.svg");
 	if (!bg) return -1;
 
 
@@ -277,6 +294,7 @@ int main(int argc, char *argv[])
 		-0.5f, -0.5f,  // Vertex 3 (X, Y)
 	};
 
+	
 	
 	initModernOpenGL( verts,  nverts, elems,  nelems );
 	//initModernOpenGL( vertices,  3, elems,  nelems );
