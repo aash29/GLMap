@@ -14,8 +14,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-
 #include <thread>
+
+#include "json.hpp"
+#include <fstream>
 
 
 void* stdAlloc(void* userData, unsigned int size)
@@ -58,6 +60,51 @@ void poolFree( void* userData, void* ptr )
 	// empty
 	TESS_NOTUSED(userData);
 	TESS_NOTUSED(ptr);
+}
+
+void loadLevel(const char *name)
+{
+  
+  
+  std::string m_currentLevel = std::string(name);
+  
+
+  nlohmann::json j;
+
+  std::ifstream file;
+  file.open(std::string("../") + std::string(name), std::ios::in);
+  if (file) {
+    j << file;
+    file.close();
+  }
+
+  if (j.find("force") != j.end()) {
+    //m_force = m_forceLeft;
+  }
+
+  for (auto c : j) {
+
+    if (c.is_object()) {
+      std::string s1 = c["type"];
+
+      if (s1 == "coin") {
+      }
+
+
+      if (s1 == "ground") {
+
+
+      }
+      if (s1 == "gears")
+	{
+
+
+
+	}
+
+      
+    }
+  }
 }
 
 
@@ -161,7 +208,7 @@ void main()
   glUseProgram(shaderProgram);
 
 
-  glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.01f));
+  glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
   GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
@@ -198,39 +245,7 @@ int main(int argc, char *argv[])
 	const GLFWvidmode* mode;
 	int width,height,i,j;
 	struct SVGPath* bg;
-	//struct SVGPath* fg;
-	struct SVGPath* it;
-	float bounds[4],view[4],cx,cy,w,offx,offy;
-	float t = 0.0f, pt = 0.0f;
-	TESSalloc ma;
-	TESStesselator* tess = 0;
-	const int nvp = 3;
-	unsigned char* vflags = 0;
-	int nvflags = 0;
-#ifdef USE_POOL
-	struct MemPool pool;
-	unsigned char mem[1024*1024];
-#else
-	int allocated = 0;
-#endif
-	TESS_NOTUSED(argc);
-	TESS_NOTUSED(argv);
 
-	printf("loading...\n");
-	// Load assets
-	bg = svgParseFromFile("./Bin/bg2.svg");
-	if (!bg) return -1;
-
-
-	printf("go...\n");
-	
-	memset(&ma, 0, sizeof(ma));
-	ma.memalloc = stdAlloc;
-	ma.memfree = stdFree;
-	ma.userData = (void*)&allocated;
-	ma.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
-
-	tess = tessNewTess(&ma);
 	if (!tess)
 		return -1;
 
