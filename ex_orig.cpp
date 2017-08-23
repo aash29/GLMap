@@ -62,7 +62,10 @@ void poolFree( void* userData, void* ptr )
 	TESS_NOTUSED(ptr);
 }
 
-void loadLevel(const char *name)
+float xmin,xmax,ymin,ymax;
+
+
+void loadLevel(const char *name,TESStesselator* tess)
 {
   
   
@@ -72,37 +75,61 @@ void loadLevel(const char *name)
   nlohmann::json j;
 
   std::ifstream file;
-  file.open(std::string("../") + std::string(name), std::ios::in);
+  file.open(std::string(name), std::ios::in);
   if (file) {
+    printf("file open \n");
     j << file;
     file.close();
   }
 
-  if (j.find("force") != j.end()) {
+  auto f1 = j.find("features");
+
+  
+  if (f1 != j.end()) {
     //m_force = m_forceLeft;
-  }
+    std::cout << "found features";
+    //std::cout << ((*f1)[0]).dump(4);
 
-  for (auto c : j) {
+    float* a1[10];
+    
+    for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
+      if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
+	//std::cout <<  (*it)["geometry"]["type"];
+	std::vector< std::vector<std::vector<float> > > c1 =  (*it)["geometry"]["coordinates"];
 
-    if (c.is_object()) {
-      std::string s1 = c["type"];
+	xmin = c1[0][0][0];
+	xmax = c1[0][0][0];
+	ymin = c1[0][0][1];
+	ymax = c1[0][0][1];
+	
+	for (int j = 0; j<c1.size();j++){
+	  a1[j] = new float[c1[j].size()*2];
+	  std::cout << "contour size:" << c1[j].size() << "\n";
+	  
+	  for (int i = 0; i<c1[j].size();i++){
+	    a1[j][2*i]=c1[j][i][0];
+	    a1[j][2*i+1]=c1[j][i][1];
+	    
+	    xmin=std::min(xmin,a1[j][2*i]);
+	    xmax=std::max(xmax,a1[j][2*i]);
+	    
+	    ymin=std::min(ymin,a1[j][2*i+1]);
+	    ymax=std::max(ymax,a1[j][2*i+1]);
+	  };
+	  std::cout << "adding contour";
+	  tessAddContour(tess, 2, a1[j], sizeof(float)*2, c1[j].size());
 
-      if (s1 == "coin") {
+	  //free(a1);
+	};
+
+	
+	//std::cout << c1 << '\n';
       }
-
-
-      if (s1 == "ground") {
-
-
+      /*
+      if ((*it)["properties"]["type"]=="route"){
+	std::cout << *it << '\n';
       }
-      if (s1 == "gears")
-	{
-
-
-
-	}
-
-      
+      */
     }
   }
 }
@@ -116,7 +143,7 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   GLuint vertexBuffer;
   glGenBuffers(1, &vertexBuffer);
 
-  printf("%u\n", vertexBuffer);
+  //printf("%u\n", vertexBuffer);
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
@@ -208,8 +235,10 @@ void main()
   glUseProgram(shaderProgram);
 
 
-  glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
+  //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
+  glm::mat4 Model = glm::ortho(xmin,xmax,ymin,ymax,-1.f,1.f);
+  
   GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
 
@@ -245,17 +274,55 @@ int main(int argc, char *argv[])
 	const GLFWvidmode* mode;
 	int width,height,i,j;
 	struct SVGPath* bg;
+	//struct SVGPath* fg;
+	struct SVGPath* it;
+	float bounds[4],view[4],cx,cy,w,offx,offy;
+	float t = 0.0f, pt = 0.0f;
+	TESSalloc ma;
+	TESStesselator* tess = 0;
+	const int nvp = 3;
+	unsigned char* vflags = 0;
+	int nvflags = 0;
+#ifdef USE_POOL
+	struct MemPool pool;
+	unsigned char mem[1024*1024];
+#else
+	int allocated = 0;
+#endif
+	TESS_NOTUSED(argc);
+	TESS_NOTUSED(argv);
+
+	printf("loading...\n");
+	// Load assets
+	bg = svgParseFromFile("./Bin/bg2.svg");
+	if (!bg) return -1;
+
+	
+	memset(&ma, 0, sizeof(ma));
+	ma.memalloc = stdAlloc;
+	ma.memfree = stdFree;
+	ma.userData = (void*)&allocated;
+	ma.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
+ 
+
+	tess = tessNewTess(&ma);
 
 	if (!tess)
 		return -1;
 
+	//loadLevel("test.geojson",tess);
+	loadLevel("little.geojson",tess);
+	printf("go...\n");
+	
+
+	
 	// Offset the foreground shape to center of the bg.
 	offx = (bounds[2]+bounds[0])/2;
 	offy = (bounds[3]+bounds[1])/2;
-
+	
 	// Add contours.
-	for (it = bg; it != NULL; it = it->next)
-		tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
+	//for (it = bg; it != NULL; it = it->next)
+	//	tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
 
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
 		return -1;
@@ -314,7 +381,7 @@ int main(int argc, char *argv[])
 	initModernOpenGL( verts,  nverts, elems,  nelems );
 	//initModernOpenGL( vertices,  3, elems,  nelems );
 
-			
+	/*		
 	printf("num elems: %d \n",nelems);
 	for (int i = 0; i<nelems; i++)
 	  {
@@ -324,7 +391,7 @@ int main(int argc, char *argv[])
 	    printf("\n");
 	  };
 	printf("\n");			
-
+	*/
 
 	
 	while (!glfwWindowShouldClose(window))
