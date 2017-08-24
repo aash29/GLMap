@@ -18,6 +18,10 @@
 
 #include "json.hpp"
 #include <fstream>
+#include <map>
+#include "camera.hpp"
+
+
 
 
 void* stdAlloc(void* userData, unsigned int size)
@@ -63,6 +67,7 @@ void poolFree( void* userData, void* ptr )
 }
 
 float xmin,xmax,ymin,ymax;
+Camera g_camera;
 
 
 void loadLevel(const char *name,TESStesselator* tess)
@@ -90,38 +95,57 @@ void loadLevel(const char *name,TESStesselator* tess)
     std::cout << "found features";
     //std::cout << ((*f1)[0]).dump(4);
 
-    float* a1[10];
-    
+
+	std::map<std::string, float**> m2;
+	float** a2;
+	float* a1[10];
+
+
+	xmin = 30.2882633f;
+	xmax = 30.2882633f;
+	ymin = 59.9379525f;
+	ymax = 59.9379525f;
+
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
       if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
+		std::cout << "id:" << (*it)["properties"]["id"] << "\n";
+		//std::cout <<  (*it)["geometry"]["type"];
+		
+		if ((*it)["geometry"]["type"]=="Polygon"){
 
-	std::cout << "id:" << (*it)["properties"]["id"] << "\n";
-	//std::cout <<  (*it)["geometry"]["type"];
-	std::vector< std::vector<std::vector<float> > > c1 =  (*it)["geometry"]["coordinates"];
+		std::vector< std::vector<std::vector<float> > > c1 =  (*it)["geometry"]["coordinates"];
 
-	xmin = c1[0][0][0];
-	xmax = c1[0][0][0];
-	ymin = c1[0][0][1];
-	ymax = c1[0][0][1];
+
 	
-	for (int j = 0; j<c1.size();j++){
-	  a1[j] = new float[c1[j].size()*2];
-	  std::cout << "contour size:" << c1[j].size() << "\n";
-	  
-	  for (int i = 0; i<c1[j].size();i++){
-	    a1[j][2*i]=c1[j][i][0];
-	    a1[j][2*i+1]=c1[j][i][1];
-	    
-	    xmin=std::min(xmin,a1[j][2*i]);
-	    xmax=std::max(xmax,a1[j][2*i]);
-	    
-	    ymin=std::min(ymin,a1[j][2*i+1]);
-	    ymax=std::max(ymax,a1[j][2*i+1]);
-	  };
-	  std::cout << "adding contour" << "\n";
-	  tessAddContour(tess, 2, a1[j], sizeof(float)*2, c1[j].size());
 
-	  //free(a1);
+		a2 = new float*[c1.size()];
+
+		for (int j = 0; j<c1.size();j++){
+
+		  a2[j] = new float[c1[j].size()*2];
+		  std::cout << "contour size:" << c1[j].size() << "\n";
+	  
+		  for (int i = 0; i<c1[j].size();i++){
+			a2[j][2*i]=c1[j][i][0];
+			a2[j][2*i+1]=c1[j][i][1];
+	    
+			xmin=std::min(xmin,a2[j][2*i]);
+			xmax=std::max(xmax,a2[j][2*i]);
+	    
+			ymin=std::min(ymin,a2[j][2*i+1]);
+			ymax=std::max(ymax,a2[j][2*i+1]);
+		  };
+		  std::cout << "adding contour" << "\n";
+		}
+
+		m2[(*it)["properties"]["id"]] = a2;
+
+		for (int j = 0; j < c1.size(); j++) {
+
+			tessAddContour(tess, 2, m2[(*it)["properties"]["id"]][j], sizeof(float) * 2, c1[j].size());
+		}
+
+		  //free(a1);
 	};
 
 	
@@ -239,10 +263,18 @@ void main()
 
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
+  g_camera.m_extent = (xmax - xmin) / 2;
+
+  float proj[16] = { 0.0f };
+  g_camera.BuildProjectionMatrix(proj, 0.0f);
+
+  
+
   glm::mat4 Model = glm::ortho(xmin,xmax,ymin,ymax,-1.f,1.f);
   
   GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
 
 			
   GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
@@ -296,8 +328,8 @@ int main(int argc, char *argv[])
 
 	printf("loading...\n");
 	// Load assets
-	bg = svgParseFromFile("./Bin/bg2.svg");
-	if (!bg) return -1;
+	//bg = svgParseFromFile("F:\\cpp\\GLMap\\Bin\\bg2.svg");
+	//if (!bg) return -1;
 
 	
 	memset(&ma, 0, sizeof(ma));
@@ -312,8 +344,8 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	//loadLevel("test.geojson",tess);
-	loadLevel("little.geojson",tess);
+	loadLevel(".\\little.geojson",tess);
+
 	printf("go...\n");
 	
 
@@ -343,7 +375,7 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	
 	//width = mode->width - 40;
@@ -479,7 +511,7 @@ int main(int argc, char *argv[])
 	if (vflags)
 		free(vflags);
 	
-	svgDelete(bg);	
+	//svgDelete(bg);	
 	//svgDelete(fg);	
 
 	glfwTerminate();
