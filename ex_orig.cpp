@@ -94,6 +94,8 @@ void loadLevel(const char *name,TESStesselator* tess)
     
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
       if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
+
+	std::cout << "id:" << (*it)["properties"]["id"] << "\n";
 	//std::cout <<  (*it)["geometry"]["type"];
 	std::vector< std::vector<std::vector<float> > > c1 =  (*it)["geometry"]["coordinates"];
 
@@ -116,7 +118,7 @@ void loadLevel(const char *name,TESStesselator* tess)
 	    ymin=std::min(ymin,a1[j][2*i+1]);
 	    ymax=std::max(ymax,a1[j][2*i+1]);
 	  };
-	  std::cout << "adding contour";
+	  std::cout << "adding contour" << "\n";
 	  tessAddContour(tess, 2, a1[j], sizeof(float)*2, c1[j].size());
 
 	  //free(a1);
