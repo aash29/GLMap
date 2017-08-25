@@ -22,7 +22,14 @@
 #include "camera.hpp"
 
 
+float xmin,xmax,ymin,ymax;
+Camera g_camera;
 
+GLint uniTrans;
+
+GLFWwindow *window = NULL;
+bool rightMouseDown;
+glm::vec2 lastp;
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -66,8 +73,62 @@ void poolFree( void* userData, void* ptr )
 	TESS_NOTUSED(ptr);
 }
 
-float xmin,xmax,ymin,ymax;
-Camera g_camera;
+
+
+
+static void sScrollCallback(GLFWwindow *, double, double dy) {
+  //    if (ui.mouseOverMenu) {
+  //      ui.scroll = -int(dy);
+  //  }
+  //  else {
+        if (dy > 0) {
+            g_camera.m_zoom /= 1.1f;
+        }
+        else {
+            g_camera.m_zoom *= 1.1f;
+        }
+	printf ("scroll");
+	//   }
+}
+
+
+static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
+    double xd, yd;
+    glfwGetCursorPos(window, &xd, &yd);
+    glm::vec2 ps((float) xd, (float) yd);
+
+    // Use the mouse to move things around.
+    if (button == GLFW_MOUSE_BUTTON_1) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_2) {
+        if (action == GLFW_PRESS) {
+            lastp = g_camera.ConvertScreenToWorld(ps);
+            rightMouseDown = true;
+	    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+            //test->RightMouseDown(pw);
+        }
+
+        if (action == GLFW_RELEASE) {
+            rightMouseDown = false;
+        }
+    }
+}
+
+
+static void sMouseMotion(GLFWwindow *, double xd, double yd) {
+  glm::vec2 ps((float) xd, (float) yd);
+
+    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+    //test->MouseMove(pw);
+    if (rightMouseDown) {
+    
+        glm::vec2 diff = pw - lastp;
+        g_camera.m_center.x -= diff.x;
+        g_camera.m_center.y -= diff.y;
+        lastp = g_camera.ConvertScreenToWorld(ps);
+   }
+}
+
 
 
 void loadLevel(const char *name,TESStesselator* tess)
@@ -263,18 +324,18 @@ void main()
 
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
-  g_camera.m_extent = (xmax - xmin) / 2;
+  g_camera.m_center = glm::vec2((xmax + xmin) / 2,(ymax + ymin) / 2);
 
-  float proj[16] = { 0.0f };
-  g_camera.BuildProjectionMatrix(proj, 0.0f);
+  //  float proj[16] = { 0.0f };
+  glm::mat4 Model = g_camera.BuildProjectionMatrix();
 
   
 
-  glm::mat4 Model = glm::ortho(xmin,xmax,ymin,ymax,-1.f,1.f);
+  //glm::mat4 Model = glm::ortho(xmin,xmax,ymin,ymax,-1.f,1.f);
   
-  GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
-  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
+  uniTrans = glGetUniformLocation(shaderProgram, "Model");
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
 
 			
   GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
@@ -304,7 +365,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 int main(int argc, char *argv[])
 {
-	GLFWwindow* window;
+  //GLFWwindow* window;
 	const GLFWvidmode* mode;
 	int width,height,i,j;
 	struct SVGPath* bg;
@@ -344,7 +405,7 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel(".\\little.geojson",tess);
+	loadLevel("little.geojson",tess);
 
 	printf("go...\n");
 	
@@ -362,8 +423,6 @@ int main(int argc, char *argv[])
 		return -1;
 	printf("Memory used: %.1f kB\n", allocated/1024.0f);
 	
-	
-	//mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
 	if (!glfwInit()) {
 		printf("Failed to init GLFW.");
@@ -375,16 +434,32 @@ int main(int argc, char *argv[])
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
-	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
+
+	mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	
-	//width = mode->width - 40;
-	//height = mode->height - 80;
-	window = glfwCreateWindow(800, 600, "Libtess2 Demo", NULL, NULL);
+	width = mode->width - 40;
+	height = mode->height - 80;
+
+	g_camera.m_width = width;
+	g_camera.m_height = height;
+
+	g_camera.m_span = (xmax-xmin)/2;
+
+	//width=800;
+	//height = 600;
+	
+	window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
 	if (!window) {
 		glfwTerminate();
 		return -1;
 	}
+
+
+	glfwSetScrollCallback(window, sScrollCallback);
+	glfwSetCursorPosCallback(window, sMouseMotion);
+        glfwSetMouseButtonCallback(window, sMouseButton);
 
 	glfwMakeContextCurrent(window);
 
@@ -440,6 +515,10 @@ int main(int argc, char *argv[])
 		if (tess)
 		{
 
+		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		  glClear(GL_COLOR_BUFFER_BIT);
+
+
 			int polySize = 3;
 			int vertexSize = 2;
 
@@ -448,11 +527,16 @@ int main(int argc, char *argv[])
 			// Draw polygons.
 			//glColor4ub(255,255,255,128);
 
-			//initModernOpenGL( vertices,  3, elems,  nelems );
+			//initModernOpenGL( verts,  nverts, elems,  nelems );
 			
 			//glDrawArrays(GL_TRIANGLES, 0, 3);
 
-		        glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
+
+			  glm::mat4 Model = g_camera.BuildProjectionMatrix();
+ 
+			  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
+			  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
 			/*
 			for (int i = 0; i < nelems2; i++) {
 			  const TESSindex* poly = &elems2[i * polySize];
