@@ -47,7 +47,7 @@ glm::mat4 Camera::BuildProjectionMatrix() {
 
 	std::cout << w << "," << h << "\n";
 	
-	float ratio = 2 * w / h;
+	float ratio =  w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
