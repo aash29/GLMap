@@ -10,7 +10,7 @@ struct Camera {
 	Camera() {
 		m_center.x = 0.0f;
 		m_center.y = 0.0f;
-		m_extent = 25.0f;
+		m_span = 1.0f;
 		m_zoom = 1.0f;
 		m_width = 1280;
 		m_height = 800;
@@ -20,10 +20,10 @@ struct Camera {
 
 	glm::vec2 ConvertWorldToScreen(const glm::vec2 &worldPoint);
 
-	void BuildProjectionMatrix(float *m, float zBias);
+	glm::mat4 BuildProjectionMatrix();
 
 	glm::vec2 m_center;
-	float m_extent;
+	float m_span;
 	float m_zoom;
 	int m_width;
 	int m_height;

@@ -1,4 +1,5 @@
 #include "camera.hpp"
+#include <iostream>
 glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	float w = float(m_width);
 	float h = float(m_height);
@@ -6,7 +7,7 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	float v = (h - ps.y) / h;
 
 	float ratio = w / h;
-	glm::vec2 extents(ratio * 25.0f, 25.0f);
+	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
 	glm::vec2 lower = m_center - extents;
@@ -23,7 +24,7 @@ glm::vec2 Camera::ConvertWorldToScreen(const glm::vec2 &pw) {
 	float w = float(m_width);
 	float h = float(m_height);
 	float ratio = w / h;
-	glm::vec2 extents(ratio * 25.0f, 25.0f);
+	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
 	glm::vec2 lower = m_center - extents;
@@ -40,16 +41,27 @@ glm::vec2 Camera::ConvertWorldToScreen(const glm::vec2 &pw) {
 
 // Convert from world coordinates to normalized device coordinates.
 // http://www.songho.ca/opengl/gl_projectionmatrix.html
-void Camera::BuildProjectionMatrix(float *m, float zBias) {
+glm::mat4 Camera::BuildProjectionMatrix() {
 	float w = float(m_width);
 	float h = float(m_height);
-	float ratio = w / h;
-	glm::vec2 extents(ratio * 25.0f, 25.0f);
+
+	std::cout << w << "," << h << "\n";
+	
+	float ratio =  w / h;
+	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
 	glm::vec2 lower = m_center - extents;
 	glm::vec2 upper = m_center + extents;
 
+	glm::mat4 Model = glm::ortho(lower.x,upper.x,lower.y,upper.y,-1.f,1.f);
+
+	std::cout << lower.x << "," << upper.x << "," << lower.y << "," << upper.y << "\n";
+	
+	return Model;
+	
+	
+	/*
 	m[0] = 2.0f / (upper.x - lower.x);
 	m[1] = 0.0f;
 	m[2] = 0.0f;
@@ -69,4 +81,10 @@ void Camera::BuildProjectionMatrix(float *m, float zBias) {
 	m[13] = -(upper.y + lower.y) / (upper.y - lower.y);
 	m[14] = zBias;
 	m[15] = 1.0f;
+	*/
+
+	
+
+	
+  
 }
