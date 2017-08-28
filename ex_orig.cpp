@@ -264,6 +264,8 @@ void main()
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
   g_camera.m_extent = (xmax - xmin) / 2;
+  g_camera.m_center.x = (xmax + xmin) / 2;
+  g_camera.m_center.y = (ymax + ymin) / 2;
 
   float proj[16] = { 0.0f };
   g_camera.BuildProjectionMatrix(proj, 0.0f);
@@ -274,7 +276,9 @@ void main()
   
   GLint uniTrans = glGetUniformLocation(shaderProgram, "Model");
   //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
+  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
+
+  
 
 			
   GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
@@ -344,7 +348,8 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel(".\\little.geojson",tess);
+	//loadLevel(".\\little.geojson",tess);
+	loadLevel(".\\test.geojson", tess);
 
 	printf("go...\n");
 	
