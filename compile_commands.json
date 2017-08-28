@@ -1,11 +1,11 @@
 [
     {
-        "command": "c++ -c -o map -g -I./Include -fPIC ex_orig.cpp",
+        "command": "c++ -c -o map -g -I./Include ex_orig.cpp",
         "directory": "/home/aash29/cpp/GLMap",
         "file": "/home/aash29/cpp/GLMap/ex_orig.cpp"
     },
     {
-        "command": "c++ -c -o map -g -I./Include -fPIC ./Include/nanosvg.c",
+        "command": "c++ -c -o map -g -I./Include ./Include/nanosvg.c",
         "directory": "/home/aash29/cpp/GLMap",
         "file": "/home/aash29/cpp/GLMap/Include/nanosvg.c"
     }

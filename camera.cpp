@@ -6,7 +6,7 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	float u = ps.x / w;
 	float v = (h - ps.y) / h;
 
-	float ratio = w / h;
+	float ratio =  w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
@@ -47,7 +47,7 @@ glm::mat4 Camera::BuildProjectionMatrix() {
 
 	std::cout << w << "," << h << "\n";
 	
-	float ratio =  w / h;
+	float ratio =  0.75f * w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
