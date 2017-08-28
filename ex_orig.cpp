@@ -20,7 +20,7 @@
 #include <fstream>
 #include <map>
 #include "camera.hpp"
-
+#include "map.hpp"
 
 float xmin,xmax,ymin,ymax;
 Camera g_camera;
@@ -138,20 +138,23 @@ void loadLevel(const char *name,TESStesselator* tess)
   std::string m_currentLevel = std::string(name);
   
 
-  nlohmann::json j;
+  nlohmann::json jsonObj;
 
   std::ifstream file;
   file.open(std::string(name), std::ios::in);
   if (file) {
     printf("file open \n");
-    j << file;
+    jsonObj << file;
     file.close();
   }
 
-  auto f1 = j.find("features");
+  auto f1 = jsonObj.find("features");
+
+
+  std::map<std::string, building> m3;
 
   
-  if (f1 != j.end()) {
+  if (f1 != jsonObj.end()) {
     //m_force = m_forceLeft;
     std::cout << "found features";
     //std::cout << ((*f1)[0]).dump(4);
@@ -177,18 +180,25 @@ void loadLevel(const char *name,TESStesselator* tess)
 		std::vector< std::vector<std::vector<float> > > c1 =  (*it)["geometry"]["coordinates"];
 
 
-	
-
 		a2 = new float*[c1.size()];
+		std::string id = (*it)["properties"]["id"];
+		m3[id].coords=std::vector <std::vector <float> >();
+		m3[id].id=id;
 
 		for (int j = 0; j<c1.size();j++){
 
 		  a2[j] = new float[c1[j].size()*2];
+		  m3[id].coords.push_back(std::vector<float>());
+		  
 		  std::cout << "contour size:" << c1[j].size() << "\n";
 	  
 		  for (int i = 0; i<c1[j].size();i++){
 			a2[j][2*i]=c1[j][i][0];
 			a2[j][2*i+1]=c1[j][i][1];
+
+			m3[id].coords[j].push_back(c1[j][i][0]);
+			m3[id].coords[j].push_back(c1[j][i][1]);
+			
 	    
 			xmin=std::min(xmin,a2[j][2*i]);
 			xmax=std::max(xmax,a2[j][2*i]);
@@ -198,16 +208,16 @@ void loadLevel(const char *name,TESStesselator* tess)
 		  };
 		  std::cout << "adding contour" << "\n";
 		}
-
+		
 		m2[(*it)["properties"]["id"]] = a2;
+		/*
+		for (int j = 0; j<c1.size();j++){
 
-		for (int j = 0; j < c1.size(); j++) {
-
-			tessAddContour(tess, 2, m2[(*it)["properties"]["id"]][j], sizeof(float) * 2, c1[j].size());
-		}
-
+		  tessAddContour(tess, 2, m3[id].coords[j].data(), sizeof(float) * 2, c1[j].size());
+		  };*/
+		
 		  //free(a1);
-	};
+		};
 
 	
 	//std::cout << c1 << '\n';
@@ -219,6 +229,17 @@ void loadLevel(const char *name,TESStesselator* tess)
       */
     }
   }
+
+      for (auto &it : m3) {
+	for (int j = 0; j < it.second.coords.size(); j++) {
+	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
+	    it.second.coords[j][i] = (it.second.coords[j][i]-xmin)/(xmax-xmin);
+	    it.second.coords[j][i+1] = (it.second.coords[j][i+1]-ymin)/(ymax-ymin);
+	  }		  
+	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
+	}
+      }
+
 }
 
 
@@ -324,7 +345,7 @@ void main()
 
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
-  g_camera.m_center = glm::vec2((xmax + xmin) / 2,(ymax + ymin) / 2);
+  g_camera.m_center = glm::vec2(0.5f,0.5f);
 
   //  float proj[16] = { 0.0f };
   glm::mat4 Model = g_camera.BuildProjectionMatrix();
@@ -445,7 +466,8 @@ int main(int argc, char *argv[])
 	g_camera.m_width = width;
 	g_camera.m_height = height;
 
-	g_camera.m_span = (xmax-xmin)/2;
+	//g_camera.m_span = (xmax-xmin)/2;
+	g_camera.m_span = 0.5f;
 
 	//width=800;
 	//height = 600;
