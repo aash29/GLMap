@@ -5,7 +5,130 @@
 #include <thread>
 
 
+GLuint createShader(GLenum type, const GLchar* src) {
+    GLuint shader = glCreateShader(type);
+    glShaderSource(shader, 1, &src, nullptr);
+    glCompileShader(shader);
 
+    GLint status;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+
+    char buffer[512];
+    glGetShaderInfoLog(shader, 512, NULL, buffer);
+    
+    if (status != GL_TRUE)
+      {
+	printf("%s\n", buffer);
+      }
+    
+    return shader;
+}
+
+
+void drawLine() {
+
+const char* vertexShaderSrc = R"glsl(
+    #version 150 core
+    in vec2 pos;
+
+    void main()
+    {
+        gl_Position = vec4(pos, 0.0, 1.0);
+    }
+)glsl";
+
+// Fragment shader
+const char* fragmentShaderSrc = R"glsl(
+    #version 150 core
+    out vec4 outColor;
+
+    void main()
+    {
+        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    }
+)glsl";
+
+  
+  const char* geometryShaderSrc = R"glsl(
+#version 150 core
+
+layout(lines) in;
+layout(triangle_strip, max_vertices = 100) out;
+
+void main()
+{
+    vec4 d1 = normalize(gl_in[1].gl_Position - gl_in[0].gl_Position);
+    vec4 n1 = vec4(-d1.y,d1.x, 0.0, 0.0);
+    
+
+
+
+    gl_Position = gl_in[0].gl_Position + 0.1 * n1;
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position + 0.1 * n1;
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position - 0.1 * n1;
+    EmitVertex();
+
+    EndPrimitive();
+
+
+    gl_Position = gl_in[1].gl_Position + 0.1 * n1;
+    EmitVertex();
+
+    gl_Position = gl_in[1].gl_Position - 0.1 * n1;
+    EmitVertex();
+
+    gl_Position = gl_in[0].gl_Position - 0.1 * n1;
+    EmitVertex();
+
+    EndPrimitive();
+
+
+})glsl";
+
+  GLuint vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSrc);
+  GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
+  GLuint geometryShader = createShader(GL_GEOMETRY_SHADER, geometryShaderSrc);
+
+  GLuint shaderProgram = glCreateProgram();
+
+
+  glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(shaderProgram, fragmentShader);
+  glAttachShader(shaderProgram, geometryShader);
+  
+  glLinkProgram(shaderProgram);
+  glUseProgram(shaderProgram);
+
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+
+  float points[] = {
+    -0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f, -0.45f,
+    0.45f, -0.45f,
+    -0.45f, -0.45f,
+  };
+
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+
+  // Create VAO
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  // Specify layout of point data
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "pos");
+  glEnableVertexAttribArray(posAttrib);
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  
+}
 
 int main()
 {
@@ -59,21 +182,7 @@ int main()
 	}
 	)glsl";
 
-	GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexSource, NULL);
-
-	glCompileShader(vertexShader);
-
-	GLint status;
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-
-	char buffer[512];
-	glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-
-	if (status != GL_TRUE)
-	{
-		printf("%s\n", buffer);
-	}
+	GLuint vertexShader = createShader(GL_VERTEX_SHADER, vertexSource);
 
 	const char* fragmentSource = R"glsl(
 	#version 150 core
@@ -86,19 +195,7 @@ int main()
 	}
 	)glsl";
 
-	GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-	glCompileShader(fragmentShader);
-
-
-	glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-
-	glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-
-	if (status != GL_TRUE)
-	{
-		printf("%s\n", buffer);
-	}
+	GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER,fragmentSource);
 
 	GLuint shaderProgram = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
@@ -167,28 +264,8 @@ void main() {
 )glsl";
 
 
-	GLuint circleVertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(circleVertexShader, 1, &vertexSource, NULL);
-
-	glCompileShader(circleVertexShader);
-
-
-	GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(circleShader, 1, &circleSource, NULL);
-	glCompileShader(circleShader);
-
-	GLint status0;
-	glGetShaderiv(circleShader, GL_COMPILE_STATUS, &status0);
-
-	char buffer0[512];
-
-	glGetShaderInfoLog(circleShader, 512, NULL, buffer0);
-
-	if (status0 != GL_TRUE)
-	{
-		printf("%s\n", buffer0);
-	}
-
+	GLuint circleVertexShader = createShader(GL_VERTEX_SHADER,vertexSource);
+	GLuint circleShader = createShader(GL_FRAGMENT_SHADER,circleSource);
 
 	GLuint circleProgram = glCreateProgram();
 	glAttachShader(circleProgram, circleVertexShader);
@@ -209,9 +286,12 @@ void main() {
 	glUseProgram(circleProgram);
 
 
+	drawLine();
+
+
 	while (!glfwWindowShouldClose(window))
 	{
-		
+	  /*
 
 		glUseProgram(circleProgram);
 
@@ -225,10 +305,15 @@ void main() {
 		glBindVertexArray(vao);
 
 		glDrawArrays(GL_TRIANGLES, 0, 3);
+	  */
 
+	  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	  glClear(GL_COLOR_BUFFER_BIT);
 
-		glfwSwapBuffers(window);
-		glfwPollEvents();
+	  glDrawArrays(GL_LINES, 0, 6);
+	  
+	  glfwSwapBuffers(window);
+	  glfwPollEvents();
 	}
 
 	glfwTerminate();

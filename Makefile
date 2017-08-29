@@ -16,6 +16,9 @@ depend: .depend
 
 include .depend
 
+gltest: gltest.cpp
+	$(CC) -o gltest gltest.cpp $(CFLAGS)
+
 .PHONY : clean
 clean :
 	rm -f map *.o
