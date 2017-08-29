@@ -7,6 +7,7 @@
 #include <string.h>
 #include <math.h>
 #include <GLFW/glfw3.h>
+//#include "nanosvg.h"
 #include "tesselator.h"
 
 #include <glm/glm.hpp>
@@ -28,6 +29,8 @@ GLint uniTrans;
 GLFWwindow *window = NULL;
 bool rightMouseDown;
 glm::vec2 lastp;
+
+GLuint circleProgram;
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -164,6 +167,48 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
   
+  const char* circleSource = R"glsl(
+#version 330
+    
+in vec2 fPosition;
+out vec4 fColor;
+
+void main() {
+    vec4 colors[4] = vec4[](
+        vec4(1.0, 0.0, 0.0, 1.0), 
+        vec4(0.0, 1.0, 0.0, 1.0), 
+        vec4(0.0, 0.0, 1.0, 1.0), 
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+    fColor = vec4(1.0);
+
+    for(int row = 0; row < 2; row++) {
+        for(int col = 0; col < 2; col++) {
+            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
+            float alpha = step(0.45, dist);
+            fColor = mix(colors[row*2+col], fColor, alpha);
+        }
+    }
+}
+)glsl";
+
+
+  GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(circleShader, 1, &circleSource, NULL);
+  glCompileShader(circleShader);
+
+  GLint status0;
+  glGetShaderiv(circleShader, GL_COMPILE_STATUS, &status0);
+
+  char buffer0[512];
+
+  glGetShaderInfoLog(circleShader, 512, NULL, buffer0);
+
+  if (status0 != GL_TRUE)
+  {
+	  printf("%s\n", buffer0);
+  }
+
 
   
   const char* vertexSource = R"glsl(
@@ -232,6 +277,18 @@ void main()
   glUseProgram(shaderProgram);
 
 
+  circleProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(circleProgram, circleShader);
+  
+  //glBindFragDataLocation(shaderProgram, 0, "outColor");
+
+  glLinkProgram(circleProgram);
+
+  //glUseProgram(circleProgram);
+
+
+
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
   g_camera.m_center = glm::vec2(0.5f,0.5f);
@@ -241,8 +298,6 @@ void main()
 
   
 
-  //glm::mat4 Model = glm::ortho(xmin,xmax,ymin,ymax,-1.f,1.f);
-  
   uniTrans = glGetUniformLocation(shaderProgram, "Model");
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
   //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
@@ -253,7 +308,37 @@ void main()
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 			
   glEnableVertexAttribArray(posAttrib);
+  
 
+  GLuint circleVao;
+  glGenVertexArrays(1, &circleVao);
+  
+  //glBindVertexArray(circleVao);
+
+  GLuint circleVbo;
+  glGenBuffers(1, &circleVbo); // Generate 1 buffer
+
+  glBindBuffer(GL_ARRAY_BUFFER, circleVbo);
+
+  float circleVertices[6][2] = {
+	  {-1.f, -1.f},
+	  {1.f, -1.f},
+	  {-1.f, 1.f},
+	  {1.f, -1.f},
+	  {1.f, 1.f},
+	  {-1.f, 1.f}
+  };
+
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*6 * 2, circleVertices, GL_STATIC_DRAW);
+
+
+  GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
+
+  glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glEnableVertexAttribArray(circlePosAttrib);
+
+  
 }
 
 
@@ -298,6 +383,9 @@ int main(int argc, char *argv[])
 	TESS_NOTUSED(argv);
 
 	printf("loading...\n");
+	// Load assets
+	//bg = svgParseFromFile("F:\\cpp\\GLMap\\Bin\\bg2.svg");
+	//if (!bg) return -1;
 
 	
 	memset(&ma, 0, sizeof(ma));
@@ -312,10 +400,20 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel("little.geojson",tess);
+	loadLevel("test.geojson",tess);
 
 	printf("go...\n");
 	
+
+	
+	// Offset the foreground shape to center of the bg.
+	offx = (bounds[2]+bounds[0])/2;
+	offy = (bounds[3]+bounds[1])/2;
+	
+	// Add contours.
+	//for (it = bg; it != NULL; it = it->next)
+	//	tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
+
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
 		return -1;
 	printf("Memory used: %.1f kB\n", allocated/1024.0f);
@@ -342,8 +440,11 @@ int main(int argc, char *argv[])
 	g_camera.m_width = width;
 	g_camera.m_height = height;
 
+	//g_camera.m_span = (xmax-xmin)/2;
 	g_camera.m_span = 0.5f;
 
+	//width=800;
+	//height = 600;
 	
 	window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
 	if (!window) {
@@ -383,6 +484,19 @@ int main(int argc, char *argv[])
 	
 	
 	initModernOpenGL( verts,  nverts, elems,  nelems );
+	//initModernOpenGL( vertices,  3, elems,  nelems );
+
+	/*		
+	printf("num elems: %d \n",nelems);
+	for (int i = 0; i<nelems; i++)
+	  {
+	    for (int j = 0; j < 3; j++) {
+	      printf("%d,",(&elems[i * 3])[j]);
+	    }
+	    printf("\n");
+	  };
+	printf("\n");			
+	*/
 
 	
 	while (!glfwWindowShouldClose(window))
@@ -390,7 +504,9 @@ int main(int argc, char *argv[])
 		float ct = (float)glfwGetTime();
 		if (run) t += ct - pt;
 		pt = ct;
-				
+		
+		
+		
 		// Draw tesselated pieces.
 		if (tess)
 		{
@@ -399,16 +515,82 @@ int main(int argc, char *argv[])
 		  glClear(GL_COLOR_BUFFER_BIT);
 
 
-		  int polySize = 3;
-		  int vertexSize = 2;
-		  
-		  glm::mat4 Model = g_camera.BuildProjectionMatrix();
-		  
-		  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+			int polySize = 3;
+			int vertexSize = 2;
 
-		  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
+			
+			
+			// Draw polygons.
+			//glColor4ub(255,255,255,128);
+
+			//initModernOpenGL( verts,  nverts, elems,  nelems );
+			
+			//glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+			  glm::mat4 Model = g_camera.BuildProjectionMatrix();
+ 
+			  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
+			  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
+
+
+			  glUseProgram(circleProgram);
+
+			    
+			  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+			  //glDrawElements(GL_POINTS, 1 * 3, GL_UNSIGNED_INT, 0);
+
+			/*
+			for (int i = 0; i < nelems2; i++) {
+			  const TESSindex* poly = &elems2[i * polySize];
+			  glBegin(GL_POLYGON);
+			  for (int j = 0; j < polySize; j++) {
+			    if (poly[j] == TESS_UNDEF) break;
+			    glVertex2fv(&verts[poly[j]*vertexSize]);
+			  }
+			  glEnd();
+			}
+			*/
+			/*
+			for (i = 0; i < nelems; ++i)
+			{
+				const int* p = &elems[i*nvp];
+				glBegin(GL_TRIANGLE_FAN);
+				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
+					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
+				glEnd();
+			}
+			
+			glColor4ub(0,0,0,16);
+			for (i = 0; i < nelems; ++i)
+			{
+				const int* p = &elems[i*nvp];
+				glBegin(GL_LINE_LOOP);
+				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
+					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
+				glEnd();
+			}
+			
+			glColor4ub(0,0,0,128);
+			glPointSize(3.0f);
+			glBegin(GL_POINTS);
+			for (i = 0; i < nverts; ++i)
+			{
+				if (vflags && vflags[vinds[i]])
+					glColor4ub(255,0,0,192);
+				else
+					glColor4ub(0,0,0,128);
+				glVertex2f(verts[i*2], verts[i*2+1]);
+			}
+			glEnd();
+			glPointSize(1.0f);
+
+			*/
 		}
 		
+		//glEnable(GL_DEPTH_TEST);
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -417,6 +599,9 @@ int main(int argc, char *argv[])
 	
 	if (vflags)
 		free(vflags);
+	
+	//svgDelete(bg);	
+	//svgDelete(fg);	
 
 	glfwTerminate();
 	return 0;
