@@ -30,6 +30,8 @@ GLFWwindow *window = NULL;
 bool rightMouseDown;
 glm::vec2 lastp;
 
+GLuint circleProgram;
+
 void* stdAlloc(void* userData, unsigned int size)
 {
 	int* allocated = ( int*)userData;
@@ -165,6 +167,48 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
   
+  const char* circleSource = R"glsl(
+#version 330
+    
+in vec2 fPosition;
+out vec4 fColor;
+
+void main() {
+    vec4 colors[4] = vec4[](
+        vec4(1.0, 0.0, 0.0, 1.0), 
+        vec4(0.0, 1.0, 0.0, 1.0), 
+        vec4(0.0, 0.0, 1.0, 1.0), 
+        vec4(0.0, 0.0, 0.0, 1.0)
+    );
+    fColor = vec4(1.0);
+
+    for(int row = 0; row < 2; row++) {
+        for(int col = 0; col < 2; col++) {
+            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
+            float alpha = step(0.45, dist);
+            fColor = mix(colors[row*2+col], fColor, alpha);
+        }
+    }
+}
+)glsl";
+
+
+  GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
+  glShaderSource(circleShader, 1, &circleSource, NULL);
+  glCompileShader(circleShader);
+
+  GLint status0;
+  glGetShaderiv(circleShader, GL_COMPILE_STATUS, &status0);
+
+  char buffer0[512];
+
+  glGetShaderInfoLog(circleShader, 512, NULL, buffer0);
+
+  if (status0 != GL_TRUE)
+  {
+	  printf("%s\n", buffer0);
+  }
+
 
   
   const char* vertexSource = R"glsl(
@@ -233,6 +277,18 @@ void main()
   glUseProgram(shaderProgram);
 
 
+  circleProgram = glCreateProgram();
+  glAttachShader(shaderProgram, vertexShader);
+  glAttachShader(circleProgram, circleShader);
+  
+  //glBindFragDataLocation(shaderProgram, 0, "outColor");
+
+  glLinkProgram(circleProgram);
+
+  //glUseProgram(circleProgram);
+
+
+
   //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
 
   g_camera.m_center = glm::vec2(0.5f,0.5f);
@@ -252,7 +308,37 @@ void main()
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 			
   glEnableVertexAttribArray(posAttrib);
+  
 
+  GLuint circleVao;
+  glGenVertexArrays(1, &circleVao);
+  
+  //glBindVertexArray(circleVao);
+
+  GLuint circleVbo;
+  glGenBuffers(1, &circleVbo); // Generate 1 buffer
+
+  glBindBuffer(GL_ARRAY_BUFFER, circleVbo);
+
+  float circleVertices[6][2] = {
+	  {-1.f, -1.f},
+	  {1.f, -1.f},
+	  {-1.f, 1.f},
+	  {1.f, -1.f},
+	  {1.f, 1.f},
+	  {-1.f, 1.f}
+  };
+
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*6 * 2, circleVertices, GL_STATIC_DRAW);
+
+
+  GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
+
+  glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glEnableVertexAttribArray(circlePosAttrib);
+
+  
 }
 
 
@@ -314,7 +400,7 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel("little.geojson",tess);
+	loadLevel("test.geojson",tess);
 
 	printf("go...\n");
 	
@@ -447,6 +533,15 @@ int main(int argc, char *argv[])
 			  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
 
 			  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
+
+
+			  glUseProgram(circleProgram);
+
+			    
+			  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+			  //glDrawElements(GL_POINTS, 1 * 3, GL_UNSIGNED_INT, 0);
+
 			/*
 			for (int i = 0; i < nelems2; i++) {
 			  const TESSindex* poly = &elems2[i * polySize];

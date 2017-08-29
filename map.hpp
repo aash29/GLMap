@@ -93,11 +93,11 @@ void loadLevel(const char *name,TESStesselator* tess)
 			m3[id].coords[j].push_back(c1[j][i][1]);
 			
 	    
-			xmin=std::min(xmin,a2[j][2*i]);
-			xmax=std::max(xmax,a2[j][2*i]);
+			xmin=std::min(xmin, c1[j][i][0]);
+			xmax=std::max(xmax, c1[j][i][0]);
 	    
-			ymin=std::min(ymin,a2[j][2*i+1]);
-			ymax=std::max(ymax,a2[j][2*i+1]);
+			ymin=std::min(ymin, c1[j][i][1]);
+			ymax=std::max(ymax, c1[j][i][1]);
 		  };
 		  std::cout << "adding contour" << "\n";
 		}
