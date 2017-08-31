@@ -4,6 +4,16 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 
+  
+  float points[] = {
+    -0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f, -0.45f,
+    0.45f, -0.45f,
+    -0.45f, -0.45f,
+  };
+  
 
 GLuint createShader(GLenum type, const GLchar* src) {
     GLuint shader = glCreateShader(type);
@@ -25,7 +35,7 @@ GLuint createShader(GLenum type, const GLchar* src) {
 }
 
 
-void drawLine() {
+GLuint drawLine() {
 
 const char* vertexShaderSrc = R"glsl(
     #version 150 core
@@ -106,6 +116,7 @@ void main()
   GLuint vbo;
   glGenBuffers(1, &vbo);
 
+  /*
   float points[] = {
     -0.45f,  0.45f,
     0.45f,  0.45f,
@@ -114,9 +125,10 @@ void main()
     0.45f, -0.45f,
     -0.45f, -0.45f,
   };
+  */
 
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
 
   // Create VAO
   GLuint vao;
@@ -127,6 +139,8 @@ void main()
   GLint posAttrib = glGetAttribLocation(shaderProgram, "pos");
   glEnableVertexAttribArray(posAttrib);
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  return vbo;
   
 }
 
@@ -286,7 +300,7 @@ void main() {
 	glUseProgram(circleProgram);
 
 
-	drawLine();
+	GLuint lvbo = drawLine();
 
 
 	while (!glfwWindowShouldClose(window))
@@ -309,6 +323,15 @@ void main() {
 
 	  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	  glClear(GL_COLOR_BUFFER_BIT);
+	  
+	  points[0]=1.f;
+	  points[1]=1.f;
+
+	  glBindBuffer(GL_ARRAY_BUFFER, lvbo);
+
+	  //glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
+
+	  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(points), points);
 
 	  glDrawArrays(GL_LINES, 0, 6);
 	  
