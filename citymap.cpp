@@ -21,6 +21,7 @@
 #include <map>
 #include "camera.hpp"
 #include "map.hpp"
+#include "graphics.hpp"
 
 Camera g_camera;
 
@@ -94,40 +95,39 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 
 
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
-    double xd, yd;
-    glfwGetCursorPos(window, &xd, &yd);
-    glm::vec2 ps((float) xd, (float) yd);
-
-    // Use the mouse to move things around.
-    if (button == GLFW_MOUSE_BUTTON_1) {
+  double xd, yd;
+  glfwGetCursorPos(window, &xd, &yd);
+  glm::vec2 ps((float) xd, (float) yd);
+  
+  // Use the mouse to move things around.
+  if (button == GLFW_MOUSE_BUTTON_1) {
+  }
+  else if (button == GLFW_MOUSE_BUTTON_2) {
+    if (action == GLFW_PRESS) {
+      lastp = g_camera.ConvertScreenToWorld(ps);
+      rightMouseDown = true;
+      glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+      //test->RightMouseDown(pw);
     }
-    else if (button == GLFW_MOUSE_BUTTON_2) {
-        if (action == GLFW_PRESS) {
-            lastp = g_camera.ConvertScreenToWorld(ps);
-            rightMouseDown = true;
-	    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-            //test->RightMouseDown(pw);
-        }
-
-        if (action == GLFW_RELEASE) {
-            rightMouseDown = false;
-        }
+    
+    if (action == GLFW_RELEASE) {
+      rightMouseDown = false;
     }
+  }
 }
 
 
 static void sMouseMotion(GLFWwindow *, double xd, double yd) {
   glm::vec2 ps((float) xd, (float) yd);
-
-    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-    //test->MouseMove(pw);
-    if (rightMouseDown) {
-    
-        glm::vec2 diff = pw - lastp;
-        g_camera.m_center.x -= diff.x;
-        g_camera.m_center.y -= diff.y;
-        lastp = g_camera.ConvertScreenToWorld(ps);
-   }
+  
+  glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+  //test->MouseMove(pw);
+  if (rightMouseDown) {    
+    glm::vec2 diff = pw - lastp;
+    g_camera.m_center.x -= diff.x;
+    g_camera.m_center.y -= diff.y;
+    lastp = g_camera.ConvertScreenToWorld(ps);
+  }
 }
 
 
@@ -135,15 +135,34 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 
 
 
-void initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
+GLuint initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
 {
   
+  const char* vertexSource = R"glsl(
+	in vec2 position;
+in vec3 color;
+in vec2 texcoord;
 
 
-  GLuint vertexBuffer;
-  glGenBuffers(1, &vertexBuffer);
+uniform mat4 Model;
 
-  //printf("%u\n", vertexBuffer);
+void main()
+{
+    gl_Position = Model * vec4(position, 0.0, 1.0);
+}
+	)glsl";
+
+  const char* fragmentSource = R"glsl(
+	#version 150 core
+
+		out vec4 outColor;
+
+	void main()
+	{
+		outColor = vec4(1.0, 1.0, 1.0, 1.0);
+	}
+	)glsl";
+
 
   GLuint vao;
   glGenVertexArrays(1, &vao);
@@ -167,64 +186,7 @@ void initModernOpenGL(const float* verts, const int nverts, const TESSindex* ele
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,
 	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
   
-  const char* circleSource = R"glsl(
-#version 330
-    
-in vec2 fPosition;
-out vec4 fColor;
-
-void main() {
-    vec4 colors[4] = vec4[](
-        vec4(1.0, 0.0, 0.0, 1.0), 
-        vec4(0.0, 1.0, 0.0, 1.0), 
-        vec4(0.0, 0.0, 1.0, 1.0), 
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    fColor = vec4(1.0);
-
-    for(int row = 0; row < 2; row++) {
-        for(int col = 0; col < 2; col++) {
-            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
-            float alpha = step(0.45, dist);
-            fColor = mix(colors[row*2+col], fColor, alpha);
-        }
-    }
-}
-)glsl";
-
-
-  GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(circleShader, 1, &circleSource, NULL);
-  glCompileShader(circleShader);
-
-  GLint status0;
-  glGetShaderiv(circleShader, GL_COMPILE_STATUS, &status0);
-
-  char buffer0[512];
-
-  glGetShaderInfoLog(circleShader, 512, NULL, buffer0);
-
-  if (status0 != GL_TRUE)
-  {
-	  printf("%s\n", buffer0);
-  }
-
-
-  
-  const char* vertexSource = R"glsl(
-	in vec2 position;
-in vec3 color;
-in vec2 texcoord;
-
-
-uniform mat4 Model;
-
-void main()
-{
-    gl_Position = Model * vec4(position, 0.0, 1.0);
-}
-	)glsl";
-			
+  			
   GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertexShader, 1, &vertexSource, NULL);
 			
@@ -241,17 +203,7 @@ void main()
       printf("%s\n", buffer);
     }
 			
-  const char* fragmentSource = R"glsl(
-	#version 150 core
-
-		out vec4 outColor;
-
-	void main()
-	{
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-	)glsl";
-			
+ 			
   GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
   glCompileShader(fragmentShader);
@@ -276,68 +228,21 @@ void main()
 
   glUseProgram(shaderProgram);
 
-
-  circleProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(circleProgram, circleShader);
-  
-  //glBindFragDataLocation(shaderProgram, 0, "outColor");
-
-  glLinkProgram(circleProgram);
-
-  //glUseProgram(circleProgram);
-
-
-
-  //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
-
   g_camera.m_center = glm::vec2(0.5f,0.5f);
 
   //  float proj[16] = { 0.0f };
   glm::mat4 Model = g_camera.BuildProjectionMatrix();
 
-  
-
   uniTrans = glGetUniformLocation(shaderProgram, "Model");
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
 
-			
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+ GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
 			
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 			
   glEnableVertexAttribArray(posAttrib);
-  
 
-  GLuint circleVao;
-  glGenVertexArrays(1, &circleVao);
-  
-  //glBindVertexArray(circleVao);
-
-  GLuint circleVbo;
-  glGenBuffers(1, &circleVbo); // Generate 1 buffer
-
-  glBindBuffer(GL_ARRAY_BUFFER, circleVbo);
-
-  float circleVertices[6][2] = {
-	  {-1.f, -1.f},
-	  {1.f, -1.f},
-	  {-1.f, 1.f},
-	  {1.f, -1.f},
-	  {1.f, 1.f},
-	  {-1.f, 1.f}
-  };
-
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*6 * 2, circleVertices, GL_STATIC_DRAW);
-
-
-  GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
-
-  glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-  glEnableVertexAttribArray(circlePosAttrib);
-
+  return shaderProgram;
   
 }
 
@@ -403,13 +308,7 @@ int main(int argc, char *argv[])
 	loadLevel("test.geojson",tess);
 
 	printf("go...\n");
-	
-
-	
-	// Offset the foreground shape to center of the bg.
-	offx = (bounds[2]+bounds[0])/2;
-	offy = (bounds[3]+bounds[1])/2;
-	
+		
 	// Add contours.
 	//for (it = bg; it != NULL; it = it->next)
 	//	tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
@@ -471,33 +370,26 @@ int main(int argc, char *argv[])
 
 	const float* verts = tessGetVertices(tess);
 	const int* vinds = tessGetVertexIndices(tess);
-	const TESSindex* elems = tessGetElements(tess);
+	const int* elems = tessGetElements(tess);
 	const int nverts = tessGetVertexCount(tess);
 	const int nelems = tessGetElementCount(tess);
+	
+	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
-	float vertices[] = {
-		0.0f,  0.5f, // Vertex 1 (X, Y)
-		0.5f, -0.5f, // Vertex 2 (X, Y)
-		-0.5f, -0.5f,  // Vertex 3 (X, Y)
+	
+	shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
+
+	float points[] = {
+	  -0.45f,  0.45f,
+	  0.45f,  0.45f,
+	  0.45f,  0.45f,
+	  0.45f, -0.45f,
+	  0.45f, -0.45f,
+	  -0.45f, -0.45f,
 	};
 
 	
-	
-	initModernOpenGL( verts,  nverts, elems,  nelems );
-	//initModernOpenGL( vertices,  3, elems,  nelems );
-
-	/*		
-	printf("num elems: %d \n",nelems);
-	for (int i = 0; i<nelems; i++)
-	  {
-	    for (int j = 0; j < 3; j++) {
-	      printf("%d,",(&elems[i * 3])[j]);
-	    }
-	    printf("\n");
-	  };
-	printf("\n");			
-	*/
-
+	shaderData lineSh = drawLineShaderInit(points, 8);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -513,81 +405,22 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
+		  /*
+		  glm::mat4 Model = g_camera.BuildProjectionMatrix();
 
+		   uniTrans = glGetUniformLocation(mapSh.shaderProgram, "Model");
 
-			int polySize = 3;
-			int vertexSize = 2;
-
-			
-			
-			// Draw polygons.
-			//glColor4ub(255,255,255,128);
-
-			//initModernOpenGL( verts,  nverts, elems,  nelems );
-			
-			//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-
-			  glm::mat4 Model = g_camera.BuildProjectionMatrix();
- 
-			  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-
-			  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
-
-
-			  glUseProgram(circleProgram);
-
-			    
-			  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-			  //glDrawElements(GL_POINTS, 1 * 3, GL_UNSIGNED_INT, 0);
-
-			/*
-			for (int i = 0; i < nelems2; i++) {
-			  const TESSindex* poly = &elems2[i * polySize];
-			  glBegin(GL_POLYGON);
-			  for (int j = 0; j < polySize; j++) {
-			    if (poly[j] == TESS_UNDEF) break;
-			    glVertex2fv(&verts[poly[j]*vertexSize]);
-			  }
-			  glEnd();
-			}
-			*/
-			/*
-			for (i = 0; i < nelems; ++i)
-			{
-				const int* p = &elems[i*nvp];
-				glBegin(GL_TRIANGLE_FAN);
-				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
-					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
-				glEnd();
-			}
-			
-			glColor4ub(0,0,0,16);
-			for (i = 0; i < nelems; ++i)
-			{
-				const int* p = &elems[i*nvp];
-				glBegin(GL_LINE_LOOP);
-				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
-					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
-				glEnd();
-			}
-			
-			glColor4ub(0,0,0,128);
-			glPointSize(3.0f);
-			glBegin(GL_POINTS);
-			for (i = 0; i < nverts; ++i)
-			{
-				if (vflags && vflags[vinds[i]])
-					glColor4ub(255,0,0,192);
-				else
-					glColor4ub(0,0,0,128);
-				glVertex2f(verts[i*2], verts[i*2+1]);
-			}
-			glEnd();
-			glPointSize(1.0f);
-
-			*/
+		  std::cout << mapSh.shaderProgram << "\n";
+		  
+		  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+		  
+		  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);		
+		  
+		  */
+		  
+		  
+		  drawMap(mapSh,g_camera);
+		  drawLine(lineSh);
 		}
 		
 		//glEnable(GL_DEPTH_TEST);

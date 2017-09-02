@@ -1,5 +1,5 @@
 
-SOURCES = citymap.cpp camera.cpp
+SOURCES = citymap.cpp camera.cpp graphics.cpp
 CC = g++
 CFLAGS =  -g -I./Include -ltess2 -L. -lGLEW -lGL -lglfw
 
@@ -16,8 +16,8 @@ depend: .depend
 
 include .depend
 
-gltest: gltest.cpp
-	$(CC) -o gltest gltest.cpp $(CFLAGS)
+gltest: gltest.cpp graphics.cpp
+	$(CC) -o gltest gltest.cpp graphics.cpp $(CFLAGS)
 
 .PHONY : clean
 clean :
