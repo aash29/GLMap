@@ -20,7 +20,7 @@ struct shaderData {
 
 GLuint createShader(GLenum type, const GLchar* src);
 shaderData drawLineShaderInit( float* points, int numPoints );
-void drawLine(shaderData sh);
+void drawLine(shaderData sh, Camera cam);
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelement );
 void drawMap( shaderData sh, Camera cam);
 

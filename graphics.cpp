@@ -5,6 +5,9 @@
 
 #include "graphics.hpp"
 #include "camera.hpp"
+#include "shaders.glsl"
+#include <iostream>
+
 
 GLuint createShader(GLenum type, const GLchar* src) {
     GLuint shader = glCreateShader(type);
@@ -28,70 +31,11 @@ GLuint createShader(GLenum type, const GLchar* src) {
 
 shaderData drawLineShaderInit( float* points, int numPoints) {
 
-const char* vertexShaderSrc = R"glsl(
-    #version 150 core
-    in vec2 pos;
-
-    void main()
-    {
-        gl_Position = vec4(pos, 0.0, 1.0);
-    }
-)glsl";
-
-// Fragment shader
-const char* fragmentShaderSrc = R"glsl(
-    #version 150 core
-    out vec4 outColor;
-
-    void main()
-    {
-        outColor = vec4(1.0, 0.0, 0.0, 1.0);
-    }
-)glsl";
-
-  
-  const char* geometryShaderSrc = R"glsl(
-#version 150 core
-
-layout(lines) in;
-layout(triangle_strip, max_vertices = 100) out;
-
-void main()
-{
-    vec4 d1 = normalize(gl_in[1].gl_Position - gl_in[0].gl_Position);
-    vec4 n1 = vec4(-d1.y,d1.x, 0.0, 0.0);
-    
-    gl_Position = gl_in[0].gl_Position + 0.1 * n1;
-    EmitVertex();
-
-    gl_Position = gl_in[1].gl_Position + 0.1 * n1;
-    EmitVertex();
-
-    gl_Position = gl_in[0].gl_Position - 0.1 * n1;
-    EmitVertex();
-
-    EndPrimitive();
-
-
-    gl_Position = gl_in[1].gl_Position + 0.1 * n1;
-    EmitVertex();
-
-    gl_Position = gl_in[1].gl_Position - 0.1 * n1;
-    EmitVertex();
-
-    gl_Position = gl_in[0].gl_Position - 0.1 * n1;
-    EmitVertex();
-
-    EndPrimitive();
-
-
-})glsl";
-
   shaderData outSh;
   
-  outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSrc);
-  outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
-  outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, geometryShaderSrc);
+  outSh.vertexShader = createShader(GL_VERTEX_SHADER, lineVertexShaderSrc);
+  outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, lineFragmentShaderSrc);
+  outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, lineGeometryShaderSrc);
 
   outSh.shaderProgram = glCreateProgram();
 
@@ -127,13 +71,21 @@ void main()
   
 }
 
-void drawLine(shaderData sh) {
+void drawLine(shaderData sh, Camera cam) {
 
 
   glBindVertexArray(sh.vao);
   
   glUseProgram(sh.shaderProgram);
-	  
+
+  glm::mat4 Model = cam.BuildProjectionMatrix();
+
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+
+  std::cout << uniTrans;
+  
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
    glDrawArrays(GL_LINES, 0, sh.vertexCount);
 
 };
@@ -141,29 +93,6 @@ void drawLine(shaderData sh) {
 
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelements )
 {
-  const char* vertexSource = R"glsl(
-	#version 150 core
-        in vec2 position;
-
-        uniform mat4 Model;
-
-        void main()
-        {
-            gl_Position = Model * vec4(position, 0.0, 1.0);
-        }
-)glsl";
-  
-const char* fragmentSource = R"glsl(
-	#version 150 core
-
-	out vec4 outColor;
-
-	void main()
-	{
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-	)glsl";
-
   shaderData outSh;
   
   outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexSource);

@@ -130,123 +130,6 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
   }
 }
 
-
-
-
-
-
-GLuint initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
-{
-  
-  const char* vertexSource = R"glsl(
-	in vec2 position;
-in vec3 color;
-in vec2 texcoord;
-
-
-uniform mat4 Model;
-
-void main()
-{
-    gl_Position = Model * vec4(position, 0.0, 1.0);
-}
-	)glsl";
-
-  const char* fragmentSource = R"glsl(
-	#version 150 core
-
-		out vec4 outColor;
-
-	void main()
-	{
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-	)glsl";
-
-
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  
-  glBindVertexArray(vao);
-  
-  GLuint vbo;
-  glGenBuffers(1, &vbo); // Generate 1 buffer
-  
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts*2, verts, GL_STATIC_DRAW);
-
-  
-  GLuint ebo;
-  glGenBuffers(1, &ebo);
-
-  printf("nelements:%d \n", nelements);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
-  
-  			
-  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader, 1, &vertexSource, NULL);
-			
-  glCompileShader(vertexShader);
-			
-  GLint status;
-  glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-			
-  char buffer[512];
-  glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-			
-  if (status != GL_TRUE)
-    {
-      printf("%s\n", buffer);
-    }
-			
- 			
-  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-  glCompileShader(fragmentShader);
-			
-			
-  glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-			
-  glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-			
-  if (status != GL_TRUE)
-    {
-      printf("%s\n", buffer);
-    }
-
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-			
-  glBindFragDataLocation(shaderProgram, 0, "outColor");
-			
-  glLinkProgram(shaderProgram);
-
-  glUseProgram(shaderProgram);
-
-  g_camera.m_center = glm::vec2(0.5f,0.5f);
-
-  //  float proj[16] = { 0.0f };
-  glm::mat4 Model = g_camera.BuildProjectionMatrix();
-
-  uniTrans = glGetUniformLocation(shaderProgram, "Model");
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-
- GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-			
-  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			
-  glEnableVertexAttribArray(posAttrib);
-
-  return shaderProgram;
-  
-}
-
-
 // Undefine this to see non-interactive heap allocator version.
 //#define USE_POOL 1
 
@@ -305,13 +188,9 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel("test.geojson",tess);
+	std::map<std::string, building> city = loadLevel("test.geojson",tess);
 
 	printf("go...\n");
-		
-	// Add contours.
-	//for (it = bg; it != NULL; it = it->next)
-	//	tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
 
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
 		return -1;
@@ -380,16 +259,19 @@ int main(int argc, char *argv[])
 	shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
 
 	float points[] = {
-	  -0.45f,  0.45f,
+	  0.f,  0.45f,
 	  0.45f,  0.45f,
 	  0.45f,  0.45f,
-	  0.45f, -0.45f,
-	  0.45f, -0.45f,
-	  -0.45f, -0.45f,
+	  0.45f, -0.f,
+	  0.45f, -0.f,
+	  -0.f, -0.f,
 	};
 
+
+	float* cont1 = city.begin()->second.coords[0].data();
+	int contSize = city.begin()->second.coords[0].size();
 	
-	shaderData lineSh = drawLineShaderInit(points, 8);
+	shaderData lineSh = drawLineShaderInit(cont1, contSize);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -405,22 +287,11 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
-		  /*
-		  glm::mat4 Model = g_camera.BuildProjectionMatrix();
 
-		   uniTrans = glGetUniformLocation(mapSh.shaderProgram, "Model");
-
-		  std::cout << mapSh.shaderProgram << "\n";
-		  
-		  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-		  
-		  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);		
-		  
-		  */
 		  
 		  
-		  drawMap(mapSh,g_camera);
-		  drawLine(lineSh);
+		  drawMap(mapSh, g_camera);
+		  drawLine(lineSh, g_camera);
 		}
 		
 		//glEnable(GL_DEPTH_TEST);

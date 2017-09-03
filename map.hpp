@@ -15,7 +15,7 @@ struct building
 
 float xmin,xmax,ymin,ymax;
 
-void loadLevel(const char *name,TESStesselator* tess)
+std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
 {
   
   
@@ -132,7 +132,8 @@ void loadLevel(const char *name,TESStesselator* tess)
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 	}
       }
-
+      
+      return m3;
 }
 
 #endif
