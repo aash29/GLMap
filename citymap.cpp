@@ -30,8 +30,12 @@ GLint uniTrans;
 GLFWwindow *window = NULL;
 bool rightMouseDown;
 glm::vec2 lastp;
+glm::vec2 selp;
 
-GLuint circleProgram;
+std::map<std::string, building> city;
+bool selected;
+shaderData lineSh;
+
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -89,9 +93,78 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
         else {
             g_camera.m_zoom *= 1.1f;
         }
-	printf ("scroll");
+	//printf ("scroll");
 	//   }
 }
+
+
+    static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
+    {
+        int i, j, c = 0;
+        for (i = 0, j = nvert-1; i < nvert; j = i++) {
+        if ( ((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+            c = !c;
+        }
+    return c;
+    }
+
+
+std::string selectBuilding(float testx, float testy)
+{
+
+  std::vector<float> unCol = std::vector<float>();
+  std::vector<float> unDraw = std::vector<float>();
+
+  unCol.push_back(0.f);
+  unCol.push_back(0.f);
+	
+  for (auto b1: city)
+    {
+      std::string id1 = b1.first;
+      for (auto it: city[id1].coords)
+	{
+	  //numVert+=round(it.size()/2);
+	  unCol.insert(unCol.end(),it.begin(),it.end());
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	  for (int i=2;i<it.size();i=i+2)
+	    {
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);
+
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);		
+	    }
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	  //unDraw.insert(unDraw.end(),it.begin(),it.end());
+	  unCol.push_back(0.f);
+	  unCol.push_back(0.f);
+	  //numVert++;
+	};
+
+
+      float* cont1 = unCol.data();
+      int numVert = round(unCol.size()/2);
+	  
+      double* vertx = new double[numVert];
+      double* verty = new double[numVert];
+
+      for (int i = 0; i<numVert; i++){
+	vertx[i]=cont1[2*i];
+	verty[i]=cont1[2*i+1];
+      }
+
+      if (pnpoly(numVert, vertx, verty, testx, testy)>0)
+	{
+	  return id1;
+	}
+      delete vertx;
+      delete verty;
+    }
+  return std::string("none");
+
+};
 
 
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
@@ -101,6 +174,43 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
   
   // Use the mouse to move things around.
   if (button == GLFW_MOUSE_BUTTON_1) {
+    selp = g_camera.ConvertScreenToWorld(ps);
+    std::string id1 = selectBuilding(selp.x,selp.y);
+
+    std::vector<float> unDraw = std::vector<float>();
+
+    if (id1!=std::string("none"))
+      {
+	selected = true;
+	std::vector<float> unDraw = std::vector<float>();
+
+	for (auto it: city[id1].coords)
+	  {
+	    unDraw.push_back(it[0]);
+	    unDraw.push_back(it[1]);
+	    for (int i=2;i<it.size();i=i+2)
+	      {
+		unDraw.push_back(it[i]);
+		unDraw.push_back(it[i+1]);
+
+		unDraw.push_back(it[i]);
+		unDraw.push_back(it[i+1]);		
+	      }
+	    unDraw.push_back(it[0]);
+	    unDraw.push_back(it[1]);
+	  };
+
+	lineSh.vertexCount = round(unDraw.size()/2);
+	lineSh.data = unDraw.data();
+	glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+	glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount*2*sizeof(float), lineSh.data, GL_STATIC_DRAW);
+
+	//lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
+      }
+    else {
+      selected=false;
+    };
+    std::cout << id1 <<"\n";
   }
   else if (button == GLFW_MOUSE_BUTTON_2) {
     if (action == GLFW_PRESS) {
@@ -134,6 +244,7 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 //#define USE_POOL 1
 
 
+
 int run = 1;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -145,6 +256,8 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		run = !run;
 }
+
+
 
 int main(int argc, char *argv[])
 {
@@ -188,7 +301,7 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	std::map<std::string, building> city = loadLevel("test.geojson",tess);
+	city = loadLevel("little.geojson",tess);
 
 	printf("go...\n");
 
@@ -255,23 +368,10 @@ int main(int argc, char *argv[])
 	
 	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
+	float stub[4] = {0.f,0.f,0.f,0.f};
 	
 	shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
-
-	float points[] = {
-	  0.f,  0.45f,
-	  0.45f,  0.45f,
-	  0.45f,  0.45f,
-	  0.45f, -0.f,
-	  0.45f, -0.f,
-	  -0.f, -0.f,
-	};
-
-
-	float* cont1 = city.begin()->second.coords[0].data();
-	int contSize = city.begin()->second.coords[0].size();
-	
-	shaderData lineSh = drawLineShaderInit(cont1, contSize);
+	lineSh = drawLineShaderInit(stub, 2);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -280,6 +380,7 @@ int main(int argc, char *argv[])
 		pt = ct;
 		
 		
+		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
 		
 		// Draw tesselated pieces.
 		if (tess)
@@ -291,7 +392,8 @@ int main(int argc, char *argv[])
 		  
 		  
 		  drawMap(mapSh, g_camera);
-		  drawLine(lineSh, g_camera);
+		  if (selected)
+		    drawLine(lineSh, g_camera);
 		}
 		
 		//glEnable(GL_DEPTH_TEST);
