@@ -22,6 +22,8 @@
 #include "camera.hpp"
 #include "map.hpp"
 #include "graphics.hpp"
+#include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
 
 Camera g_camera;
 
@@ -259,6 +261,15 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 
 
+void sInterface() {
+
+  if (ImGui::IsMouseHoveringWindow()) {
+    ImGui::CaptureMouseFromApp(false);
+  }
+
+}
+
+
 int main(int argc, char *argv[])
 {
   //GLFWwindow* window;
@@ -344,6 +355,9 @@ int main(int argc, char *argv[])
 	}
 
 
+	ImGui_ImplGlfwGL3_Init(window, true);
+
+	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
         glfwSetMouseButtonCallback(window, sMouseButton);
@@ -379,6 +393,19 @@ int main(int argc, char *argv[])
 		if (run) t += ct - pt;
 		pt = ct;
 		
+		ImGui_ImplGlfwGL3_NewFrame();
+
+		sInterface();
+		
+		{
+		  static float f = 0.0f;
+		  ImGui::Text("Hello, world!");
+		  ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+		  
+		  
+		  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		}
+
 		
 		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
 		
@@ -388,6 +415,7 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
+		  ImGui::Render();
 
 		  
 		  

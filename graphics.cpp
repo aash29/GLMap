@@ -82,7 +82,7 @@ void drawLine(shaderData sh, Camera cam) {
 
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
 
-  std::cout << uniTrans;
+  //std::cout << uniTrans;
   
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
 
