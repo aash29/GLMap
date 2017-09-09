@@ -173,57 +173,71 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
   double xd, yd;
   glfwGetCursorPos(window, &xd, &yd);
   glm::vec2 ps((float) xd, (float) yd);
+  selp = g_camera.ConvertScreenToWorld(ps);
+
   
-  // Use the mouse to move things around.
-  if (button == GLFW_MOUSE_BUTTON_1) {
-    selp = g_camera.ConvertScreenToWorld(ps);
-    std::string id1 = selectBuilding(selp.x,selp.y);
+  ImGuiIO &io = ImGui::GetIO();
+  /*
+  ImGui::Begin("Info");
+  ImGui::Text("lalala");
+  ImGui::End();
+  */
+  std::cout<<"pressed" << "\n";
+  
+  if (!io.WantCaptureMouse) {
 
-    std::vector<float> unDraw = std::vector<float>();
 
-    if (id1!=std::string("none"))
-      {
-	selected = true;
-	std::vector<float> unDraw = std::vector<float>();
+    // Use the mouse to move things around.
+    if (button == GLFW_MOUSE_BUTTON_1) {
+      std::string id1 = selectBuilding(selp.x,selp.y);  // relation/2612859 
 
-	for (auto it: city[id1].coords)
-	  {
-	    unDraw.push_back(it[0]);
-	    unDraw.push_back(it[1]);
-	    for (int i=2;i<it.size();i=i+2)
-	      {
-		unDraw.push_back(it[i]);
-		unDraw.push_back(it[i+1]);
 
-		unDraw.push_back(it[i]);
-		unDraw.push_back(it[i+1]);		
-	      }
-	    unDraw.push_back(it[0]);
-	    unDraw.push_back(it[1]);
-	  };
+      std::vector<float> unDraw = std::vector<float>();
 
-	lineSh.vertexCount = round(unDraw.size()/2);
-	lineSh.data = unDraw.data();
-	glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-	glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount*2*sizeof(float), lineSh.data, GL_STATIC_DRAW);
+      if (id1!=std::string("none"))
+	{
+	  selected = true;
+	  std::vector<float> unDraw = std::vector<float>();
 
-	//lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
-      }
-    else {
-      selected=false;
-    };
-    std::cout << id1 <<"\n";
-  }
-  else if (button == GLFW_MOUSE_BUTTON_2) {
-    if (action == GLFW_PRESS) {
-      lastp = g_camera.ConvertScreenToWorld(ps);
-      rightMouseDown = true;
-      glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-      //test->RightMouseDown(pw);
+	  for (auto it: city[id1].coords)
+	    {
+	      unDraw.push_back(it[0]);
+	      unDraw.push_back(it[1]);
+	      for (int i=2;i<it.size()-1;i=i+2)
+		{
+		  unDraw.push_back(it[i]);
+		  unDraw.push_back(it[i+1]);
+
+		  unDraw.push_back(it[i]);
+		  unDraw.push_back(it[i+1]);		
+		}
+	      unDraw.push_back(it[0]);
+	      unDraw.push_back(it[1]);
+	    };
+
+	  lineSh.vertexCount = round(unDraw.size()/2);
+	  lineSh.data = unDraw.data();
+	  glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+	  glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount*2*sizeof(float), lineSh.data, GL_STATIC_DRAW);
+
+	  //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
+	}
+      else {
+	selected=false;
+      };
+      std::cout << id1 <<"\n";
     }
+    else if (button == GLFW_MOUSE_BUTTON_2) {
+      if (action == GLFW_PRESS) {
+	lastp = g_camera.ConvertScreenToWorld(ps);
+	rightMouseDown = true;
+	glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+	//test->RightMouseDown(pw);
+      }
     
-    if (action == GLFW_RELEASE) {
-      rightMouseDown = false;
+      if (action == GLFW_RELEASE) {
+	rightMouseDown = false;
+      }
     }
   }
 }
@@ -263,9 +277,33 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 void sInterface() {
 
-  if (ImGui::IsMouseHoveringWindow()) {
-    ImGui::CaptureMouseFromApp(false);
+  if (ImGui::IsAnyWindowHovered()) {
+    ImGui::CaptureMouseFromApp(true);
   }
+
+  {
+    ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+    ImGuiStyle &style = ImGui::GetStyle();
+    //style.Colors[ImGuiCol_WindowBg]=color;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, color);    
+    ImGui::Begin("Info");
+    static float f = 0.0f;
+    ImGui::Text("Hello, world!");
+    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+    
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+
+    ImGui::Begin("Info2");
+    ImGui::Text("Hello, world!");
+    
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+    ImGui::End();
+
+    
+    ImGui::PopStyleColor();
+  }
+
 
 }
 
@@ -354,22 +392,22 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
-
-	ImGui_ImplGlfwGL3_Init(window, true);
+	glfwMakeContextCurrent(window);
+	//glfwSwapInterval(1); // Enable vsync
 
 	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
         glfwSetMouseButtonCallback(window, sMouseButton);
 
-	glfwMakeContextCurrent(window);
 
 	glewExperimental = GL_TRUE;
 	glewInit();
 
+	ImGui_ImplGlfwGL3_Init(window, false);
 
+	//glEnable(GL_DEPTH_TEST);	
 	glfwSetKeyCallback(window, key);
-	glfwMakeContextCurrent(window);
 	
 
 	glfwSetTime(0);
@@ -394,18 +432,9 @@ int main(int argc, char *argv[])
 		pt = ct;
 		
 		ImGui_ImplGlfwGL3_NewFrame();
-
-		sInterface();
+		//glfwPollEvents();
 		
-		{
-		  static float f = 0.0f;
-		  ImGui::Text("Hello, world!");
-		  ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-		  
-		  
-		  ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		}
-
+		sInterface();
 		
 		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
 		
@@ -415,16 +444,17 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
-		  ImGui::Render();
-
 		  
 		  
 		  drawMap(mapSh, g_camera);
 		  if (selected)
 		    drawLine(lineSh, g_camera);
+
+
+		  ImGui::Render();
 		}
 		
-		//glEnable(GL_DEPTH_TEST);
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
