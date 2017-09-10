@@ -24,6 +24,7 @@
 #include "graphics.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
+#include "appLog.h"
 
 Camera g_camera;
 
@@ -35,7 +36,7 @@ glm::vec2 lastp;
 glm::vec2 selp;
 
 std::map<std::string, building> city;
-bool selected;
+std::string selected;
 shaderData lineSh;
 
 
@@ -174,29 +175,25 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
   glfwGetCursorPos(window, &xd, &yd);
   glm::vec2 ps((float) xd, (float) yd);
   selp = g_camera.ConvertScreenToWorld(ps);
-
   
   ImGuiIO &io = ImGui::GetIO();
-  /*
-  ImGui::Begin("Info");
-  ImGui::Text("lalala");
-  ImGui::End();
-  */
-  std::cout<<"pressed" << "\n";
+
+  //std::cout<<"pressed" << "\n";
   
   if (!io.WantCaptureMouse) {
 
 
     // Use the mouse to move things around.
     if (button == GLFW_MOUSE_BUTTON_1) {
-      std::string id1 = selectBuilding(selp.x,selp.y);  // relation/2612859 
-
+      std::string id1 = selectBuilding(selp.x,selp.y);  
+      debug_log.AddLog(id1.c_str());
+      debug_log.AddLog("\n");
 
       std::vector<float> unDraw = std::vector<float>();
 
       if (id1!=std::string("none"))
 	{
-	  selected = true;
+	  selected = id1;
 	  std::vector<float> unDraw = std::vector<float>();
 
 	  for (auto it: city[id1].coords)
@@ -223,7 +220,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 	  //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
 	}
       else {
-	selected=false;
+	selected=std::string("none");
       };
       std::cout << id1 <<"\n";
     }
@@ -281,27 +278,38 @@ void sInterface() {
     ImGui::CaptureMouseFromApp(true);
   }
 
+  ImGuiIO &io = ImGui::GetIO();
+
+
   {
     ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
     ImGuiStyle &style = ImGui::GetStyle();
     //style.Colors[ImGuiCol_WindowBg]=color;
     ImGui::PushStyleColor(ImGuiCol_WindowBg, color);    
     ImGui::Begin("Info");
-    static float f = 0.0f;
-    ImGui::Text("Hello, world!");
-    ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+    glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);  
+    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
     
+    
+    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);    
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+    if (selected!=std::string("none"))
+      {
+        
+	ImGui::Text((std::string("id:") + city[selected].id).c_str());
+      }
+
     ImGui::End();
 
-    ImGui::Begin("Info2");
-    ImGui::Text("Hello, world!");
-    
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-    ImGui::End();
 
     
     ImGui::PopStyleColor();
+
+    ImGui::ShowTestWindow();
+
+    debug_log.Draw("Log");
   }
 
 
@@ -313,10 +321,6 @@ int main(int argc, char *argv[])
   //GLFWwindow* window;
 	const GLFWvidmode* mode;
 	int width,height,i,j;
-	struct SVGPath* bg;
-	//struct SVGPath* fg;
-	struct SVGPath* it;
-	float bounds[4],view[4],cx,cy,w,offx,offy;
 	float t = 0.0f, pt = 0.0f;
 	TESSalloc ma;
 	TESStesselator* tess = 0;
@@ -436,6 +440,7 @@ int main(int argc, char *argv[])
 		
 		sInterface();
 		
+		
 		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
 		
 		// Draw tesselated pieces.
@@ -447,7 +452,7 @@ int main(int argc, char *argv[])
 		  
 		  
 		  drawMap(mapSh, g_camera);
-		  if (selected)
+		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
 
 
