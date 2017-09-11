@@ -20,11 +20,11 @@
 #include <fstream>
 #include <map>
 #include "camera.hpp"
-#include "map.hpp"
 #include "graphics.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "appLog.h"
+#include "map.hpp"
 
 Camera g_camera;
 
@@ -39,6 +39,7 @@ std::map<std::string, building> city;
 std::string selected;
 shaderData lineSh;
 
+//UIState ui;
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -86,10 +87,12 @@ void poolFree( void* userData, void* ptr )
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
-  //    if (ui.mouseOverMenu) {
-  //      ui.scroll = -int(dy);
-  //  }
-  //  else {
+
+  ImGuiIO &io = ImGui::GetIO();
+
+  //std::cout<<"pressed" << "\n";
+  
+  if (!io.WantCaptureMouse) {
         if (dy > 0) {
             g_camera.m_zoom /= 1.1f;
         }
@@ -97,7 +100,7 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
             g_camera.m_zoom *= 1.1f;
         }
 	//printf ("scroll");
-	//   }
+    }
 }
 
 
@@ -270,7 +273,21 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		run = !run;
 }
 
+/*
+void sInterfaceInit() {
 
+
+  ImGuiIO &io = ImGui::GetIO();
+
+  //io.FontGlobalScale = 1.5f;
+
+
+  //io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 14);
+  //io.Fonts->GetTexDataAsRGBA32();
+
+  
+}
+*/
 
 void sInterface() {
 
@@ -281,6 +298,9 @@ void sInterface() {
   ImGuiIO &io = ImGui::GetIO();
 
 
+
+  
+  
   {
     ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
     ImGuiStyle &style = ImGui::GetStyle();
@@ -410,6 +430,8 @@ int main(int argc, char *argv[])
 
 	ImGui_ImplGlfwGL3_Init(window, false);
 
+	//sInterfaceInit();
+	
 	//glEnable(GL_DEPTH_TEST);	
 	glfwSetKeyCallback(window, key);
 	
@@ -424,10 +446,19 @@ int main(int argc, char *argv[])
 	
 	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
-	float stub[4] = {0.f,0.f,0.f,0.f};
 	
 	shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
+	float stub[4] = {0.f,0.f,0.f,0.f};
 	lineSh = drawLineShaderInit(stub, 2);
+
+	std::vector<float> outlines = getOutlines(city);
+	debug_log.AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
+
+	float* outlinesData = outlines.data();
+	int outlineVerts = round(outlines.size()/2); 
+	
+	
+	shaderData outlineSh = drawBuildingOutlinesInit(outlinesData,outlineVerts);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -452,9 +483,11 @@ int main(int argc, char *argv[])
 		  
 		  
 		  drawMap(mapSh, g_camera);
+		  drawBuildingOutlines( outlineSh, g_camera);
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
 
+		  
 
 		  ImGui::Render();
 		}

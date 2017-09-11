@@ -83,13 +83,77 @@ void drawLine(shaderData sh, Camera cam) {
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
 
   //std::cout << uniTrans;
-  
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
 
-   glDrawArrays(GL_LINES, 0, sh.vertexCount);
+  GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
+  
+  glUniform4f(uniColor, 0.0f, 0.0f, 1.0f, 1.0f);
+   
+  glDrawArrays(GL_LINES, 0, sh.vertexCount);
 
 };
 
+shaderData drawBuildingOutlinesInit(float* verts, const int nverts)
+{
+  shaderData outSh;
+
+  outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexSource);
+  outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentSource);
+ 
+  outSh.shaderProgram = glCreateProgram(); 
+
+  glAttachShader(outSh.shaderProgram, outSh.vertexShader);
+  glAttachShader(outSh.shaderProgram, outSh.fragmentShader);
+ 
+  //glBindFragDataLocation(outSh.shaderProgram, 0, "outColor");
+  
+  glLinkProgram(outSh.shaderProgram);
+  glUseProgram(outSh.shaderProgram);
+
+  glGenBuffers(1, &outSh.vbo); // Generate 1 buffer
+
+  outSh.data = verts;
+  outSh.vertexCount = nverts;
+
+  
+  glBindBuffer(GL_ARRAY_BUFFER, outSh.vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts*2, verts, GL_STATIC_DRAW);
+
+  
+  glGenVertexArrays(1, &outSh.vao);
+  
+  glBindVertexArray(outSh.vao);
+  
+  
+
+  GLint posAttrib = glGetAttribLocation(outSh.shaderProgram, "position");
+  glEnableVertexAttribArray(posAttrib);			
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+			
+  return outSh;
+  
+};
+
+void drawBuildingOutlines( shaderData sh, Camera cam)
+{
+  glBindVertexArray(sh.vao);
+  
+  glUseProgram(sh.shaderProgram);
+
+  glm::mat4 Model = cam.BuildProjectionMatrix();
+
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+
+  //std::cout << uniTrans;
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
+  GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
+  
+  glUniform4f(uniColor, 1.0f, 1.0f, 1.0f, 1.0f);
+   
+  glDrawArrays(GL_LINES, 0, sh.vertexCount);
+
+};
 
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelements )
 {
@@ -159,6 +223,11 @@ void drawMap( shaderData sh, Camera cam){
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+
+  GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
+  
+  glUniform4f(uniColor, 0.2f, 0.4f, 0.2f, 1.0f);
+
   
   glDrawElements(GL_TRIANGLES, sh.elementCount*3, GL_UNSIGNED_INT, 0);
    

@@ -14,10 +14,11 @@ const char* lineVertexShaderSrc = R"glsl(
 const char* lineFragmentShaderSrc = R"glsl(
     #version 150 core
     out vec4 outColor;
-
+    uniform vec4 lineColor;
     void main()
     {
-        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+        //outColor = vec4(1.0, 0.0, 0.0, 1.0);
+	outColor = lineColor;
     }
 )glsl";
 
@@ -80,9 +81,10 @@ const char* fragmentSource = R"glsl(
 	#version 150 core
 
 	out vec4 outColor;
+    uniform vec4 setColor;
 
 	void main()
 	{
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
+		outColor = setColor;
 	}
 	)glsl";
