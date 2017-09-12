@@ -29,4 +29,6 @@ struct Camera {
 	int m_height;
 };
 
+extern float geoRatio;
+
 #endif

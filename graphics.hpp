@@ -1,6 +1,6 @@
 #ifndef GRAPHICS_HPP
 #define GRAPHICS_HPP
-
+#include <GL/gl.h>
 #include "camera.hpp"
 
 struct shaderData {
@@ -27,7 +27,7 @@ shaderData drawBuildingOutlinesInit(float* verts, const int nverts);
 void drawBuildingOutlines( shaderData sh, Camera cam);
 
 
-
+extern float angleNorth;
 
 
 

@@ -128,8 +128,8 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
       for (auto &it : m3) {
 	for (int j = 0; j < it.second.coords.size(); j++) {
 	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
-	    it.second.coords[j][i] = (it.second.coords[j][i]-xmin)/(xmax-xmin);
-	    it.second.coords[j][i+1] = (it.second.coords[j][i+1]-ymin)/(ymax-ymin);
+	    it.second.coords[j][i] = -0.5f + (it.second.coords[j][i]-xmin)/(xmax-xmin);
+	    it.second.coords[j][i+1] = (-0.5f + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)) * (ymax-ymin)/(xmax-xmin);
 	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 	}

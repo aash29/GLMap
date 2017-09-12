@@ -9,6 +9,8 @@
 #include <iostream>
 
 
+float angleNorth= 0.f;
+
 GLuint createShader(GLenum type, const GLchar* src) {
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &src, nullptr);
@@ -80,10 +82,15 @@ void drawLine(shaderData sh, Camera cam) {
 
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
-  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+   glm::mat4 rotN;
 
-  //std::cout << uniTrans;
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+  glm::mat4 trans = rotN*Model;
+
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+  
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
 
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
   
@@ -142,10 +149,16 @@ void drawBuildingOutlines( shaderData sh, Camera cam)
 
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
-  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+  glm::mat4 rotN;
 
-  //std::cout << uniTrans;
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+  glm::mat4 trans = rotN*Model;
+
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+  
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
 
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
   
@@ -220,9 +233,15 @@ void drawMap( shaderData sh, Camera cam){
 
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
+  glm::mat4 rotN;
+
+  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+  glm::mat4 trans = rotN*Model;
+
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
 
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
   

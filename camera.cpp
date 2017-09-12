@@ -1,29 +1,43 @@
 #include "camera.hpp"
 #include <iostream>
+#include "graphics.hpp"
+
+float geoRatio = 2.f;
+
 glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	float w = float(m_width);
 	float h = float(m_height);
 	float u = ps.x / w;
 	float v = (h - ps.y) / h;
 
-	float ratio = 0.7f * w / h;
+	float ratio =geoRatio * w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
+
+	glm::mat2 r1 (cos(glm::radians(-angleNorth)), sin(glm::radians(-angleNorth)), -sin(glm::radians(-angleNorth)), cos(glm::radians(-angleNorth)) );
+
 	extents *= m_zoom;
 
 	glm::vec2 lower = m_center - extents;
 	glm::vec2 upper = m_center + extents;
 
-	glm::vec2 pw;
-	pw.x = (1.0f - u) * lower.x + u * upper.x;
-	pw.y = (1.0f - v) * lower.y + v * upper.y;
+
+	//glm::mat4 Model = glm::ortho(lower.x,upper.x,lower.y,upper.y,-1.f,1.f);
+
+	glm::vec2 pw =  r1*glm::vec2(u,v);
+	pw.x =  (1.0f - pw.x) * lower.x + pw.x * upper.x;
+	pw.y =  (1.0f - pw.y) * lower.y + pw.y * upper.y;
+
+
 	return pw;
+
+	//return pw;
 }
 
 //
 glm::vec2 Camera::ConvertWorldToScreen(const glm::vec2 &pw) {
 	float w = float(m_width);
 	float h = float(m_height);
-	float ratio = 0.7f * w / h;
+	float ratio = geoRatio* w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
@@ -36,6 +50,8 @@ glm::vec2 Camera::ConvertWorldToScreen(const glm::vec2 &pw) {
 	glm::vec2 ps;
 	ps.x = u * w;
 	ps.y = (1.0f - v) * h;
+
+	//glm::mat2 r1 (cos(-angleNorth), -sin(-angleNorth), sin(-angleNorth), cos(-angleNorth) );
 	return ps;
 }
 
@@ -47,7 +63,7 @@ glm::mat4 Camera::BuildProjectionMatrix() {
 
 	//std::cout << w << "," << h << "\n";
 	
-	float ratio =  0.7f * w / h;
+	float ratio =  geoRatio* w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 

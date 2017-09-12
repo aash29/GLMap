@@ -295,11 +295,7 @@ void sInterface() {
     ImGui::CaptureMouseFromApp(true);
   }
 
-  ImGuiIO &io = ImGui::GetIO();
-
-
-
-  
+  ImGuiIO &io = ImGui::GetIO();  
   
   {
     ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
@@ -321,6 +317,12 @@ void sInterface() {
 	ImGui::Text((std::string("id:") + city[selected].id).c_str());
       }
 
+
+
+    ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+
+    ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+    
     ImGui::End();
 
 
@@ -400,6 +402,10 @@ int main(int argc, char *argv[])
 	
 	width = mode->width - 40;
 	height = mode->height - 80;
+
+
+	width=600;
+	height=600;
 
 	g_camera.m_width = width;
 	g_camera.m_height = height;
