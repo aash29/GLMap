@@ -13,9 +13,11 @@ struct building
   std::vector<std::vector<float> > coords;
 };
 
+typedef std::map<std::string, building> cityMap; 
+
 float xmin,xmax,ymin,ymax;
 
-void loadLevel(const char *name,TESStesselator* tess)
+std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
 {
   
   
@@ -132,7 +134,38 @@ void loadLevel(const char *name,TESStesselator* tess)
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 	}
       }
+      
+      return m3;
+};
 
-}
+
+
+std::vector<float> getOutlines(cityMap city1)
+{
+  std::vector<float> unDraw = std::vector<float>();
+  
+  for (auto b1: city1)
+    {
+      std::string id1 = b1.first;
+      for (auto it: city1[id1].coords)
+	{
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	  for (int i=2;i<it.size();i=i+2)
+	    {
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);
+
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);		
+	    }
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	};
+    };
+  return unDraw;  
+
+};
+
 
 #endif

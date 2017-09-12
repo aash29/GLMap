@@ -20,6 +20,10 @@
 #include <fstream>
 #include <map>
 #include "camera.hpp"
+#include "graphics.hpp"
+#include "imgui.h"
+#include "imgui_impl_glfw_gl3.h"
+#include "appLog.h"
 #include "map.hpp"
 
 Camera g_camera;
@@ -29,8 +33,13 @@ GLint uniTrans;
 GLFWwindow *window = NULL;
 bool rightMouseDown;
 glm::vec2 lastp;
+glm::vec2 selp;
 
-GLuint circleProgram;
+std::map<std::string, building> city;
+std::string selected;
+shaderData lineSh;
+
+//UIState ui;
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -78,272 +87,178 @@ void poolFree( void* userData, void* ptr )
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
-  //    if (ui.mouseOverMenu) {
-  //      ui.scroll = -int(dy);
-  //  }
-  //  else {
+
+  ImGuiIO &io = ImGui::GetIO();
+
+  //std::cout<<"pressed" << "\n";
+  
+  if (!io.WantCaptureMouse) {
         if (dy > 0) {
             g_camera.m_zoom /= 1.1f;
         }
         else {
             g_camera.m_zoom *= 1.1f;
         }
-	printf ("scroll");
-	//   }
+	//printf ("scroll");
+    }
 }
 
 
+    static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
+    {
+        int i, j, c = 0;
+        for (i = 0, j = nvert-1; i < nvert; j = i++) {
+        if ( ((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
+            c = !c;
+        }
+    return c;
+    }
+
+
+std::string selectBuilding(float testx, float testy)
+{
+
+  std::vector<float> unCol = std::vector<float>();
+  std::vector<float> unDraw = std::vector<float>();
+
+  unCol.push_back(0.f);
+  unCol.push_back(0.f);
+	
+  for (auto b1: city)
+    {
+      std::string id1 = b1.first;
+      for (auto it: city[id1].coords)
+	{
+	  //numVert+=round(it.size()/2);
+	  unCol.insert(unCol.end(),it.begin(),it.end());
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	  for (int i=2;i<it.size();i=i+2)
+	    {
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);
+
+	      unDraw.push_back(it[i]);
+	      unDraw.push_back(it[i+1]);		
+	    }
+	  unDraw.push_back(it[0]);
+	  unDraw.push_back(it[1]);
+	  //unDraw.insert(unDraw.end(),it.begin(),it.end());
+	  unCol.push_back(0.f);
+	  unCol.push_back(0.f);
+	  //numVert++;
+	};
+
+
+      float* cont1 = unCol.data();
+      int numVert = round(unCol.size()/2);
+	  
+      double* vertx = new double[numVert];
+      double* verty = new double[numVert];
+
+      for (int i = 0; i<numVert; i++){
+	vertx[i]=cont1[2*i];
+	verty[i]=cont1[2*i+1];
+      }
+
+      if (pnpoly(numVert, vertx, verty, testx, testy)>0)
+	{
+	  return id1;
+	}
+      delete vertx;
+      delete verty;
+    }
+  return std::string("none");
+
+};
+
+
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
-    double xd, yd;
-    glfwGetCursorPos(window, &xd, &yd);
-    glm::vec2 ps((float) xd, (float) yd);
+  double xd, yd;
+  glfwGetCursorPos(window, &xd, &yd);
+  glm::vec2 ps((float) xd, (float) yd);
+  selp = g_camera.ConvertScreenToWorld(ps);
+  
+  ImGuiIO &io = ImGui::GetIO();
+
+  //std::cout<<"pressed" << "\n";
+  
+  if (!io.WantCaptureMouse) {
+
 
     // Use the mouse to move things around.
     if (button == GLFW_MOUSE_BUTTON_1) {
+      std::string id1 = selectBuilding(selp.x,selp.y);  
+      debug_log.AddLog(id1.c_str());
+      debug_log.AddLog("\n");
+
+      std::vector<float> unDraw = std::vector<float>();
+
+      if (id1!=std::string("none"))
+	{
+	  selected = id1;
+	  std::vector<float> unDraw = std::vector<float>();
+
+	  for (auto it: city[id1].coords)
+	    {
+	      unDraw.push_back(it[0]);
+	      unDraw.push_back(it[1]);
+	      for (int i=2;i<it.size()-1;i=i+2)
+		{
+		  unDraw.push_back(it[i]);
+		  unDraw.push_back(it[i+1]);
+
+		  unDraw.push_back(it[i]);
+		  unDraw.push_back(it[i+1]);		
+		}
+	      unDraw.push_back(it[0]);
+	      unDraw.push_back(it[1]);
+	    };
+
+	  lineSh.vertexCount = round(unDraw.size()/2);
+	  lineSh.data = unDraw.data();
+	  glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+	  glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount*2*sizeof(float), lineSh.data, GL_STATIC_DRAW);
+
+	  //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
+	}
+      else {
+	selected=std::string("none");
+      };
+      std::cout << id1 <<"\n";
     }
     else if (button == GLFW_MOUSE_BUTTON_2) {
-        if (action == GLFW_PRESS) {
-            lastp = g_camera.ConvertScreenToWorld(ps);
-            rightMouseDown = true;
-	    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-            //test->RightMouseDown(pw);
-        }
-
-        if (action == GLFW_RELEASE) {
-            rightMouseDown = false;
-        }
+      if (action == GLFW_PRESS) {
+	lastp = g_camera.ConvertScreenToWorld(ps);
+	rightMouseDown = true;
+	glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+	//test->RightMouseDown(pw);
+      }
+    
+      if (action == GLFW_RELEASE) {
+	rightMouseDown = false;
+      }
     }
+  }
 }
 
 
 static void sMouseMotion(GLFWwindow *, double xd, double yd) {
   glm::vec2 ps((float) xd, (float) yd);
-
-    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-    //test->MouseMove(pw);
-    if (rightMouseDown) {
-    
-        glm::vec2 diff = pw - lastp;
-        g_camera.m_center.x -= diff.x;
-        g_camera.m_center.y -= diff.y;
-        lastp = g_camera.ConvertScreenToWorld(ps);
-   }
-}
-
-
-
-
-
-
-void initModernOpenGL(const float* verts, const int nverts, const TESSindex* elements, const  int nelements )
-{
   
-
-
-  GLuint vertexBuffer;
-  glGenBuffers(1, &vertexBuffer);
-
-  //printf("%u\n", vertexBuffer);
-
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  
-  glBindVertexArray(vao);
-  
-  GLuint vbo;
-  glGenBuffers(1, &vbo); // Generate 1 buffer
-  
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-			
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*nverts*2, verts, GL_STATIC_DRAW);
-
-  
-  GLuint ebo;
-  glGenBuffers(1, &ebo);
-
-  printf("nelements:%d \n", nelements);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-	       sizeof(int)*nelements*3, elements, GL_STATIC_DRAW);
-  
-  const char* circleSource = R"glsl(
-#version 330
-    
-in vec2 fPosition;
-out vec4 fColor;
-
-void main() {
-    vec4 colors[4] = vec4[](
-        vec4(1.0, 0.0, 0.0, 1.0), 
-        vec4(0.0, 1.0, 0.0, 1.0), 
-        vec4(0.0, 0.0, 1.0, 1.0), 
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    fColor = vec4(1.0);
-
-    for(int row = 0; row < 2; row++) {
-        for(int col = 0; col < 2; col++) {
-            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
-            float alpha = step(0.45, dist);
-            fColor = mix(colors[row*2+col], fColor, alpha);
-        }
-    }
-}
-)glsl";
-
-
-  GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(circleShader, 1, &circleSource, NULL);
-  glCompileShader(circleShader);
-
-  GLint status0;
-  glGetShaderiv(circleShader, GL_COMPILE_STATUS, &status0);
-
-  char buffer0[512];
-
-  glGetShaderInfoLog(circleShader, 512, NULL, buffer0);
-
-  if (status0 != GL_TRUE)
-  {
-	  printf("%s\n", buffer0);
+  glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+  //test->MouseMove(pw);
+  if (rightMouseDown) {    
+    glm::vec2 diff = pw - lastp;
+    g_camera.m_center.x -= diff.x;
+    g_camera.m_center.y -= diff.y;
+    lastp = g_camera.ConvertScreenToWorld(ps);
   }
-
-
-  
-  const char* vertexSource = R"glsl(
-	in vec2 position;
-in vec3 color;
-in vec2 texcoord;
-
-
-uniform mat4 Model;
-
-void main()
-{
-    gl_Position = Model * vec4(position, 0.0, 1.0);
 }
-	)glsl";
-			
-  GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader, 1, &vertexSource, NULL);
-			
-  glCompileShader(vertexShader);
-			
-  GLint status;
-  glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-			
-  char buffer[512];
-  glGetShaderInfoLog(vertexShader, 512, NULL, buffer);
-			
-  if (status != GL_TRUE)
-    {
-      printf("%s\n", buffer);
-    }
-			
-  const char* fragmentSource = R"glsl(
-	#version 150 core
-
-		out vec4 outColor;
-
-	void main()
-	{
-		outColor = vec4(1.0, 1.0, 1.0, 1.0);
-	}
-	)glsl";
-			
-  GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-  glCompileShader(fragmentShader);
-			
-			
-  glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-			
-  glGetShaderInfoLog(fragmentShader, 512, NULL, buffer);
-			
-  if (status != GL_TRUE)
-    {
-      printf("%s\n", buffer);
-    }
-
-  GLuint shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-			
-  glBindFragDataLocation(shaderProgram, 0, "outColor");
-			
-  glLinkProgram(shaderProgram);
-
-  glUseProgram(shaderProgram);
-
-
-  circleProgram = glCreateProgram();
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(circleProgram, circleShader);
-  
-  //glBindFragDataLocation(shaderProgram, 0, "outColor");
-
-  glLinkProgram(circleProgram);
-
-  //glUseProgram(circleProgram);
-
-
-
-  //glm::mat4 Model = glm::scale(glm::mat4(1.0f), glm::vec3(0.001f));
-
-  g_camera.m_center = glm::vec2(0.5f,0.5f);
-
-  //  float proj[16] = { 0.0f };
-  glm::mat4 Model = g_camera.BuildProjectionMatrix();
-
-  
-
-  uniTrans = glGetUniformLocation(shaderProgram, "Model");
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-  //glUniformMatrix4fv(uniTrans, 1, GL_FALSE, proj);
-
-			
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-			
-  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-			
-  glEnableVertexAttribArray(posAttrib);
-  
-
-  GLuint circleVao;
-  glGenVertexArrays(1, &circleVao);
-  
-  //glBindVertexArray(circleVao);
-
-  GLuint circleVbo;
-  glGenBuffers(1, &circleVbo); // Generate 1 buffer
-
-  glBindBuffer(GL_ARRAY_BUFFER, circleVbo);
-
-  float circleVertices[6][2] = {
-	  {-1.f, -1.f},
-	  {1.f, -1.f},
-	  {-1.f, 1.f},
-	  {1.f, -1.f},
-	  {1.f, 1.f},
-	  {-1.f, 1.f}
-  };
-
-  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*6 * 2, circleVertices, GL_STATIC_DRAW);
-
-
-  GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
-
-  glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-  glEnableVertexAttribArray(circlePosAttrib);
-
-  
-}
-
 
 // Undefine this to see non-interactive heap allocator version.
 //#define USE_POOL 1
+
 
 
 int run = 1;
@@ -358,15 +273,74 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		run = !run;
 }
 
+/*
+void sInterfaceInit() {
+
+
+  ImGuiIO &io = ImGui::GetIO();
+
+  //io.FontGlobalScale = 1.5f;
+
+
+  //io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 14);
+  //io.Fonts->GetTexDataAsRGBA32();
+
+  
+}
+*/
+
+void sInterface() {
+
+  if (ImGui::IsAnyWindowHovered()) {
+    ImGui::CaptureMouseFromApp(true);
+  }
+
+  ImGuiIO &io = ImGui::GetIO();
+
+
+
+  
+  
+  {
+    ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+    ImGuiStyle &style = ImGui::GetStyle();
+    //style.Colors[ImGuiCol_WindowBg]=color;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, color);    
+    ImGui::Begin("Info");
+    glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);  
+    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
+    
+    
+    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);    
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+    if (selected!=std::string("none"))
+      {
+        
+	ImGui::Text((std::string("id:") + city[selected].id).c_str());
+      }
+
+    ImGui::End();
+
+
+    
+    ImGui::PopStyleColor();
+
+    ImGui::ShowTestWindow();
+
+    debug_log.Draw("Log");
+  }
+
+
+}
+
+
 int main(int argc, char *argv[])
 {
   //GLFWwindow* window;
 	const GLFWvidmode* mode;
 	int width,height,i,j;
-	struct SVGPath* bg;
-	//struct SVGPath* fg;
-	struct SVGPath* it;
-	float bounds[4],view[4],cx,cy,w,offx,offy;
 	float t = 0.0f, pt = 0.0f;
 	TESSalloc ma;
 	TESStesselator* tess = 0;
@@ -400,19 +374,9 @@ int main(int argc, char *argv[])
 	if (!tess)
 		return -1;
 
-	loadLevel("test.geojson",tess);
+	city = loadLevel("little.geojson",tess);
 
 	printf("go...\n");
-	
-
-	
-	// Offset the foreground shape to center of the bg.
-	offx = (bounds[2]+bounds[0])/2;
-	offy = (bounds[3]+bounds[1])/2;
-	
-	// Add contours.
-	//for (it = bg; it != NULL; it = it->next)
-	//	tessAddContour(tess, 2, it->pts, sizeof(float)*2, it->npts);
 
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
 		return -1;
@@ -452,52 +416,49 @@ int main(int argc, char *argv[])
 		return -1;
 	}
 
+	glfwMakeContextCurrent(window);
+	//glfwSwapInterval(1); // Enable vsync
 
+	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
         glfwSetMouseButtonCallback(window, sMouseButton);
 
-	glfwMakeContextCurrent(window);
 
 	glewExperimental = GL_TRUE;
 	glewInit();
 
+	ImGui_ImplGlfwGL3_Init(window, false);
 
+	//sInterfaceInit();
+	
+	//glEnable(GL_DEPTH_TEST);	
 	glfwSetKeyCallback(window, key);
-	glfwMakeContextCurrent(window);
 	
 
 	glfwSetTime(0);
 
 	const float* verts = tessGetVertices(tess);
 	const int* vinds = tessGetVertexIndices(tess);
-	const TESSindex* elems = tessGetElements(tess);
+	const int* elems = tessGetElements(tess);
 	const int nverts = tessGetVertexCount(tess);
 	const int nelems = tessGetElementCount(tess);
-
-	float vertices[] = {
-		0.0f,  0.5f, // Vertex 1 (X, Y)
-		0.5f, -0.5f, // Vertex 2 (X, Y)
-		-0.5f, -0.5f,  // Vertex 3 (X, Y)
-	};
+	
+	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
 	
+	shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
+	float stub[4] = {0.f,0.f,0.f,0.f};
+	lineSh = drawLineShaderInit(stub, 2);
+
+	std::vector<float> outlines = getOutlines(city);
+	debug_log.AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
+
+	float* outlinesData = outlines.data();
+	int outlineVerts = round(outlines.size()/2); 
 	
-	initModernOpenGL( verts,  nverts, elems,  nelems );
-	//initModernOpenGL( vertices,  3, elems,  nelems );
-
-	/*		
-	printf("num elems: %d \n",nelems);
-	for (int i = 0; i<nelems; i++)
-	  {
-	    for (int j = 0; j < 3; j++) {
-	      printf("%d,",(&elems[i * 3])[j]);
-	    }
-	    printf("\n");
-	  };
-	printf("\n");			
-	*/
-
+	
+	shaderData outlineSh = drawBuildingOutlinesInit(outlinesData,outlineVerts);
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -505,7 +466,13 @@ int main(int argc, char *argv[])
 		if (run) t += ct - pt;
 		pt = ct;
 		
+		ImGui_ImplGlfwGL3_NewFrame();
+		//glfwPollEvents();
 		
+		sInterface();
+		
+		
+		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
 		
 		// Draw tesselated pieces.
 		if (tess)
@@ -513,84 +480,19 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
+		  
+		  
+		  drawMap(mapSh, g_camera);
+		  drawBuildingOutlines( outlineSh, g_camera);
+		  if (selected!=std::string("none"))
+		    drawLine(lineSh, g_camera);
 
+		  
 
-			int polySize = 3;
-			int vertexSize = 2;
-
-			
-			
-			// Draw polygons.
-			//glColor4ub(255,255,255,128);
-
-			//initModernOpenGL( verts,  nverts, elems,  nelems );
-			
-			//glDrawArrays(GL_TRIANGLES, 0, 3);
-
-
-			  glm::mat4 Model = g_camera.BuildProjectionMatrix();
- 
-			  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
-
-			  glDrawElements(GL_TRIANGLES, nelems*3, GL_UNSIGNED_INT, 0);
-
-
-			  glUseProgram(circleProgram);
-
-			    
-			  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-
-			  //glDrawElements(GL_POINTS, 1 * 3, GL_UNSIGNED_INT, 0);
-
-			/*
-			for (int i = 0; i < nelems2; i++) {
-			  const TESSindex* poly = &elems2[i * polySize];
-			  glBegin(GL_POLYGON);
-			  for (int j = 0; j < polySize; j++) {
-			    if (poly[j] == TESS_UNDEF) break;
-			    glVertex2fv(&verts[poly[j]*vertexSize]);
-			  }
-			  glEnd();
-			}
-			*/
-			/*
-			for (i = 0; i < nelems; ++i)
-			{
-				const int* p = &elems[i*nvp];
-				glBegin(GL_TRIANGLE_FAN);
-				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
-					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
-				glEnd();
-			}
-			
-			glColor4ub(0,0,0,16);
-			for (i = 0; i < nelems; ++i)
-			{
-				const int* p = &elems[i*nvp];
-				glBegin(GL_LINE_LOOP);
-				for (j = 0; j < nvp && p[j] != TESS_UNDEF; ++j)
-					glVertex2f(verts[p[j]*2], verts[p[j]*2+1]);
-				glEnd();
-			}
-			
-			glColor4ub(0,0,0,128);
-			glPointSize(3.0f);
-			glBegin(GL_POINTS);
-			for (i = 0; i < nverts; ++i)
-			{
-				if (vflags && vflags[vinds[i]])
-					glColor4ub(255,0,0,192);
-				else
-					glColor4ub(0,0,0,128);
-				glVertex2f(verts[i*2], verts[i*2+1]);
-			}
-			glEnd();
-			glPointSize(1.0f);
-
-			*/
+		  ImGui::Render();
 		}
 		
-		//glEnable(GL_DEPTH_TEST);
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}

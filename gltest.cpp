@@ -4,28 +4,21 @@
 #include <GLFW/glfw3.h>
 #include <thread>
 
-
-GLuint createShader(GLenum type, const GLchar* src) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
-
-    GLint status;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-
-    char buffer[512];
-    glGetShaderInfoLog(shader, 512, NULL, buffer);
-    
-    if (status != GL_TRUE)
-      {
-	printf("%s\n", buffer);
-      }
-    
-    return shader;
-}
+#include "graphics.hpp"
+  
+  float points[] = {
+    -0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f,  0.45f,
+    0.45f, -0.45f,
+    0.45f, -0.45f,
+    -0.45f, -0.45f,
+  };
+  
 
 
-void drawLine() {
+
+shaderData drawLine() {
 
 const char* vertexShaderSrc = R"glsl(
     #version 150 core
@@ -60,9 +53,6 @@ void main()
     vec4 d1 = normalize(gl_in[1].gl_Position - gl_in[0].gl_Position);
     vec4 n1 = vec4(-d1.y,d1.x, 0.0, 0.0);
     
-
-
-
     gl_Position = gl_in[0].gl_Position + 0.1 * n1;
     EmitVertex();
 
@@ -89,23 +79,27 @@ void main()
 
 })glsl";
 
-  GLuint vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSrc);
-  GLuint fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
-  GLuint geometryShader = createShader(GL_GEOMETRY_SHADER, geometryShaderSrc);
-
-  GLuint shaderProgram = glCreateProgram();
-
-
-  glAttachShader(shaderProgram, vertexShader);
-  glAttachShader(shaderProgram, fragmentShader);
-  glAttachShader(shaderProgram, geometryShader);
+  shaderData outSh;
   
-  glLinkProgram(shaderProgram);
-  glUseProgram(shaderProgram);
+  outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexShaderSrc);
+  outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentShaderSrc);
+  outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, geometryShaderSrc);
 
-  GLuint vbo;
-  glGenBuffers(1, &vbo);
+  outSh.shaderProgram = glCreateProgram();
 
+  
+
+  glAttachShader(outSh.shaderProgram, outSh.vertexShader);
+  glAttachShader(outSh.shaderProgram, outSh.fragmentShader);
+  glAttachShader(outSh.shaderProgram, outSh.geometryShader);
+  
+  glLinkProgram(outSh.shaderProgram);
+  glUseProgram(outSh.shaderProgram);
+
+  
+  glGenBuffers(1, &outSh.vbo);
+
+  /*
   float points[] = {
     -0.45f,  0.45f,
     0.45f,  0.45f,
@@ -114,19 +108,25 @@ void main()
     0.45f, -0.45f,
     -0.45f, -0.45f,
   };
+  */
+  outSh.data = points;
+  outSh.vertexCount = 6;
+  
 
-  glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, outSh.vbo);
+  glBufferData(GL_ARRAY_BUFFER, outSh.vertexCount*2*sizeof(float), outSh.data, GL_DYNAMIC_DRAW);
 
   // Create VAO
-  GLuint vao;
-  glGenVertexArrays(1, &vao);
-  glBindVertexArray(vao);
+  //GLuint vao;
+  glGenVertexArrays(1, &outSh.vao);
+  glBindVertexArray(outSh.vao);
 
   // Specify layout of point data
-  GLint posAttrib = glGetAttribLocation(shaderProgram, "pos");
+  GLint posAttrib = glGetAttribLocation(outSh.shaderProgram, "pos");
   glEnableVertexAttribArray(posAttrib);
   glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  return outSh;
   
 }
 
@@ -152,11 +152,6 @@ int main()
 
 	printf("%u\n", vertexBuffer);
 
-	float vertices[] = {
-		0.0f,  0.8f, // Vertex 1 (X, Y)
-		0.8f, -0.8f, // Vertex 2 (X, Y)
-		-0.8f, -0.8f  // Vertex 3 (X, Y)
-	};
 
 	GLuint vao;
 	glGenVertexArrays(1, &vao);
@@ -237,56 +232,9 @@ int main()
 
 
 
-	const char* circleSource = R"glsl(
-#version 330
-    
-in vec2 fPosition;
-out vec4 fColor;
-
-void main() {
-    vec4 colors[4] = vec4[](
-        vec4(1.0, 0.0, 0.0, 1.0), 
-        vec4(0.0, 1.0, 0.0, 1.0), 
-        vec4(0.0, 0.0, 1.0, 1.0), 
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    fColor = vec4(1.0);
-
-    for(int row = 0; row < 2; row++) {
-        for(int col = 0; col < 2; col++) {
-            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
-            float delta = fwidth(dist);
-            float alpha = smoothstep(0.15-delta, 0.15, dist);
-            fColor = mix(colors[row*2+col], fColor, alpha);
-        }
-    }
-}
-)glsl";
 
 
-	GLuint circleVertexShader = createShader(GL_VERTEX_SHADER,vertexSource);
-	GLuint circleShader = createShader(GL_FRAGMENT_SHADER,circleSource);
-
-	GLuint circleProgram = glCreateProgram();
-	glAttachShader(circleProgram, circleVertexShader);
-	glAttachShader(circleProgram, circleShader);
-
-	//glBindFragDataLocation(shaderProgram, 0, "outColor");
-
-	glLinkProgram(circleProgram);
-
-
-
-	GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
-
-	glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glEnableVertexAttribArray(circlePosAttrib);
-
-	glUseProgram(circleProgram);
-
-
-	drawLine();
+	shaderData sh1 = drawLineShaderInit(points);
 
 
 	while (!glfwWindowShouldClose(window))
@@ -309,8 +257,19 @@ void main() {
 
 	  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	  glClear(GL_COLOR_BUFFER_BIT);
+	  
+	  /*
+	  points[0]=1.f;
+	  points[1]=1.f;
 
-	  glDrawArrays(GL_LINES, 0, 6);
+	  glBindBuffer(GL_ARRAY_BUFFER, sh1.vbo);
+
+	  glBufferSubData(GL_ARRAY_BUFFER, 0, sh1.vertexCount*2*sizeof(float), sh1.data);
+
+	  */
+
+	  //glDrawArrays(GL_LINES, 0, sh1.vertexCount);
+	  drawLine(sh1);
 	  
 	  glfwSwapBuffers(window);
 	  glfwPollEvents();

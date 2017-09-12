@@ -6,7 +6,7 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	float u = ps.x / w;
 	float v = (h - ps.y) / h;
 
-	float ratio =  w / h;
+	float ratio = 0.7f * w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
@@ -23,7 +23,7 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 glm::vec2 Camera::ConvertWorldToScreen(const glm::vec2 &pw) {
 	float w = float(m_width);
 	float h = float(m_height);
-	float ratio = w / h;
+	float ratio = 0.7f * w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
@@ -45,9 +45,9 @@ glm::mat4 Camera::BuildProjectionMatrix() {
 	float w = float(m_width);
 	float h = float(m_height);
 
-	std::cout << w << "," << h << "\n";
+	//std::cout << w << "," << h << "\n";
 	
-	float ratio =  0.75f * w / h;
+	float ratio =  0.7f * w / h;
 	glm::vec2 extents(ratio * m_span, m_span);
 	extents *= m_zoom;
 
@@ -56,7 +56,7 @@ glm::mat4 Camera::BuildProjectionMatrix() {
 
 	glm::mat4 Model = glm::ortho(lower.x,upper.x,lower.y,upper.y,-1.f,1.f);
 
-	std::cout << lower.x << "," << upper.x << "," << lower.y << "," << upper.y << "\n";
+	//std::cout << lower.x << "," << upper.x << "," << lower.y << "," << upper.y << "\n";
 	
 	return Model;
 	
