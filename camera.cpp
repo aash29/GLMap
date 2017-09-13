@@ -19,17 +19,7 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	glm::vec2 lower = m_center - extents;
 	glm::vec2 upper = m_center + extents;
 
-	glm::mat4 rotN;
-
-	rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
-
-	//glm::mat4 = tr1
-
 	
-	glm::mat4 Model = glm::ortho(lower.x,upper.x,lower.y,upper.y,-1.f,1.f);
-
-	glm::mat4 trans = rotN*Model;
-
 
 	glm::vec2 pw;
 
@@ -38,14 +28,22 @@ glm::vec2 Camera::ConvertScreenToWorld(const glm::vec2 &ps) {
 	pw.y =  (1.0f - v) * lower.y + v * upper.y;
 
 
-	glm::vec4 uvr = glm::inverse(trans)*glm::vec4(u,v,0.f,1.f);
+	//glm::vec4 uvr = glm::inverse(trans)*glm::vec4(u,v,0.f,1.f);
 
 
+	glm::mat4 translate1 = glm::translate(glm::mat4(),glm::vec3(-g_camera.m_center.x,-g_camera.m_center.y,0.f));
+  
+	glm::mat4 rotN = glm::rotate(glm::mat4(), glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	glm::mat4 translate2 =  glm::translate(glm::mat4(),glm::vec3(g_camera.m_center.x,g_camera.m_center.y,0.f));
+
+
+	
 	glm::mat4 view = glm::mat4();
 	glm::mat4 projection = glm::ortho(lower.x,upper.x,lower.y,upper.y,-1.f,1.f);
 	glm::vec4 viewport = glm::vec4(0, 0, w, h);
 	glm::vec3 wincoord = glm::vec3(ps.x, h - ps.y, 0.0f);
-	glm::vec3 objcoord = glm::unProject(wincoord, view, rotN*projection, viewport);
+	glm::vec3 objcoord = glm::unProject(wincoord, translate2*rotN*translate1*view, projection, viewport);
 	//glm::vec4 res = rotN*glm::vec4(objcoord,1.f);
 	
 	//return glm::vec2(res.x,res.y);
