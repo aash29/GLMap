@@ -26,7 +26,7 @@
 #include "appLog.h"
 #include "map.hpp"
 
-Camera g_camera;
+//Camera g_camera;
 
 GLint uniTrans;
 
@@ -117,6 +117,14 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 
 std::string selectBuilding(float testx, float testy)
 {
+
+
+
+  glm::mat4 rotN;
+  rotN = glm::rotate(rotN, glm::radians(-angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+  
+
 
   std::vector<float> unCol = std::vector<float>();
   std::vector<float> unDraw = std::vector<float>();
@@ -404,8 +412,8 @@ int main(int argc, char *argv[])
 	height = mode->height - 80;
 
 
-	width=600;
-	height=600;
+	//width = 600;
+	//height = 600;
 
 	g_camera.m_width = width;
 	g_camera.m_height = height;
@@ -413,8 +421,6 @@ int main(int argc, char *argv[])
 	//g_camera.m_span = (xmax-xmin)/2;
 	g_camera.m_span = 0.5f;
 
-	//width=800;
-	//height = 600;
 	
 	window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
 	if (!window) {
@@ -436,6 +442,9 @@ int main(int argc, char *argv[])
 
 	ImGui_ImplGlfwGL3_Init(window, false);
 
+	
+	glfwSetWindowAspectRatio(window, width, height);
+	
 	//sInterfaceInit();
 	
 	//glEnable(GL_DEPTH_TEST);	

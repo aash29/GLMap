@@ -28,7 +28,7 @@ struct Camera {
 	int m_width;
 	int m_height;
 };
-
+extern Camera g_camera;
 extern float geoRatio;
 
 #endif

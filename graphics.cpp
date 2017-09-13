@@ -11,6 +11,19 @@
 
 float angleNorth= 0.f;
 
+
+glm::mat4 setupCam()
+{
+  glm::mat4 Model = g_camera.BuildProjectionMatrix();
+
+  glm::mat4 rotN = glm::rotate(glm::mat4(), glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+  glm::mat4 trans = rotN*Model;
+  return trans;
+};
+
+
+
 GLuint createShader(GLenum type, const GLchar* src) {
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &src, nullptr);
@@ -79,15 +92,15 @@ void drawLine(shaderData sh, Camera cam) {
   glBindVertexArray(sh.vao);
   
   glUseProgram(sh.shaderProgram);
-
+  /*
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
    glm::mat4 rotN;
 
   rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
-
-  glm::mat4 trans = rotN*Model;
-
+  */
+  glm::mat4 trans = setupCam();
+  
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
@@ -146,15 +159,16 @@ void drawBuildingOutlines( shaderData sh, Camera cam)
   glBindVertexArray(sh.vao);
   
   glUseProgram(sh.shaderProgram);
-
+  /*
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
   glm::mat4 rotN;
 
   rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  glm::mat4 trans = rotN*Model;
-
+  glm::mat4 trans = Model*rotN;
+  */
+  glm::mat4 trans = setupCam();
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
@@ -230,15 +244,18 @@ void drawMap( shaderData sh, Camera cam){
   glUseProgram(sh.shaderProgram);
 
 
-
+  /*
   glm::mat4 Model = cam.BuildProjectionMatrix();
 
   glm::mat4 rotN;
 
   rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  glm::mat4 trans = rotN*Model;
+  glm::mat4 trans = Model*rotN;
+  */
 
+  glm::mat4 trans = setupCam();
+  
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));

@@ -125,11 +125,24 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
     }
   }
 
+  float lowerx,lowery,upperx,uppery;
+
+  lowery = 0.f;
+  uppery = 1.f;
+
+  lowerx = 0.f * (xmax-xmin)/(ymax-ymin); 
+  upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
+
+  debug_log.AddLog("upperx: %f \n", upperx);
+
       for (auto &it : m3) {
 	for (int j = 0; j < it.second.coords.size(); j++) {
 	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
-	    it.second.coords[j][i] = -0.5f + (it.second.coords[j][i]-xmin)/(xmax-xmin);
-	    it.second.coords[j][i+1] = (-0.5f + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)) * (ymax-ymin)/(xmax-xmin);
+	    //it.second.coords[j][i] = -0.5f + (it.second.coords[j][i]-xmin)/(xmax-xmin);
+	    //it.second.coords[j][i+1] = (-0.5f + (it.second.coords[j][i+1]-ymin)/(ymax-ymin));
+
+	    it.second.coords[j][i] = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
+	    it.second.coords[j][i+1] = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
 	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 	}
