@@ -1,6 +1,7 @@
 #ifndef GRAPHICS_HPP
 #define GRAPHICS_HPP
-#include <GL/gl.h>
+//#include <GL/gl.h>
+#include <GL/glew.h>
 #include "camera.hpp"
 
 struct shaderData {

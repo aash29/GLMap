@@ -133,7 +133,7 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
   lowerx = 0.f * (xmax-xmin)/(ymax-ymin); 
   upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
 
-  debug_log.AddLog("upperx: %f \n", upperx);
+  debug_log().AddLog("upperx: %f \n", upperx);
 
       for (auto &it : m3) {
 	for (int j = 0; j < it.second.coords.size(); j++) {

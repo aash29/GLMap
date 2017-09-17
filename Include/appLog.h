@@ -66,6 +66,6 @@ struct AppLog
     }
 };
 
-extern AppLog debug_log;
+AppLog & debug_log();
 
 #endif

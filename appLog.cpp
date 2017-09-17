@@ -4,4 +4,10 @@
 
 #include "imgui.h"
 #include "appLog.h"
-AppLog debug_log;
+
+
+AppLog & debug_log() {
+	static AppLog dl;
+	return dl;
+}
+

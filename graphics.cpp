@@ -16,11 +16,11 @@ glm::mat4 setupCam()
 {
   glm::mat4 proj = g_camera.BuildProjectionMatrix();
 
-  glm::mat4 translate1 = glm::translate(glm::mat4(),glm::vec3(-g_camera.m_center.x,-g_camera.m_center.y,0.f));
+  glm::mat4 translate1 = glm::translate(glm::mat4(1.f),glm::vec3(-g_camera.m_center.x,-g_camera.m_center.y,0.f));
   
-  glm::mat4 rotN = glm::rotate(glm::mat4(), glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+  glm::mat4 rotN = glm::rotate(glm::mat4(1.f), glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  glm::mat4 translate2 =  glm::translate(glm::mat4(),glm::vec3(g_camera.m_center.x,g_camera.m_center.y,0.f));
+  glm::mat4 translate2 =  glm::translate(glm::mat4(1.f),glm::vec3(g_camera.m_center.x,g_camera.m_center.y,0.f));
   
   glm::mat4 trans = proj*translate2*rotN*translate1;
 
@@ -191,6 +191,8 @@ void drawBuildingOutlines( shaderData sh, Camera cam)
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelements )
 {
   shaderData outSh;
+
+  outSh.vertexCount = nverts;
   
   outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexSource);
   outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentSource);

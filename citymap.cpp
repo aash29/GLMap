@@ -197,8 +197,8 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     // Use the mouse to move things around.
     if (button == GLFW_MOUSE_BUTTON_1) {
       std::string id1 = selectBuilding(selp.x,selp.y);  
-      debug_log.AddLog(id1.c_str());
-      debug_log.AddLog("\n");
+      debug_log().AddLog(id1.c_str());
+      debug_log().AddLog("\n");
 
       std::vector<float> unDraw = std::vector<float>();
 
@@ -339,7 +339,7 @@ void sInterface() {
 
     ImGui::ShowTestWindow();
 
-    debug_log.Draw("Log");
+    debug_log().Draw("Log");
   }
 
 
@@ -446,7 +446,7 @@ int main(int argc, char *argv[])
 	ImGui_ImplGlfwGL3_Init(window, false);
 
 	
-	glfwSetWindowAspectRatio(window, width, height);
+	//glfwSetWindowAspectRatio(window, width, height);
 	
 	//sInterfaceInit();
 	
@@ -470,7 +470,7 @@ int main(int argc, char *argv[])
 	lineSh = drawLineShaderInit(stub, 2);
 
 	std::vector<float> outlines = getOutlines(city);
-	debug_log.AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
+	debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
 
 	float* outlinesData = outlines.data();
 	int outlineVerts = round(outlines.size()/2); 
