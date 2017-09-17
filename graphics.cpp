@@ -9,7 +9,7 @@
 #include <iostream>
 
 
-float angleNorth= 0.f;
+float angleNorth= -30.f;
 
 
 glm::mat4 setupCam()
