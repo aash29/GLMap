@@ -1,0 +1,16 @@
+(define (problem city_problem)
+  (:domain city_domain)
+  (:objects
+   agent0 - agent
+   )
+  
+  (:init
+   (at agent 0 0)
+   )
+  
+  
+  (:goal
+   )
+  
+  
+  )

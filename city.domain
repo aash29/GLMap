@@ -1,0 +1,13 @@
+
+(define (domain city_domain)
+
+	(:requirements :typing)
+	(:types
+	    agent - object)
+
+	(:predicates 
+		(at ?agent ?x ?y)
+	)
+)
+
+

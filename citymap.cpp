@@ -26,6 +26,9 @@
 #include "appLog.h"
 #include "map.hpp"
 
+
+
+
 //Camera g_camera;
 
 GLint uniTrans;
