@@ -348,6 +348,35 @@ void sInterface() {
 
 }
 
+void loadState(std::string fileName )
+{
+
+  std::ifstream file;
+  file.open(std::string(fileName), std::ios::in);
+  char c = file.get();
+
+   while (file.good()) {
+    std::cout << c;
+    c = file.get();
+  }
+
+
+   std::string s = "scott>=tiger>=mushroom";
+std::string delimiter = ">=";
+
+size_t pos = 0;
+std::string token;
+while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    std::cout << token << std::endl;
+    s.erase(0, pos + delimiter.length());
+}
+std::cout << s << std::endl;
+
+  file.close();
+  
+};
+
 
 int main(int argc, char *argv[])
 {
@@ -386,7 +415,8 @@ int main(int argc, char *argv[])
 
 	if (!tess)
 		return -1;
-
+	loadState("city.problem");
+	
 	city = loadLevel("little.geojson",tess);
 
 	printf("go...\n");
