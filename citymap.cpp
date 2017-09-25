@@ -351,29 +351,70 @@ void sInterface() {
 void loadState(std::string fileName )
 {
 
+  //std::ifstream t("file.txt");
+
   std::ifstream file;
   file.open(std::string(fileName), std::ios::in);
-  char c = file.get();
 
-   while (file.good()) {
-    std::cout << c;
-    c = file.get();
+  std::string stateString((std::istreambuf_iterator<char>(file)),
+	  std::istreambuf_iterator<char>());
+
+
+  stateString.erase(std::remove(stateString.begin(), stateString.end(), '\n'), stateString.end());
+
+  //char c = file.get();
+  std::string curStr;
+  std::vector<std::string> tokens = std::vector<std::string>();
+  for (int i = 0; i < stateString.length(); i++) {
+	  char c = stateString[i];
+
+		  if ((c != '(') and (c != ')') and (c != ' '))
+		  {
+			  curStr += c;
+		  }
+		  else
+		  {
+			  if (curStr!="")
+				tokens.push_back(curStr);
+
+			  curStr = "";
+			  if (c != ' ') {
+				  tokens.push_back(std::string(1, c));
+				  curStr = "";
+		  }
+
+	//	  c = file.get();
+	  }
   }
 
-
-   std::string s = "scott>=tiger>=mushroom";
-std::string delimiter = ">=";
-
-size_t pos = 0;
-std::string token;
-while ((pos = s.find(delimiter)) != std::string::npos) {
-    token = s.substr(0, pos);
-    std::cout << token << std::endl;
-    s.erase(0, pos + delimiter.length());
-}
-std::cout << s << std::endl;
-
+	for (auto s1 : tokens) {
+		debug_log().AddLog(s1.c_str());
+		debug_log().AddLog("\n");
+	}
   file.close();
+
+
+  std::vector<std::string> read_from_tokens(std::vector<std::string> tokens)
+  if (tokens.size() == 0) {
+	  debug_log().AddLog("unexpected EOF");
+  };
+  std::string token = tokens.back();
+  tokens.pop_back();
+
+  if ("(" == token ) {
+	  std::vector<std::string> L = std::vector<std::string>();
+	  while (tokens[0] != ")") {
+
+	  }
+				  L.append(read_from_tokens(tokens))
+				  tokens.pop(0) # pop off ')'
+				  return L
+  }
+				  elif ')' == token:
+  raise SyntaxError('unexpected )')
+		  else:
+  return atom(token)
+
   
 };
 
@@ -417,7 +458,7 @@ int main(int argc, char *argv[])
 		return -1;
 	loadState("city.problem");
 	
-	city = loadLevel("little.geojson",tess);
+	city = loadLevel("test.geojson",tess);
 
 	printf("go...\n");
 
