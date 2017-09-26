@@ -42,6 +42,8 @@ std::map<std::string, building> city;
 std::string selected;
 shaderData lineSh;
 
+std::string state;
+
 //UIState ui;
 
 void* stdAlloc(void* userData, unsigned int size)
@@ -348,7 +350,7 @@ void sInterface() {
 
 }
 
-void loadState(std::string fileName )
+std::string loadState(std::string fileName )
 {
 
   //std::ifstream t("file.txt");
@@ -394,7 +396,11 @@ void loadState(std::string fileName )
   file.close();
 
 
-  std::vector<std::string> read_from_tokens(std::vector<std::string> tokens)
+
+  return stateString;
+  /*
+
+  std::vector<std::string> read_from_tokens(std::vector<std::string> tokens);
   if (tokens.size() == 0) {
 	  debug_log().AddLog("unexpected EOF");
   };
@@ -414,10 +420,25 @@ void loadState(std::string fileName )
   raise SyntaxError('unexpected )')
 		  else:
   return atom(token)
-
+  */
   
 };
 
+
+void getAgentPos(std::string state, std::string agent, int &x, int &y)
+{
+	int p1 = state.find("(at");
+	int p2 = state.find(")", p1);
+	std::string str2 = state.substr(p1 + 1, p2 - p1);
+
+	std::stringstream ss(str2);
+
+	std::string id;
+	ss >> id;
+	ss >> id;
+	ss >> x;
+	ss >> y;
+}
 
 int main(int argc, char *argv[])
 {
@@ -456,7 +477,12 @@ int main(int argc, char *argv[])
 
 	if (!tess)
 		return -1;
-	loadState("city.problem");
+	state = loadState("city.problem");
+
+	int x, y;
+	getAgentPos(state, "agent0", x, y);
+
+	debug_log().AddLog("agent0 pos: %d,%d", x, y);
 	
 	city = loadLevel("test.geojson",tess);
 
@@ -579,7 +605,7 @@ int main(int argc, char *argv[])
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
 
-		  
+		  AddGfxCmdText(p1.x, g_camera.m_height - p1.y, TEXT_ALIGN_LEFT, buffer, WHITE);
 
 		  ImGui::Render();
 		}
