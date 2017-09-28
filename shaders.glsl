@@ -6,11 +6,15 @@ const GLchar* texQuadVertex = R"glsl(
     in vec2 texcoord;
     out vec3 Color;
     out vec2 Texcoord;
+    uniform mat4 Model;
+
+
     void main()
     {
         Color = color;
         Texcoord = texcoord;
-        gl_Position = vec4(position, 0.0, 1.0);
+        //gl_Position = vec4(position, 0.0, 1.0);
+	gl_Position = Model * vec4(position, -1.0, 1.0);
     }
 )glsl";
 const GLchar* texQuadFragment = R"glsl(
@@ -19,10 +23,9 @@ const GLchar* texQuadFragment = R"glsl(
     in vec2 Texcoord;
     out vec4 outColor;
     uniform sampler2D texKitten;
-    uniform sampler2D texPuppy;
     void main()
     {
-        outColor = mix(texture(texKitten, Texcoord), texture(texPuppy, Texcoord), 0.5);
+        outColor = texture(texKitten, Texcoord);
     }
 )glsl";
 

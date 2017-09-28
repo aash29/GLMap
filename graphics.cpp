@@ -8,6 +8,7 @@
 #include "shaders.glsl"
 #include <iostream>
 
+#include <SOIL/SOIL.h>
 
 float angleNorth= -30.f;
 
@@ -31,22 +32,22 @@ glm::mat4 setupCam()
 
 
 GLuint createShader(GLenum type, const GLchar* src) {
-    GLuint shader = glCreateShader(type);
-    glShaderSource(shader, 1, &src, nullptr);
-    glCompileShader(shader);
+  GLuint shader = glCreateShader(type);
+  glShaderSource(shader, 1, &src, nullptr);
+  glCompileShader(shader);
 
-    GLint status;
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+  GLint status;
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 
-    char buffer[512];
-    glGetShaderInfoLog(shader, 512, NULL, buffer);
+  char buffer[512];
+  glGetShaderInfoLog(shader, 512, NULL, buffer);
     
-    if (status != GL_TRUE)
-      {
-	printf("%s\n", buffer);
-      }
+  if (status != GL_TRUE)
+    {
+      printf("%s\n", buffer);
+    }
     
-    return shader;
+  return shader;
 }
 
 
@@ -99,11 +100,11 @@ void drawLine(shaderData sh, Camera cam) {
   
   glUseProgram(sh.shaderProgram);
   /*
-  glm::mat4 Model = cam.BuildProjectionMatrix();
+    glm::mat4 Model = cam.BuildProjectionMatrix();
 
-   glm::mat4 rotN;
+    glm::mat4 rotN;
 
-  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+    rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
   */
   glm::mat4 trans = setupCam();
   
@@ -166,13 +167,13 @@ void drawBuildingOutlines( shaderData sh, Camera cam)
   
   glUseProgram(sh.shaderProgram);
   /*
-  glm::mat4 Model = cam.BuildProjectionMatrix();
+    glm::mat4 Model = cam.BuildProjectionMatrix();
 
-  glm::mat4 rotN;
+    glm::mat4 rotN;
 
-  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+    rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  glm::mat4 trans = Model*rotN;
+    glm::mat4 trans = Model*rotN;
   */
   glm::mat4 trans = setupCam();
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
@@ -234,13 +235,13 @@ shaderData drawMapShaderInit(const float* verts, const int nverts, const int* el
   glEnableVertexAttribArray(posAttrib);
 
   /*
-  cam.m_center = glm::vec2(0.5f,0.5f);
+    cam.m_center = glm::vec2(0.5f,0.5f);
 
-  //  float proj[16] = { 0.0f };
-  glm::mat4 Model = cam.BuildProjectionMatrix();
+    //  float proj[16] = { 0.0f };
+    glm::mat4 Model = cam.BuildProjectionMatrix();
 
-  uniTrans = glGetUniformLocation(shaderProgram, "Model");
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
+    uniTrans = glGetUniformLocation(shaderProgram, "Model");
+    glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(Model));
   */
   return outSh;
 };
@@ -253,13 +254,13 @@ void drawMap( shaderData sh, Camera cam){
 
 
   /*
-  glm::mat4 Model = cam.BuildProjectionMatrix();
+    glm::mat4 Model = cam.BuildProjectionMatrix();
 
-  glm::mat4 rotN;
+    glm::mat4 rotN;
 
-  rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+    rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
-  glm::mat4 trans = Model*rotN;
+    glm::mat4 trans = Model*rotN;
   */
 
   glm::mat4 trans = setupCam();
@@ -278,129 +279,163 @@ void drawMap( shaderData sh, Camera cam){
 }
 
 
-void texQuadInit()
+shaderData texQuadInit()
 {
-	// Create Vertex Array Object
-	GLuint vao;
-glGenVertexArrays(1, &vao);
-glBindVertexArray(vao);
+  shaderData tqShader;
 
-// Create a Vertex Buffer Object and copy the vertex data to it
-GLuint vbo;
-glGenBuffers(1, &vbo);
+  tqShader.vertexCount = 4;
+  
+  // Create Vertex Array Object
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
 
-GLfloat vertices[] = {
-	//  Position      Color             Texcoords
-	-0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
-	0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
-	0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
-	-0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
-};
+  tqShader.vao = vao;
+ 
+  // Create a Vertex Buffer Object and copy the vertex data to it
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
 
-glBindBuffer(GL_ARRAY_BUFFER, vbo);
-glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+  tqShader.vbo = vbo;
 
-// Create an element array
-GLuint ebo;
-glGenBuffers(1, &ebo);
+  GLfloat vertices[] = {
+    //  Position      Color             Texcoords
+    -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
+    0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
+    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
+    -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
+  };
 
-GLuint elements[] = {
-	0, 1, 2,
-	2, 3, 0
-};
+  tqShader.data = vertices;
+ 
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+  // Create an element array
+  GLuint ebo;
+  glGenBuffers(1, &ebo);
 
-// Create and compile the vertex shader
-GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-glShaderSource(vertexShader, 1, &vertexSource, NULL);
-glCompileShader(vertexShader);
+  GLuint elements[] = {
+    0, 1, 2,
+    2, 3, 0
+  };
 
-// Create and compile the fragment shader
-GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-glShaderSource(fragmentShader, 1, &fragmentSource, NULL);
-glCompileShader(fragmentShader);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
 
-// Link the vertex and fragment shader into a shader program
-GLuint shaderProgram = glCreateProgram();
-glAttachShader(shaderProgram, vertexShader);
-glAttachShader(shaderProgram, fragmentShader);
-glBindFragDataLocation(shaderProgram, 0, "outColor");
-glLinkProgram(shaderProgram);
-glUseProgram(shaderProgram);
+  tqShader.vertexShader = createShader(GL_VERTEX_SHADER, texQuadVertex );
 
-// Specify the layout of the vertex data
-GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
-glEnableVertexAttribArray(posAttrib);
-glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
+  tqShader.fragmentShader = createShader(GL_FRAGMENT_SHADER, texQuadFragment);
+ 
+  // Link the vertex and fragment shader into a shader program
+  GLuint shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, tqShader.vertexShader);
+  glAttachShader(shaderProgram, tqShader.fragmentShader);
+  glBindFragDataLocation(shaderProgram, 0, "outColor");
+  glLinkProgram(shaderProgram);
+  glUseProgram(shaderProgram);
 
-GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
-glEnableVertexAttribArray(colAttrib);
-glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
-GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
-glEnableVertexAttribArray(texAttrib);
-glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
+  tqShader.shaderProgram = shaderProgram; 
+  // Specify the layout of the vertex data
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  glEnableVertexAttribArray(posAttrib);
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), 0);
 
-// Load textures
-GLuint textures[2];
-glGenTextures(2, textures);
+  GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+  glEnableVertexAttribArray(colAttrib);
+  glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(2 * sizeof(GLfloat)));
 
-int width, height;
-unsigned char* image;
+  GLint texAttrib = glGetAttribLocation(shaderProgram, "texcoord");
+  glEnableVertexAttribArray(texAttrib);
+  glVertexAttribPointer(texAttrib, 2, GL_FLOAT, GL_FALSE, 7 * sizeof(GLfloat), (void*)(5 * sizeof(GLfloat)));
 
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, textures[0]);
-image = SOIL_load_image("sample.png", &width, &height, 0, SOIL_LOAD_RGB);
-glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-SOIL_free_image_data(image);
-glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
+  // Load textures
+  GLuint textures[1];
+  glGenTextures(1, textures);
 
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  tqShader.texture = textures[0];
+  int width, height;
+  unsigned char* image;
 
-glActiveTexture(GL_TEXTURE1);
-glBindTexture(GL_TEXTURE_2D, textures[1]);
-image = SOIL_load_image("sample2.png", &width, &height, 0, SOIL_LOAD_RGB);
-glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-SOIL_free_image_data(image);
-glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, textures[0]);
+  image = SOIL_load_image("proggy2.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+  SOIL_free_image_data(image);
+  glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);
 
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  /*
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, textures[1]);
+    image = SOIL_load_image("sample2.png", &width, &height, 0, SOIL_LOAD_RGB);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+    SOIL_free_image_data(image);
+    glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
+  
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  */
+
+
+  return tqShader;
 }
+
+
+void texQuadDraw(shaderData sh)
+{
+  glBindVertexArray(sh.vao);
+  
+  glUseProgram(sh.shaderProgram);
+  
+  glActiveTexture(GL_TEXTURE0);
+
+  glBindTexture(GL_TEXTURE_2D, sh.texture);
+
+  glUniform1i(glGetUniformLocation(sh.shaderProgram, "texKitten"), 0);
+
+  glm::mat4 trans = setupCam();
+  
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+  
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+  
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+};
 /*
 
 
   const char* circleSource = R"glsl(
-#version 330
+  #version 330
     
-in vec2 fPosition;
-out vec4 fColor;
+  in vec2 fPosition;
+  out vec4 fColor;
 
-void main() {
-    vec4 colors[4] = vec4[](
-        vec4(1.0, 0.0, 0.0, 1.0), 
-        vec4(0.0, 1.0, 0.0, 1.0), 
-        vec4(0.0, 0.0, 1.0, 1.0), 
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    fColor = vec4(1.0);
+  void main() {
+  vec4 colors[4] = vec4[](
+  vec4(1.0, 0.0, 0.0, 1.0), 
+  vec4(0.0, 1.0, 0.0, 1.0), 
+  vec4(0.0, 0.0, 1.0, 1.0), 
+  vec4(0.0, 0.0, 0.0, 1.0)
+  );
+  fColor = vec4(1.0);
 
-    for(int row = 0; row < 2; row++) {
-        for(int col = 0; col < 2; col++) {
-            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
-            float alpha = step(0.45, dist);
-            fColor = mix(colors[row*2+col], fColor, alpha);
-        }
-    }
-}
-)glsl";
+  for(int row = 0; row < 2; row++) {
+  for(int col = 0; col < 2; col++) {
+  float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
+  float alpha = step(0.45, dist);
+  fColor = mix(colors[row*2+col], fColor, alpha);
+  }
+  }
+  }
+  )glsl";
 
 
   GLuint circleShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -416,58 +451,58 @@ void main() {
 
   if (status0 != GL_TRUE)
   {
-	  printf("%s\n", buffer0);
+  printf("%s\n", buffer0);
   }
 
 
 
-	const char* circleSource = R"glsl(
-#version 330
+  const char* circleSource = R"glsl(
+  #version 330
     
-in vec2 fPosition;
-out vec4 fColor;
+  in vec2 fPosition;
+  out vec4 fColor;
 
-void main() {
-    vec4 colors[4] = vec4[](
-        vec4(1.0, 0.0, 0.0, 1.0), 
-        vec4(0.0, 1.0, 0.0, 1.0), 
-        vec4(0.0, 0.0, 1.0, 1.0), 
-        vec4(0.0, 0.0, 0.0, 1.0)
-    );
-    fColor = vec4(1.0);
+  void main() {
+  vec4 colors[4] = vec4[](
+  vec4(1.0, 0.0, 0.0, 1.0), 
+  vec4(0.0, 1.0, 0.0, 1.0), 
+  vec4(0.0, 0.0, 1.0, 1.0), 
+  vec4(0.0, 0.0, 0.0, 1.0)
+  );
+  fColor = vec4(1.0);
 
-    for(int row = 0; row < 2; row++) {
-        for(int col = 0; col < 2; col++) {
-            float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
-            float delta = fwidth(dist);
-            float alpha = smoothstep(0.15-delta, 0.15, dist);
-            fColor = mix(colors[row*2+col], fColor, alpha);
-        }
-    }
-}
-)glsl";
-
-
-	GLuint circleVertexShader = createShader(GL_VERTEX_SHADER,vertexSource);
-	GLuint circleShader = createShader(GL_FRAGMENT_SHADER,circleSource);
-
-	GLuint circleProgram = glCreateProgram();
-	glAttachShader(circleProgram, circleVertexShader);
-	glAttachShader(circleProgram, circleShader);
-
-	//glBindFragDataLocation(shaderProgram, 0, "outColor");
-
-	glLinkProgram(circleProgram);
+  for(int row = 0; row < 2; row++) {
+  for(int col = 0; col < 2; col++) {
+  float dist = distance(fPosition, vec2(-0.50 + col, 0.50 - row));
+  float delta = fwidth(dist);
+  float alpha = smoothstep(0.15-delta, 0.15, dist);
+  fColor = mix(colors[row*2+col], fColor, alpha);
+  }
+  }
+  }
+  )glsl";
 
 
+  GLuint circleVertexShader = createShader(GL_VERTEX_SHADER,vertexSource);
+  GLuint circleShader = createShader(GL_FRAGMENT_SHADER,circleSource);
 
-	GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
+  GLuint circleProgram = glCreateProgram();
+  glAttachShader(circleProgram, circleVertexShader);
+  glAttachShader(circleProgram, circleShader);
 
-	glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  //glBindFragDataLocation(shaderProgram, 0, "outColor");
 
-	glEnableVertexAttribArray(circlePosAttrib);
+  glLinkProgram(circleProgram);
 
-	glUseProgram(circleProgram);  circleProgram = glCreateProgram();
+
+
+  GLint circlePosAttrib = glGetAttribLocation(circleProgram, "position");
+
+  glVertexAttribPointer(circlePosAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glEnableVertexAttribArray(circlePosAttrib);
+
+  glUseProgram(circleProgram);  circleProgram = glCreateProgram();
   glAttachShader(shaderProgram, vertexShader);
   glAttachShader(circleProgram, circleShader);
   

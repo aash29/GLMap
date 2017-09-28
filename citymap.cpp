@@ -484,7 +484,9 @@ int main(int argc, char *argv[])
 
 	debug_log().AddLog("agent0 pos: %d,%d", x, y);
 	
-	city = loadLevel("test.geojson",tess);
+	rect boundingBox;
+
+	city = loadLevel("little.geojson",tess, boundingBox);
 
 	printf("go...\n");
 
@@ -569,6 +571,39 @@ int main(int argc, char *argv[])
 	float stub[4] = {0.f,0.f,0.f,0.f};
 	lineSh = drawLineShaderInit(stub, 2);
 
+	std::vector<float> gridVec = std::vector<float>();
+	int lineCount = 0;
+
+
+	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
+	
+	for (float x=boundingBox.xmin; x < boundingBox.xmax; x=x+0.01f)
+	  {
+	    gridVec.push_back(x);
+	    gridVec.push_back(boundingBox.ymin);
+	    gridVec.push_back(x);
+	    gridVec.push_back(boundingBox.ymax);
+	    lineCount++;
+	  }
+	
+		
+	for (float y=boundingBox.ymin; y < boundingBox.ymax; y=y+0.01f)
+	  {
+	    gridVec.push_back(boundingBox.xmin);
+	    gridVec.push_back(y);
+	    gridVec.push_back(boundingBox.xmax);
+	    gridVec.push_back(y);
+	    lineCount++;
+	  }
+		
+	float* grid = gridVec.data();
+
+	
+	
+	shaderData gridSh = drawLineShaderInit(grid, 2*lineCount);
+
+
+	
 	std::vector<float> outlines = getOutlines(city);
 	debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
 
@@ -577,6 +612,9 @@ int main(int argc, char *argv[])
 	
 	
 	shaderData outlineSh = drawBuildingOutlinesInit(outlinesData,outlineVerts);
+
+
+	shaderData texSh = texQuadInit();
 	
 	while (!glfwWindowShouldClose(window))
 	{
@@ -598,15 +636,21 @@ int main(int argc, char *argv[])
 
 		  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		  glClear(GL_COLOR_BUFFER_BIT);
+
+		  glEnable(GL_BLEND);
+		  glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+		  drawLine(gridSh,g_camera);
+
 		  
-		  
+		  texQuadDraw(texSh);
 		  drawMap(mapSh, g_camera);
 		  drawBuildingOutlines( outlineSh, g_camera);
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
 
-		  AddGfxCmdText(p1.x, g_camera.m_height - p1.y, TEXT_ALIGN_LEFT, buffer, WHITE);
-
+		  
 		  ImGui::Render();
 		}
 		

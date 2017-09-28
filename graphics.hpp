@@ -17,6 +17,8 @@ struct shaderData {
   int vertexCount;
   int elementCount;
   int gltype;
+
+  GLuint texture;
 };
 
 GLuint createShader(GLenum type, const GLchar* src);
@@ -26,6 +28,8 @@ shaderData drawMapShaderInit(const float* verts, const int nverts, const int* el
 void drawMap( shaderData sh, Camera cam);
 shaderData drawBuildingOutlinesInit(float* verts, const int nverts);
 void drawBuildingOutlines( shaderData sh, Camera cam);
+shaderData texQuadInit();
+void texQuadDraw(shaderData sh);
 
 
 extern float angleNorth;

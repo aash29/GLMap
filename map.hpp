@@ -13,11 +13,20 @@ struct building
   std::vector<std::vector<float> > coords;
 };
 
+struct rect
+{
+  float xmin;
+  float xmax;
+  float ymin;
+  float ymax;
+};
+
+
 typedef std::map<std::string, building> cityMap; 
 
 float xmin,xmax,ymin,ymax;
 
-std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
+std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 {
   
   
@@ -103,19 +112,7 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
 		  };
 		  std::cout << "adding contour" << "\n";
 		}
-		
-		//m2[(*it)["properties"]["id"]] = a2;
-		/*
-		for (int j = 0; j<c1.size();j++){
-
-		  tessAddContour(tess, 2, m3[id].coords[j].data(), sizeof(float) * 2, c1[j].size());
-		  };*/
-		
-		  //free(a1);
 		};
-
-	
-	//std::cout << c1 << '\n';
       }
       /*
       if ((*it)["properties"]["type"]=="route"){
@@ -125,6 +122,8 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
     }
   }
 
+
+
   float lowerx,lowery,upperx,uppery;
 
   lowery = 0.f;
@@ -132,6 +131,13 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess)
 
   lowerx = 0.f * (xmax-xmin)/(ymax-ymin); 
   upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
+
+  boundingBox.xmin = lowerx;
+  boundingBox.xmax = upperx;
+  boundingBox.ymin = lowery;
+  boundingBox.ymax = uppery;
+
+
 
   debug_log().AddLog("upperx: %f \n", upperx);
 
