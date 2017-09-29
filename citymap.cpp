@@ -576,6 +576,8 @@ int main(int argc, char *argv[])
 
 
 	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
+
+	float gridSize = 0.01f;
 	
 	for (float x=boundingBox.xmin; x < boundingBox.xmax; x=x+0.01f)
 	  {

@@ -298,12 +298,24 @@ shaderData texQuadInit()
 
   tqShader.vbo = vbo;
 
+  float tlx = 0.35f;
+  float tly = 0.65f;
+
+  float brx = 0.37f;
+  float bry = 0.75f;
+
+  int posx = 0;
+
+  int posy = 0;
+
+  float gridSize = 0.01f;
+  
   GLfloat vertices[] = {
     //  Position      Color             Texcoords
-    -0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, // Top-left
-    0.5f,  0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // Top-right
-    0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, // Bottom-right
-    -0.5f, -0.5f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f  // Bottom-left
+    posx*gridSize, (posy+1)*gridSize , 1.0f, 1.0f, 1.0f, tlx, tly, // Top-left
+    (posx+1)*gridSize,  (posy+1)*gridSize, 1.0f, 1.0f, 1.0f, brx, tly, // Top-right
+    (posx+1)*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f, brx, bry, // Bottom-right
+    posx*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f, tlx, bry  // Bottom-left
   };
 
   tqShader.data = vertices;
@@ -367,8 +379,8 @@ shaderData texQuadInit()
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   /*
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, textures[1]);

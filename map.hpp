@@ -26,7 +26,7 @@ typedef std::map<std::string, building> cityMap;
 
 float xmin,xmax,ymin,ymax;
 
-std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
+cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 {
   
   
@@ -138,6 +138,10 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess,
   boundingBox.ymax = uppery;
 
 
+  float aN = 30.f*glm::pi<float>()/180;
+  
+  glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
+
 
   debug_log().AddLog("upperx: %f \n", upperx);
 
@@ -147,8 +151,16 @@ std::map<std::string, building> loadLevel(const char *name,TESStesselator* tess,
 	    //it.second.coords[j][i] = -0.5f + (it.second.coords[j][i]-xmin)/(xmax-xmin);
 	    //it.second.coords[j][i+1] = (-0.5f + (it.second.coords[j][i+1]-ymin)/(ymax-ymin));
 
-	    it.second.coords[j][i] = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
-	    it.second.coords[j][i+1] = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
+	    float x = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
+	    float y = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
+
+	    glm::vec2 v1(x,y);
+	    glm::vec2 v2 = r1 * v1;
+
+	    it.second.coords[j][i] = v2[0];
+	    it.second.coords[j][i+1] = v2[1];
+	    
+	    
 	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 	}
