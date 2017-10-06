@@ -610,12 +610,18 @@ int main(int argc, char *argv[])
 	lineSh = drawLineShaderInit(stub, 2);
 
 	std::vector<float> gridVec = std::vector<float>();
-	int lineCount = 0;
 
 
 	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
 
 	float gridSize = 0.01f;
+
+	int xm,xp,ym,yp;
+	xm = 0;
+	xp = 0;
+	ym = 0;
+	yp = 0;
+
 	
 	for (float x=0; x < boundingBox.xmax; x=x+gridSize)
 	  {
@@ -623,7 +629,7 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(boundingBox.ymin);
 	    gridVec.push_back(x);
 	    gridVec.push_back(boundingBox.ymax);
-	    lineCount++;
+	    xp++;
 	  }
 
 	for (float x=0; x > boundingBox.xmin; x=x-gridSize)
@@ -632,7 +638,7 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(boundingBox.ymin);
 	    gridVec.push_back(x);
 	    gridVec.push_back(boundingBox.ymax);
-	    lineCount++;
+	    xm++;
 	  }
 
     	for (float y=0; y < boundingBox.ymax; y=y+gridSize)
@@ -641,7 +647,7 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(y);
 	    gridVec.push_back(boundingBox.xmax);
 	    gridVec.push_back(y);
-	    lineCount++;
+	    yp++;
 	  }
 
 
@@ -651,7 +657,7 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(y);
 	    gridVec.push_back(boundingBox.xmax);
 	    gridVec.push_back(y);
-	    lineCount++;
+	    ym++;
 	  }
 
 	
@@ -659,7 +665,7 @@ int main(int argc, char *argv[])
 
 	
 	
-	shaderData gridSh = drawLineShaderInit(grid, 2*lineCount);
+	shaderData gridSh = drawLineShaderInit(grid, 2*(xm+xp+ym+yp));
 
 
 	
@@ -718,6 +724,32 @@ int main(int argc, char *argv[])
 	  debug_log().AddLog("\n");
 	};
 	
+
+	std::shared_ptr<navigation_path<location_t>> path;
+	map_t map(-xm, xp, -ym, yp);
+
+	debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
+	/*
+	debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
+	debug_log().AddLog("x=2,y=2, at(x,y)= %d \n", map.at(2,2));
+	debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
+	*/
+	
+	location_t dude_position {0,0};
+	location_t destination {4,5};
+
+
+	path = find_path<location_t, navigator>(dude_position, destination);
+	if (path->success)
+	  {
+	    debug_log().AddLog("path found \n");
+	    for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
+	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+	    }
+	  }
+
+
+
 	
 	while (!glfwWindowShouldClose(window))
 	{

@@ -65,37 +65,30 @@ struct location_t {
 // Now we define our basic map. Why a struct? Because a struct is just a class with
 // everything public in it!
 struct map_t {
-    map_t(const int &w, const int &h) : width(w), height(h) {
+  map_t(const int &x1, const int &x2, const int &y1, const int &y2) : xmin(x1), xmax(x2), ymin(y1), ymax(y2) {
         // Resize the vector to hold the whole map; this way it won't reallocate
-        walkable.resize((2*w)*(2*h));
+        walkable.resize((x2-x1+1)*(y2-y1+1));
 
         // Set the entire map to walkable
         std::fill(walkable.begin(), walkable.end(), true);
 
         // We want the perimeter to be solid
-        for (int x=-width; x<=width; ++x) {
-            walkable[at(x,-height+1)]=false;
-            walkable[at(x,height-1)]=false;
+        for (int x=x1; x<=x2; x++) {
+            walkable[at(x,y1)]=false;
+            walkable[at(x,y2)]=false;
         }
-        for (int y=-height; y<=height; ++y) {
-            walkable[at(-width+1,y)] = false;
-            walkable[at(width-1,y)] = false;
+        for (int y=y1; y<=y2; y++) {
+            walkable[at(x1,y)] = false;
+            walkable[at(x2,y)] = false;
         }
-        /*
-        // Every tile other than 10,10 (starting) has a 16% chance of being solid
-        for (int y=1; y<height-2; ++y) {
-            for (int x=1; x<width-2; ++x) {
-                if ((x != 10 && y != 10) && rng.roll_dice(1,6)==1) walkable[at(x,y)] = false;
-            }
-        }
-         */
     }
 
     // Calculate the vector offset of a grid location
-    inline int at(const int &x, const int &y) { return ((y+height)*(2*width))+(x+width); }
+    inline int at(const int &x, const int &y)
+  { return ((xmax-xmin+1)*(y-ymin))+(x-xmin); }
 
     // The width and height of the map
-    const int width, height;
+  const int xmin,xmax, ymin, ymax;
 
     // The actual walkable storage vector
     std::vector<bool> walkable;
@@ -108,9 +101,7 @@ std::shared_ptr<navigation_path<location_t>> path;
 // We're using 1024x768, with 8 pixel wide chars. That gives a console grid of
 // 128 x 96. We'll go with that for the map, even though in reality the screen
 // might change. Worrying about that is for a future example!
-constexpr int MAP_WIDTH = 10;
-constexpr int MAP_HEIGHT = 10;
-map_t map(MAP_WIDTH, MAP_HEIGHT);
+map_t map(-1,5, -2,10);
 
 
 
@@ -137,7 +128,7 @@ struct navigator {
     // This is where we calculate where you can go from a given tile. In this case, we check
     // all 8 directions, and if the destination is walkable return it as an option.
     static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-        //std::cout << pos.x << "/" << pos.y << "\n";
+      //std::cout << pos.x << "/" << pos.y << "\n";
 
         if (map.walkable[map.at(pos.x-1, pos.y-1)]) successors.push_back(location_t(pos.x-1, pos.y-1));
         if (map.walkable[map.at(pos.x, pos.y-1)]) successors.push_back(location_t(pos.x, pos.y-1));
@@ -171,13 +162,13 @@ double tick_time = 0.0;
 
 // Instead of raw ints, we'll use the location structure to represent where our
 // dude is. Using C++14 initialization, it's nice and clean.
-location_t dude_position {10,10};
+location_t dude_position {2,3};
 
 // We'll also use a location_t to represent the intended destination.
 location_t destination {5,5};
 
 // Your main function
-int main3()
+int path_test()
 {
     // Initialize with defaults
     //init(config_simple_px("../assets"));
