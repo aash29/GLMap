@@ -10,8 +10,9 @@
 
 #include <SOIL/SOIL.h>
 
-float angleNorth= -30.f;
+float angleNorth= 0.f;
 
+float gridSize = 0.01f;
 
 glm::mat4 setupCam()
 {
@@ -308,8 +309,6 @@ shaderData texQuadInit()
 
   int posy = 0;
 
-  float gridSize = 0.01f;
-  
   GLfloat vertices[] = {
     //  Position      Color             Texcoords
     posx*gridSize, (posy+1)*gridSize , 1.0f, 1.0f, 1.0f, tlx, tly, // Top-left
@@ -381,26 +380,13 @@ shaderData texQuadInit()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  /*
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, textures[1]);
-    image = SOIL_load_image("sample2.png", &width, &height, 0, SOIL_LOAD_RGB);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
-    SOIL_free_image_data(image);
-    glUniform1i(glGetUniformLocation(shaderProgram, "texPuppy"), 1);
-  
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  */
 
 
   return tqShader;
 }
 
 
-void texQuadDraw(shaderData sh)
+void texQuadDraw(shaderData sh, int posx, int posy)
 {
   glBindVertexArray(sh.vao);
   
@@ -414,10 +400,17 @@ void texQuadDraw(shaderData sh)
 
   glm::mat4 trans = setupCam();
   
+  float x = posx* gridSize;
+  float y = posy* gridSize;
+  
+  
+  glm::mat4 translate1 = glm::translate(glm::mat4(1.f),glm::vec3(x,y,0.f));
+
+  glm::mat4 m1 = trans*translate1;
+  
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
   
-  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
-
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(m1));
   
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 };

@@ -2,9 +2,13 @@
   (:domain city_domain)
   (:objects
    agent0 - agent
+   agent1 - agent
+   agent2 - agent
    )
   (:init
-   (at agent0 0 0)
+	(at agent0 10 0)
+   	(at agent1 0 0)
+	(at agent2 5 5)
    )
   (:goal
    )

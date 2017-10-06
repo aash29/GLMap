@@ -26,7 +26,9 @@
 #include "appLog.h"
 #include "map.hpp"
 
+#include "path_impl.hpp"
 
+#define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 
 //Camera g_camera;
@@ -269,6 +271,7 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
   }
 }
 
+
 // Undefine this to see non-interactive heap allocator version.
 //#define USE_POOL 1
 
@@ -278,13 +281,33 @@ int run = 1;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	TESS_NOTUSED(scancode);
-	TESS_NOTUSED(mods);
-	if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, GL_TRUE);
-	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-		run = !run;
-}
+  ImGuiIO &io = ImGui::GetIO();
+
+  if (!io.WantCaptureKeyboard)
+    {
+      TESS_NOTUSED(scancode);
+      TESS_NOTUSED(mods);
+      if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+	glfwSetWindowShouldClose(window, GL_TRUE);
+      if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+	run = !run;
+    }
+  else
+    {
+      if (action == GLFW_PRESS)
+        io.KeysDown[key] = true;
+      if (action == GLFW_RELEASE)
+        io.KeysDown[key] = false;
+    }
+};
+
+void charCallback(GLFWwindow*, unsigned int c)
+{
+  ImGuiIO& io = ImGui::GetIO();
+  if (c > 0 && c < 0x10000)
+    io.AddInputCharacter((unsigned short)c);
+};
+
 
 /*
 void sInterfaceInit() {
@@ -301,54 +324,6 @@ void sInterfaceInit() {
   
 }
 */
-
-void sInterface() {
-
-  if (ImGui::IsAnyWindowHovered()) {
-    ImGui::CaptureMouseFromApp(true);
-  }
-
-  ImGuiIO &io = ImGui::GetIO();  
-  
-  {
-    ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
-    ImGuiStyle &style = ImGui::GetStyle();
-    //style.Colors[ImGuiCol_WindowBg]=color;
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, color);    
-    ImGui::Begin("Info");
-    glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);  
-    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-
-    
-    
-    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);    
-    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-    if (selected!=std::string("none"))
-      {
-        
-	ImGui::Text((std::string("id:") + city[selected].id).c_str());
-      }
-
-
-
-    ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
-
-    ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
-    
-    ImGui::End();
-
-
-    
-    ImGui::PopStyleColor();
-
-    ImGui::ShowTestWindow();
-
-    debug_log().Draw("Log");
-  }
-
-
-}
 
 std::string loadState(std::string fileName )
 {
@@ -424,10 +399,73 @@ std::string loadState(std::string fileName )
   
 };
 
+void sInterface() {
+
+  if (ImGui::IsAnyWindowHovered()) {
+    ImGui::CaptureMouseFromApp(true);
+  }
+
+  ImGuiIO &io = ImGui::GetIO();  
+  
+  {
+    ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+    ImGuiStyle &style = ImGui::GetStyle();
+    //style.Colors[ImGuiCol_WindowBg]=color;
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, color);    
+    ImGui::Begin("Info");
+    glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);  
+    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
+    
+    
+    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);    
+    ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+    if (selected!=std::string("none"))
+      {
+        
+	ImGui::Text((std::string("id:") + city[selected].id).c_str());
+      }
+
+
+
+    ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+
+    ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+    
+    ImGui::End();
+
+
+    
+    ImGui::PopStyleColor();
+
+    ImGui::Begin("State");
+
+    char* text = &state[0];
+    
+    ImGui::InputTextMultiline("##source", text, 2000, ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
+    if (ImGui::Button("Load"))
+      {
+	state = loadState("city.problem");
+      };
+    
+      ImGui::End();
+
+    ImGui::ShowTestWindow();
+
+    debug_log().Draw("Log");
+  }
+
+
+};
+
+
+
 
 void getAgentPos(std::string state, std::string agent, int &x, int &y)
 {
-	int p1 = state.find("(at");
+	int p1 = state.find("(at "+ agent);
 	int p2 = state.find(")", p1);
 	std::string str2 = state.substr(p1 + 1, p2 - p1);
 
@@ -479,10 +517,6 @@ int main(int argc, char *argv[])
 		return -1;
 	state = loadState("city.problem");
 
-	int x, y;
-	getAgentPos(state, "agent0", x, y);
-
-	debug_log().AddLog("agent0 pos: %d,%d", x, y);
 	
 	rect boundingBox;
 
@@ -540,7 +574,12 @@ int main(int argc, char *argv[])
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
         glfwSetMouseButtonCallback(window, sMouseButton);
+	glfwSetKeyCallback(window, key);
+	glfwSetCharCallback(window, charCallback);
+	  
 
+
+	
 
 	glewExperimental = GL_TRUE;
 	glewInit();
@@ -553,7 +592,6 @@ int main(int argc, char *argv[])
 	//sInterfaceInit();
 	
 	//glEnable(GL_DEPTH_TEST);	
-	glfwSetKeyCallback(window, key);
 	
 
 	glfwSetTime(0);
@@ -579,7 +617,7 @@ int main(int argc, char *argv[])
 
 	float gridSize = 0.01f;
 	
-	for (float x=boundingBox.xmin; x < boundingBox.xmax; x=x+0.01f)
+	for (float x=0; x < boundingBox.xmax; x=x+gridSize)
 	  {
 	    gridVec.push_back(x);
 	    gridVec.push_back(boundingBox.ymin);
@@ -587,9 +625,17 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(boundingBox.ymax);
 	    lineCount++;
 	  }
-	
-		
-	for (float y=boundingBox.ymin; y < boundingBox.ymax; y=y+0.01f)
+
+	for (float x=0; x > boundingBox.xmin; x=x-gridSize)
+	  {
+	    gridVec.push_back(x);
+	    gridVec.push_back(boundingBox.ymin);
+	    gridVec.push_back(x);
+	    gridVec.push_back(boundingBox.ymax);
+	    lineCount++;
+	  }
+
+    	for (float y=0; y < boundingBox.ymax; y=y+gridSize)
 	  {
 	    gridVec.push_back(boundingBox.xmin);
 	    gridVec.push_back(y);
@@ -597,7 +643,18 @@ int main(int argc, char *argv[])
 	    gridVec.push_back(y);
 	    lineCount++;
 	  }
-		
+
+
+    	for (float y=0; y > boundingBox.ymin; y=y-gridSize)
+	  {
+	    gridVec.push_back(boundingBox.xmin);
+	    gridVec.push_back(y);
+	    gridVec.push_back(boundingBox.xmax);
+	    gridVec.push_back(y);
+	    lineCount++;
+	  }
+
+	
 	float* grid = gridVec.data();
 
 	
@@ -617,21 +674,65 @@ int main(int argc, char *argv[])
 
 
 	shaderData texSh = texQuadInit();
+
+	int x, y;
+
+	std::vector<std::string> agents;
+
+	int p1 = state.find("(:objects") + sizeof("(:objects");
+
+	int p2 = state.find(")", p1) - 1;
+
+	std::string str2 = state.substr(p1 + 1, p2 - p1);
+
+	debug_log().AddLog(str2.c_str());
+	debug_log().AddLog("\n");
+	
+	std::stringstream ss(str2);
+	
+	
+	while (ss)
+	  {
+	    std::string id;
+	    std::string type;
+	    ss >> id;
+	    agents.push_back(id);
+	    debug_log().AddLog("agent id:");
+	    debug_log().AddLog(id.c_str());
+	    debug_log().AddLog("\n");
+	    
+	    ss>>type;
+	    debug_log().AddLog("agent type:");
+   	    debug_log().AddLog(type.c_str());
+	    debug_log().AddLog("\n");
+
+	    ss>>type;
+	    
+	}
+
+	
+	getAgentPos(state, "agent0", x, y);
+	debug_log().AddLog("agent0 pos: %d,%d", x, y);
+	for (std::string s1 : agents){
+	  debug_log().AddLog(s1.c_str());
+	  debug_log().AddLog("\n");
+	};
+	
 	
 	while (!glfwWindowShouldClose(window))
 	{
 		float ct = (float)glfwGetTime();
 		if (run) t += ct - pt;
 		pt = ct;
+
+		glfwPollEvents();
 		
 		ImGui_ImplGlfwGL3_NewFrame();
 		//glfwPollEvents();
 		
 		sInterface();
 		
-		
-		//selected =  pnpoly(numVert, vertx, verty, selp.x, selp.y)>0;	
-		
+				
 		// Draw tesselated pieces.
 		if (tess)
 		{
@@ -645,18 +746,19 @@ int main(int argc, char *argv[])
 
 		  drawLine(gridSh,g_camera);
 
+		  for (std::string s1 : agents){
+
+		    getAgentPos(state, s1, x, y);
 		  
-		  texQuadDraw(texSh);
+		    texQuadDraw(texSh,x,y);
+		  }
+		  
 		  drawMap(mapSh, g_camera);
 		  drawBuildingOutlines( outlineSh, g_camera);
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
-
-		  
 		  ImGui::Render();
 		}
-		
-		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -666,9 +768,6 @@ int main(int argc, char *argv[])
 	if (vflags)
 		free(vflags);
 	
-	//svgDelete(bg);	
-	//svgDelete(fg);	
-
 	glfwTerminate();
 	return 0;
 }

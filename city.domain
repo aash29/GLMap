@@ -3,10 +3,24 @@
 
 	(:requirements :typing)
 	(:types
-	    agent - object)
+		agent - object
+	)
 
 	(:predicates 
 		(at ?agent ?x ?y)
+	)
+	(:action move-to-point
+	:parameters (?from ?point)
+	:precondition
+		(and
+		(npc-at ?area)
+		(point-of-interest ?point ?area)
+		(npc-not-close-to-point)
+	)
+	:effect (and
+		(npc-close-to ?point)
+		(not (npc-not-close-to-point))
+		)
 	)
 )
 
