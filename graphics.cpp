@@ -280,6 +280,116 @@ void drawMap( shaderData sh, Camera cam){
 }
 
 
+shaderData drawQuadInit()
+{
+  shaderData qShader;
+  qShader.vertexCount = 4;
+  
+  // Create Vertex Array Object
+  GLuint vao;
+  glGenVertexArrays(1, &vao);
+  glBindVertexArray(vao);
+
+  qShader.vao = vao;
+ 
+  // Create a Vertex Buffer Object and copy the vertex data to it
+  GLuint vbo;
+  glGenBuffers(1, &vbo);
+
+  qShader.vbo = vbo;
+  
+  int posx = 0;
+
+  int posy = 0;
+
+  GLfloat vertices[] = {
+    //  Position      Color             Texcoords
+    posx*gridSize, (posy+1)*gridSize , 1.0f, 1.0f, 1.0f,  // Top-left
+    (posx+1)*gridSize,  (posy+1)*gridSize, 1.0f, 1.0f, 1.0f, // Top-right
+    (posx+1)*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f,  // Bottom-right
+    posx*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f  // Bottom-left
+  };
+
+  qShader.data = vertices;
+ 
+  glBindBuffer(GL_ARRAY_BUFFER, vbo);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+  // Create an element array
+  GLuint ebo;
+  glGenBuffers(1, &ebo);
+
+  GLuint elements[] = {
+    0, 1, 2,
+    2, 3, 0
+  };
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+
+  qShader.vertexShader = createShader(GL_VERTEX_SHADER, vertexSource );
+
+  qShader.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentSource);
+ 
+  // Link the vertex and fragment shader into a shader program
+  GLuint shaderProgram = glCreateProgram();
+  glAttachShader(shaderProgram, qShader.vertexShader);
+  glAttachShader(shaderProgram, qShader.fragmentShader);
+  glBindFragDataLocation(shaderProgram, 0, "outColor");
+  glLinkProgram(shaderProgram);
+  glUseProgram(shaderProgram);
+
+
+  qShader.shaderProgram = shaderProgram;
+
+    // Specify the layout of the vertex data
+
+  GLint posAttrib = glGetAttribLocation(shaderProgram, "position");
+  glEnableVertexAttribArray(posAttrib);
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE,
+			5*sizeof(float), 0);
+
+  GLint colAttrib = glGetAttribLocation(shaderProgram, "color");
+  glEnableVertexAttribArray(colAttrib);
+  glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
+			5*sizeof(float), (void*)(2*sizeof(float)));
+
+  
+
+  return qShader;  
+}
+
+
+void drawQuad(shaderData sh, int posx, int posy)
+{
+  glBindVertexArray(sh.vao);
+  
+  glUseProgram(sh.shaderProgram);
+  
+  glm::mat4 trans = setupCam();
+  
+  float x = posx* gridSize;
+  float y = posy* gridSize;
+  
+  
+  glm::mat4 translate1 = glm::translate(glm::mat4(1.f),glm::vec3(x,y,0.f));
+
+  glm::mat4 m1 = trans*translate1;
+  
+  GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+  
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(m1));
+
+
+  GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
+  
+  glUniform4f(uniColor, 1.0f, 1.0f, 1.0f, 0.3f);
+
+  
+  glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+};
+
+
 shaderData texQuadInit()
 {
   shaderData tqShader;

@@ -124,14 +124,8 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 
 std::string selectBuilding(float testx, float testy)
 {
-
-
-
   glm::mat4 rotN;
   rotN = glm::rotate(rotN, glm::radians(-angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
-
-  
-
 
   std::vector<float> unCol = std::vector<float>();
   std::vector<float> unDraw = std::vector<float>();
@@ -520,7 +514,9 @@ int main(int argc, char *argv[])
 	
 	rect boundingBox;
 
-	city = loadLevel("little.geojson",tess, boundingBox);
+	polygon singlePolygon;
+
+	city = loadLevel("little.geojson",tess, boundingBox, singlePolygon);
 
 	printf("go...\n");
 
@@ -681,6 +677,10 @@ int main(int argc, char *argv[])
 
 	shaderData texSh = texQuadInit();
 
+
+	shaderData quadSh = drawQuadInit();
+	
+
 	int x, y;
 
 	std::vector<std::string> agents;
@@ -789,6 +789,11 @@ int main(int argc, char *argv[])
 		  drawBuildingOutlines( outlineSh, g_camera);
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
+
+
+		  drawQuad(quadSh, 0,0);
+
+		  
 		  ImGui::Render();
 		}
 		glfwSwapBuffers(window);

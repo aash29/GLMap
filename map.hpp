@@ -22,11 +22,18 @@ struct rect
 };
 
 
+struct polygon
+{
+  int nvert;
+  double *vertx;
+  double *verty;
+};
+
 typedef std::map<std::string, building> cityMap; 
 
 float xmin,xmax,ymin,ymax;
 
-cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
+cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon)
 {
   
   
@@ -64,6 +71,12 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 	xmax = 30.2882633f;
 	ymin = 59.9379525f;
 	ymax = 59.9379525f;
+
+
+	singlePolygon.nvert = 0;
+
+	singlePolygon.nvert++;
+	
 
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
       if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
@@ -103,7 +116,8 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 			m3[id].coords[j].push_back(c1[j][i][0]);
 			m3[id].coords[j].push_back(c1[j][i][1]);
 			
-	    
+			singlePolygon.nvert++;
+
 			xmin=std::min(xmin, c1[j][i][0]);
 			xmax=std::max(xmax, c1[j][i][0]);
 	    
@@ -111,7 +125,11 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 			ymax=std::max(ymax, c1[j][i][1]);
 		  };
 		  std::cout << "adding contour" << "\n";
+		  singlePolygon.nvert++;  // zero vert
+
 		}
+
+	
 		};
       }
       /*
@@ -143,13 +161,21 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
   glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
 
 
+  singlePolygon.vertx = new double[singlePolygon.nvert];
+  singlePolygon.verty = new double[singlePolygon.nvert];
+  int spCounter = 0;
+
+
+  singlePolygon.vertx[spCounter] = 0.f;
+  singlePolygon.vertx[spCounter] = 0.f;
+  spCounter++;
+
+
   debug_log().AddLog("upperx: %f \n", upperx);
 
       for (auto &it : m3) {
 	for (int j = 0; j < it.second.coords.size(); j++) {
 	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
-	    //it.second.coords[j][i] = -0.5f + (it.second.coords[j][i]-xmin)/(xmax-xmin);
-	    //it.second.coords[j][i+1] = (-0.5f + (it.second.coords[j][i+1]-ymin)/(ymax-ymin));
 
 	    float x = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
 	    float y = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
@@ -157,6 +183,10 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 	    glm::vec2 v1(x,y);
 	    glm::vec2 v2 = r1 * v1;
 
+	    singlePolygon.vertx[spCounter] = v2[0];
+	    singlePolygon.vertx[spCounter] = v2[1];
+	    spCounter++;
+	    
 	    it.second.coords[j][i] = v2[0];
 	    it.second.coords[j][i+1] = v2[1];
 
@@ -169,7 +199,15 @@ cityMap loadLevel(const char *name,TESStesselator* tess, rect &boundingBox)
 	    
 	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
+
+	  singlePolygon.vertx[spCounter] = 0.f;
+	  singlePolygon.vertx[spCounter] = 0.f;
+	  spCounter++;
+
+	  
 	}
+
+	
       }
       
       return m3;
