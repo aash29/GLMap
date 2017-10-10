@@ -46,6 +46,8 @@ shaderData lineSh;
 
 std::string state;
 
+polygon singlePolygon;
+
 //UIState ui;
 
 void* stdAlloc(void* userData, unsigned int size)
@@ -170,6 +172,13 @@ std::string selectBuilding(float testx, float testy)
 	verty[i]=cont1[2*i+1];
       }
 
+       debug_log().AddLog("vertx one building:");
+      for (int i=0; i< numVert; i++){
+	
+	debug_log().AddLog("%g,",vertx[i] );
+      };
+      debug_log().AddLog("\n");
+
       if (pnpoly(numVert, vertx, verty, testx, testy)>0)
 	{
 	  return id1;
@@ -192,14 +201,27 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 
   //std::cout<<"pressed" << "\n";
   
-  if (!io.WantCaptureMouse) {
-
+  if (!io.WantCaptureMouse) 
+{
 
     // Use the mouse to move things around.
     if (button == GLFW_MOUSE_BUTTON_1) {
       std::string id1 = selectBuilding(selp.x,selp.y);  
       debug_log().AddLog(id1.c_str());
       debug_log().AddLog("\n");
+
+      debug_log().AddLog("vertx single polygon:");
+      for (int i=0; i< singlePolygon.nvert; i++){
+	
+	debug_log().AddLog("%g,",singlePolygon.vertx[i] );
+      };
+      debug_log().AddLog("\n");
+
+      if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, selp.x, selp.y)>0)
+	{	      
+	  debug_log().AddLog("hit \n");
+	}
+
 
       std::vector<float> unDraw = std::vector<float>();
 
@@ -514,9 +536,9 @@ int main(int argc, char *argv[])
 	
 	rect boundingBox;
 
-	polygon singlePolygon;
 
-	city = loadLevel("little.geojson",tess, boundingBox, singlePolygon);
+
+	city = loadLevel("test.geojson",tess, boundingBox, singlePolygon);
 
 	printf("go...\n");
 

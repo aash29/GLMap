@@ -75,6 +75,8 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 	singlePolygon.nvert = 0;
 
+
+	// zero vert
 	singlePolygon.nvert++;
 	
 
@@ -163,8 +165,8 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
   singlePolygon.vertx = new double[singlePolygon.nvert];
   singlePolygon.verty = new double[singlePolygon.nvert];
+  
   int spCounter = 0;
-
 
   singlePolygon.vertx[spCounter] = 0.f;
   singlePolygon.vertx[spCounter] = 0.f;
