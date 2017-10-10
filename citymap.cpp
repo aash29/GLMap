@@ -171,14 +171,14 @@ std::string selectBuilding(float testx, float testy)
 	vertx[i]=cont1[2*i];
 	verty[i]=cont1[2*i+1];
       }
-
+	  /*
        debug_log().AddLog("vertx one building:");
       for (int i=0; i< numVert; i++){
 	
 	debug_log().AddLog("%g,",vertx[i] );
       };
       debug_log().AddLog("\n");
-
+	  */
       if (pnpoly(numVert, vertx, verty, testx, testy)>0)
 	{
 	  return id1;
@@ -209,14 +209,14 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
       std::string id1 = selectBuilding(selp.x,selp.y);  
       debug_log().AddLog(id1.c_str());
       debug_log().AddLog("\n");
-
+	  /*
       debug_log().AddLog("vertx single polygon:");
       for (int i=0; i< singlePolygon.nvert; i++){
 	
 	debug_log().AddLog("%g,",singlePolygon.vertx[i] );
       };
       debug_log().AddLog("\n");
-
+	  */
       if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, selp.x, selp.y)>0)
 	{	      
 	  debug_log().AddLog("hit \n");
@@ -538,7 +538,7 @@ int main(int argc, char *argv[])
 
 
 
-	city = loadLevel("test.geojson",tess, boundingBox, singlePolygon);
+	city = loadLevel("little.geojson",tess, boundingBox, singlePolygon);
 
 	printf("go...\n");
 
@@ -632,7 +632,7 @@ int main(int argc, char *argv[])
 
 	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
 
-	float gridSize = 0.01f;
+	float gridSize = 0.005f;
 
 	int xm,xp,ym,yp;
 	xm = 0;
@@ -643,18 +643,18 @@ int main(int argc, char *argv[])
 	
 	for (float x=0; x < boundingBox.xmax; x=x+gridSize)
 	  {
-	    gridVec.push_back(x);
+	    gridVec.push_back(x + gridSize/2);
 	    gridVec.push_back(boundingBox.ymin);
-	    gridVec.push_back(x);
+	    gridVec.push_back(x + gridSize / 2);
 	    gridVec.push_back(boundingBox.ymax);
 	    xp++;
 	  }
 
 	for (float x=0; x > boundingBox.xmin; x=x-gridSize)
 	  {
-	    gridVec.push_back(x);
+	    gridVec.push_back(x - gridSize / 2);
 	    gridVec.push_back(boundingBox.ymin);
-	    gridVec.push_back(x);
+	    gridVec.push_back(x - gridSize / 2);
 	    gridVec.push_back(boundingBox.ymax);
 	    xm++;
 	  }
@@ -662,9 +662,9 @@ int main(int argc, char *argv[])
     	for (float y=0; y < boundingBox.ymax; y=y+gridSize)
 	  {
 	    gridVec.push_back(boundingBox.xmin);
-	    gridVec.push_back(y);
+	    gridVec.push_back(y + gridSize / 2);
 	    gridVec.push_back(boundingBox.xmax);
-	    gridVec.push_back(y);
+	    gridVec.push_back(y + gridSize / 2);
 	    yp++;
 	  }
 
@@ -672,9 +672,9 @@ int main(int argc, char *argv[])
     	for (float y=0; y > boundingBox.ymin; y=y-gridSize)
 	  {
 	    gridVec.push_back(boundingBox.xmin);
-	    gridVec.push_back(y);
+	    gridVec.push_back(y- gridSize / 2);
 	    gridVec.push_back(boundingBox.xmax);
-	    gridVec.push_back(y);
+	    gridVec.push_back(y - gridSize / 2);
 	    ym++;
 	  }
 
@@ -750,6 +750,19 @@ int main(int argc, char *argv[])
 	std::shared_ptr<navigation_path<location_t>> path;
 	map_t map(-xm, xp, -ym, yp);
 
+	for (int i = -xm; i < xp; i++)
+	{
+		for (int j = -ym; j < yp; j++)
+		{
+			if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*gridSize, j*gridSize)>0)
+			{
+				//debug_log().AddLog("hit \n");
+				map.walkable[map.at(i, j)] = false;
+
+			}
+		}
+	}
+
 	debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
 	/*
 	debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
@@ -812,8 +825,16 @@ int main(int argc, char *argv[])
 		  if (selected!=std::string("none"))
 		    drawLine(lineSh, g_camera);
 
+		  for (int i = -xm; i < xp; i++)
+		  {
+			  for (int j = -ym; j < yp; j++)
+			  {
+				  if (!map.walkable[map.at(i, j)]) {
+					  drawQuad(quadSh, i, j);
+				  }
 
-		  drawQuad(quadSh, 0,0);
+			  }
+		  };
 
 		  
 		  ImGui::Render();

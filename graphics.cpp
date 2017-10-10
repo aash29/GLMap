@@ -8,11 +8,11 @@
 #include "shaders.glsl"
 #include <iostream>
 
-#include <SOIL/SOIL.h>
+#include <SOIL\SOIL.h>
 
 float angleNorth= 0.f;
 
-float gridSize = 0.01f;
+float gridSize = 0.005f;
 
 glm::mat4 setupCam()
 {
@@ -304,10 +304,10 @@ shaderData drawQuadInit()
 
   GLfloat vertices[] = {
     //  Position      Color             Texcoords
-    posx*gridSize, (posy+1)*gridSize , 1.0f, 1.0f, 1.0f,  // Top-left
-    (posx+1)*gridSize,  (posy+1)*gridSize, 1.0f, 1.0f, 1.0f, // Top-right
-    (posx+1)*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f,  // Bottom-right
-    posx*gridSize, (posy)*gridSize, 1.0f, 1.0f, 1.0f  // Bottom-left
+    (posx - 0.5f)*gridSize, (posy + 0.5f)*gridSize , 1.0f, 1.0f, 1.0f,  // Top-left
+    (posx + 0.5f)*gridSize,  (posy + 0.5f)*gridSize, 1.0f, 1.0f, 1.0f, // Top-right
+    (posx + 0.5f)*gridSize, (posy - 0.5f)*gridSize, 1.0f, 1.0f, 1.0f,  // Bottom-right
+    (posx - 0.5f)*gridSize, (posy - 0.5f)*gridSize, 1.0f, 1.0f, 1.0f  // Bottom-left
   };
 
   qShader.data = vertices;

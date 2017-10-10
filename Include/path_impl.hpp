@@ -73,13 +73,13 @@ struct map_t {
         std::fill(walkable.begin(), walkable.end(), true);
 
         // We want the perimeter to be solid
-        for (int x=x1; x<=x2; x++) {
+        for (int x=x1; x<x2; x++) {
             walkable[at(x,y1)]=false;
-            walkable[at(x,y2)]=false;
+            walkable[at(x,y2-1)]=false;
         }
-        for (int y=y1; y<=y2; y++) {
+        for (int y=y1; y<y2-1; y++) {
             walkable[at(x1,y)] = false;
-            walkable[at(x2,y)] = false;
+            walkable[at(x2-1,y)] = false;
         }
     }
 
