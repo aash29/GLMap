@@ -356,11 +356,11 @@ void loadJsonState(std::string name )
   debug_log().AddLog("\n");
   debug_log().AddLog("********** \n");
 
-  /*
+  
   nlohmann::json::iterator f2 = f1->find("name");
   debug_log().AddLog(f2->dump().c_str());
   debug_log().AddLog("\n");
-  */
+  
   //std::cout << f1;
   //auto f1 = jsonObj.find("objects");
 
