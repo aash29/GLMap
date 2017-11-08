@@ -1,0 +1,84 @@
+{
+    "domain-name": "city",
+    "types": ["agent","loc"],
+    "objects":[
+	{"name":"agent0",
+	 "type":"agent"},
+	{"name":"agent1",
+	 "type":"agent"},
+	{"name":"agent2",
+	 "type":"agent"}
+    ],
+    "init":[
+	{"name":"at",
+	 "arguments":[
+	     "agent0",
+	     "loc-0-0"
+	 ]
+	},
+	{"name":"at",
+	 "arguments":[
+	     "agent1",
+	     "loc-5-0"
+	 ]
+	},
+	{"name":"at",
+	 "arguments":[
+	     "agent2",
+	     "loc-5-5"
+	 ]
+	}
+    ],
+    
+    "predicates": [
+	{"name": "at",
+	 "arguments": [
+	     {"name":"who",
+	      "type":"none"},
+	     {"name":"where",
+	      "type":"loc"}
+	 ]
+	}
+    ],
+
+    "actions": [
+	{
+	    "name":"move-to-point",
+	    "parameters": [
+		{"name":"?who",
+		 "type":"none"},
+		{"name":"?from",
+		 "type":"loc"},
+		{"name":"?to",
+		 "type":"loc"}
+	    ],
+	    "preconditions": [
+		{"name":"at",
+		 "arguments": [
+		     "?who",
+		     "?from"
+		 ]
+		}
+	    ],
+	    "effect": {
+		"plus":
+		{
+		    "name": "at",
+		    "arguments": [
+			"?who",
+			"?to"
+		    ]
+		},
+		"minus":
+		{
+		    "name": "at",
+		    "arguments": [
+			"?who",
+			"?from"
+		    ]
+		}
+	    }
+	}
+    ]    
+}
+
