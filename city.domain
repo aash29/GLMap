@@ -1,25 +1,24 @@
-
 (define (domain city_domain)
 
 	(:requirements :typing)
 	(:types
 		agent - object
+		loc
 	)
 
 	(:predicates 
-		(at ?agent ?x ?y)
+		(at ?who ?where - loc)
 	)
+	
 	(:action move-to-point
-	:parameters (?from ?point)
+	:parameters (?who ?from ?to)
 	:precondition
 		(and
-		(npc-at ?area)
-		(point-of-interest ?point ?area)
-		(npc-not-close-to-point)
+		(at ?who ?from)
 	)
 	:effect (and
-		(npc-close-to ?point)
-		(not (npc-not-close-to-point))
+		(at ?who ?to)
+		(not (at ?who ?from))
 		)
 	)
 )

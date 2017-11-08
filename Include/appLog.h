@@ -8,15 +8,19 @@
 
 struct AppLog
 {
-    ImGuiTextBuffer     Buf;
-    ImGuiTextFilter     Filter;
-    ImVector<int>       LineOffsets;        // Index to lines offset
-    bool                ScrollToBottom;
-
-    void    Clear()     { Buf.clear(); LineOffsets.clear(); }
-
-    void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
-    {
+  ImGuiTextBuffer     Buf;
+  ImGuiTextFilter     Filter;
+  ImVector<int>       LineOffsets;        // Index to lines offset
+  bool                ScrollToBottom;
+  
+  void    Clear()     { Buf.clear(); LineOffsets.clear(); }
+  /*
+  void    AddLog(const char* fmt, ...)
+  {
+  }
+  */
+  void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
+  {
         int old_size = Buf.size();
         va_list args;
         va_start(args, fmt);

@@ -1,12 +1,42 @@
 [
     {
-        "command": "c++ -c -o map -g -I./Include ex_orig.cpp",
+        "command": "c++ -c -o map -g -I./Include citymap.cpp",
         "directory": "/home/aash29/cpp/GLMap",
-        "file": "/home/aash29/cpp/GLMap/ex_orig.cpp"
+        "file": "/home/aash29/cpp/GLMap/citymap.cpp"
     },
     {
-        "command": "c++ -c -o map -g -I./Include ./Include/nanosvg.c",
+        "command": "c++ -c -o map -g -I./Include camera.cpp",
         "directory": "/home/aash29/cpp/GLMap",
-        "file": "/home/aash29/cpp/GLMap/Include/nanosvg.c"
+        "file": "/home/aash29/cpp/GLMap/camera.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include graphics.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/graphics.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include imgui.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/imgui.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include imgui_draw.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/imgui_draw.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include imgui_impl_glfw_gl3.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/imgui_impl_glfw_gl3.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include imgui_demo.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/imgui_demo.cpp"
+    },
+    {
+        "command": "c++ -c -o map -g -I./Include appLog.cpp",
+        "directory": "/home/aash29/cpp/GLMap",
+        "file": "/home/aash29/cpp/GLMap/appLog.cpp"
     }
 ]

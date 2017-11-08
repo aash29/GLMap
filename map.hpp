@@ -74,9 +74,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 
 	singlePolygon.nvert = 0;
-
-
-
 	
 
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {

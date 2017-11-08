@@ -31,9 +31,11 @@
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 
+
 //Camera g_camera;
 
 GLint uniTrans;
+
 
 GLFWwindow *window = NULL;
 bool rightMouseDown;
@@ -47,6 +49,13 @@ shaderData lineSh;
 std::string state;
 
 polygon singlePolygon;
+
+
+bool drawGrid = true;
+bool drawBlockedCells = false;
+
+char* text;
+int stateSize;
 
 //UIState ui;
 
@@ -148,9 +157,8 @@ std::string selectBuilding(float testx, float testy)
 	    {
 	      unDraw.push_back(it[i]);
 	      unDraw.push_back(it[i+1]);
-
 	      unDraw.push_back(it[i]);
-	      unDraw.push_back(it[i+1]);		
+	      unDraw.push_back(it[i+1]);
 	    }
 	  unDraw.push_back(it[0]);
 	  unDraw.push_back(it[1]);
@@ -185,6 +193,8 @@ std::string selectBuilding(float testx, float testy)
 	}
       delete vertx;
       delete verty;
+
+      
     }
   return std::string("none");
 
@@ -325,21 +335,38 @@ void charCallback(GLFWwindow*, unsigned int c)
 };
 
 
-/*
-void sInterfaceInit() {
 
 
-  ImGuiIO &io = ImGui::GetIO();
+void loadJsonState(std::string name )
+{
+  nlohmann::json jsonObj;
 
-  //io.FontGlobalScale = 1.5f;
+  std::ifstream file;
+  file.open(std::string(name), std::ios::in);
+  if (file) {
+    printf("file open \n");
+    jsonObj << file;
+    file.close();
+  }
 
+  nlohmann::json::iterator f1 = jsonObj.find("objects");
 
-  //io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 14);
-  //io.Fonts->GetTexDataAsRGBA32();
+  debug_log().AddLog("********** \n"); 
+  debug_log().AddLog(f1->dump().c_str());
+  debug_log().AddLog("\n");
+  debug_log().AddLog("********** \n");
 
+  /*
+  nlohmann::json::iterator f2 = f1->find("name");
+  debug_log().AddLog(f2->dump().c_str());
+  debug_log().AddLog("\n");
+  */
+  //std::cout << f1;
+  //auto f1 = jsonObj.find("objects");
+
+  //g_camera.Add
   
 }
-*/
 
 std::string loadState(std::string fileName )
 {
@@ -350,70 +377,59 @@ std::string loadState(std::string fileName )
   file.open(std::string(fileName), std::ios::in);
 
   std::string stateString((std::istreambuf_iterator<char>(file)),
-	  std::istreambuf_iterator<char>());
+			  std::istreambuf_iterator<char>());
 
+  
+  std::string stateOut(stateString);
 
-  stateString.erase(std::remove(stateString.begin(), stateString.end(), '\n'), stateString.end());
+  //stateString.erase(std::remove(stateString.begin(), stateString.end(), '\n'), stateString.end());
 
   //char c = file.get();
   std::string curStr;
   std::vector<std::string> tokens = std::vector<std::string>();
   for (int i = 0; i < stateString.length(); i++) {
-	  char c = stateString[i];
+    char c = stateString[i];
 
-		  if ((c != '(') and (c != ')') and (c != ' '))
-		  {
-			  curStr += c;
-		  }
-		  else
-		  {
-			  if (curStr!="")
-				tokens.push_back(curStr);
+    if ((c != '(') and (c != ')') and (c != ' '))
+      {
+	curStr += c;
+      }
+    else
+      {
+	if (curStr!="")
+	  tokens.push_back(curStr);
 
-			  curStr = "";
-			  if (c != ' ') {
-				  tokens.push_back(std::string(1, c));
-				  curStr = "";
-		  }
-
-	//	  c = file.get();
-	  }
-  }
-
-	for (auto s1 : tokens) {
-		debug_log().AddLog(s1.c_str());
-		debug_log().AddLog("\n");
+	curStr = "";
+	if (c != ' ') {
+	  tokens.push_back(std::string(1, c));
+	  curStr = "";
 	}
+      }
+  }
+  for (auto s1 : tokens) {
+    debug_log().AddLog(s1.c_str());
+    debug_log().AddLog("\n");
+  }
   file.close();
 
+  int p1 = stateString.find("(:objects") + sizeof("(:objects");
 
+  stateString.insert(p1," l-0-0 ");
 
-  return stateString;
-  /*
-
-  std::vector<std::string> read_from_tokens(std::vector<std::string> tokens);
-  if (tokens.size() == 0) {
-	  debug_log().AddLog("unexpected EOF");
-  };
-  std::string token = tokens.back();
-  tokens.pop_back();
-
-  if ("(" == token ) {
-	  std::vector<std::string> L = std::vector<std::string>();
-	  while (tokens[0] != ")") {
-
-	  }
-				  L.append(read_from_tokens(tokens))
-				  tokens.pop(0) # pop off ')'
-				  return L
-  }
-				  elif ')' == token:
-  raise SyntaxError('unexpected )')
-		  else:
-  return atom(token)
-  */
+  stateString.insert(p1," l-1-0 ");
   
+  stateSize = stateString.length();
+    
+  text = new char[stateSize];
+  
+  memcpy(text, stateString.c_str(), stateSize);
+
+
+  
+  
+  return stateOut;  
 };
+
 
 void sInterface() {
 
@@ -434,7 +450,9 @@ void sInterface() {
 
     
     
-    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);    
+    ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
+    ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+    
     ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
     if (selected!=std::string("none"))
@@ -443,23 +461,24 @@ void sInterface() {
 	ImGui::Text((std::string("id:") + city[selected].id).c_str());
       }
 
-
-
     ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
 
     ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+
+    ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
+    ImGui::Checkbox("Draw Grid", &drawBlockedCells);
+    
     
     ImGui::End();
-
-
     
     ImGui::PopStyleColor();
 
     ImGui::Begin("State");
-
-    char* text = &state[0];
     
-    ImGui::InputTextMultiline("##source", text, 2000, ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
+    //static char* text = &state[0];
+   
+    ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
 
     if (ImGui::Button("Load"))
       {
@@ -471,6 +490,13 @@ void sInterface() {
     ImGui::ShowTestWindow();
 
     debug_log().Draw("Log");
+
+    
+    ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+    ImFont* font = atlas->Fonts[0];
+    //font->Scale = 2.f;
+
+    
   }
 
 
@@ -533,9 +559,10 @@ int main(int argc, char *argv[])
 		return -1;
 	state = loadState("city.problem");
 
+	loadJsonState("city.json");
+		
 	
 	rect boundingBox;
-
 
 
 	city = loadLevel("little.geojson",tess, boundingBox, singlePolygon);
@@ -632,7 +659,6 @@ int main(int argc, char *argv[])
 
 	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
 
-	float gridSize = 0.005f;
 
 	int xm,xp,ym,yp;
 	xm = 0;
@@ -641,40 +667,40 @@ int main(int argc, char *argv[])
 	yp = 0;
 
 	
-	for (float x=0; x < boundingBox.xmax; x=x+gridSize)
+	for (float x=0; x < boundingBox.xmax; x=x+g_camera.gridSize)
 	  {
-	    gridVec.push_back(x + gridSize/2);
+	    gridVec.push_back(x + g_camera.gridSize/2);
 	    gridVec.push_back(boundingBox.ymin);
-	    gridVec.push_back(x + gridSize / 2);
+	    gridVec.push_back(x + g_camera.gridSize / 2);
 	    gridVec.push_back(boundingBox.ymax);
 	    xp++;
 	  }
 
-	for (float x=0; x > boundingBox.xmin; x=x-gridSize)
+	for (float x=0; x > boundingBox.xmin; x=x-g_camera.gridSize)
 	  {
-	    gridVec.push_back(x - gridSize / 2);
+	    gridVec.push_back(x - g_camera.gridSize / 2);
 	    gridVec.push_back(boundingBox.ymin);
-	    gridVec.push_back(x - gridSize / 2);
+	    gridVec.push_back(x - g_camera.gridSize / 2);
 	    gridVec.push_back(boundingBox.ymax);
 	    xm++;
 	  }
 
-    	for (float y=0; y < boundingBox.ymax; y=y+gridSize)
+    	for (float y=0; y < boundingBox.ymax; y=y+g_camera.gridSize)
 	  {
 	    gridVec.push_back(boundingBox.xmin);
-	    gridVec.push_back(y + gridSize / 2);
+	    gridVec.push_back(y + g_camera.gridSize / 2);
 	    gridVec.push_back(boundingBox.xmax);
-	    gridVec.push_back(y + gridSize / 2);
+	    gridVec.push_back(y + g_camera.gridSize / 2);
 	    yp++;
 	  }
 
 
-    	for (float y=0; y > boundingBox.ymin; y=y-gridSize)
+    	for (float y=0; y > boundingBox.ymin; y=y-g_camera.gridSize)
 	  {
 	    gridVec.push_back(boundingBox.xmin);
-	    gridVec.push_back(y- gridSize / 2);
+	    gridVec.push_back(y- g_camera.gridSize / 2);
 	    gridVec.push_back(boundingBox.xmax);
-	    gridVec.push_back(y - gridSize / 2);
+	    gridVec.push_back(y - g_camera.gridSize / 2);
 	    ym++;
 	  }
 
@@ -754,7 +780,7 @@ int main(int argc, char *argv[])
 	{
 		for (int j = -ym; j < yp; j++)
 		{
-			if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*gridSize, j*gridSize)>0)
+			if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*g_camera.gridSize, j*g_camera.gridSize)>0)
 			{
 				//debug_log().AddLog("hit \n");
 				map.walkable[map.at(i, j)] = false;
@@ -813,6 +839,13 @@ int main(int argc, char *argv[])
 
 		  drawLine(gridSh,g_camera);
 
+		  drawMap(mapSh, g_camera);
+		  drawBuildingOutlines( outlineSh, g_camera);
+		  if (selected!=std::string("none"))
+		    drawLine(lineSh, g_camera);
+
+
+		  
 		  for (std::string s1 : agents){
 
 		    getAgentPos(state, s1, x, y);
@@ -820,22 +853,20 @@ int main(int argc, char *argv[])
 		    texQuadDraw(texSh,x,y);
 		  }
 		  
-		  drawMap(mapSh, g_camera);
-		  drawBuildingOutlines( outlineSh, g_camera);
-		  if (selected!=std::string("none"))
-		    drawLine(lineSh, g_camera);
 
-		  for (int i = -xm; i < xp; i++)
-		  {
+
+		  if (drawBlockedCells)
+		    {
+		      for (int i = -xm; i < xp; i++)
+			{
 			  for (int j = -ym; j < yp; j++)
-			  {
-				  if (!map.walkable[map.at(i, j)]) {
-					  drawQuad(quadSh, i, j);
-				  }
-
-			  }
-		  };
-
+			    {
+			      if (!map.walkable[map.at(i, j)]) {
+				drawQuad(quadSh, i, j);
+			      }
+			    }
+			};
+		    };
 		  
 		  ImGui::Render();
 		}

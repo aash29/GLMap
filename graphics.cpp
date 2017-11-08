@@ -8,11 +8,13 @@
 #include "shaders.glsl"
 #include <iostream>
 
-#include <SOIL\SOIL.h>
+#include <SOIL/SOIL.h>
 
 float angleNorth= 0.f;
 
-float gridSize = 0.005f;
+//float gridSize = Camera::gridSize;
+
+float gridSize = 0.05f;
 
 glm::mat4 setupCam()
 {
@@ -372,7 +374,7 @@ void drawQuad(shaderData sh, int posx, int posy)
   float y = posy* gridSize;
   
   
-  glm::mat4 translate1 = glm::translate(glm::mat4(1.f),glm::vec3(x,y,0.f));
+  glm::mat4 translate1 = glm::translate(glm::mat4(1.f),glm::vec3(x,y,1.f));
 
   glm::mat4 m1 = trans*translate1;
   

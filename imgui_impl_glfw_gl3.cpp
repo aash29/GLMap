@@ -184,7 +184,7 @@ bool ImGui_ImplGlfwGL3_CreateFontsTexture()
 {
     // Build texture atlas
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 14);
+    io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 22);
 
     unsigned char* pixels;
     int width, height;
