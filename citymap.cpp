@@ -28,9 +28,13 @@
 
 #include "path_impl.hpp"
 
+#include "st_tree.h"
+
+#include "pddltree.hpp"
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
-
+pddlTreeNode root("city");
 
 //Camera g_camera;
 
@@ -387,8 +391,30 @@ std::string loadState(std::string fileName )
   //char c = file.get();
   std::string curStr;
   std::vector<std::string> tokens = std::vector<std::string>();
+
+  //st_tree::tree<std::string > stateTree;
+
+//  stateTree.insert("city");
+
+  //st_tree::tree<std::string >::iterator i1 = stateTree.root();
+
+  /*
+  pddlTreeNode c1;
+  c1.data = std::string("*********lalala*********");
+  */
+
+  //pddlTreeNode* curNode;
+
+  //root.insert_back(pddlTreeNode("***lalalala****"));
+
+
   for (int i = 0; i < stateString.length(); i++) {
     char c = stateString[i];
+
+	if ((c == '(') or (c == ')'))
+	{
+		//tokens.push_back(std::string(1, c));
+	};
 
     if ((c != '(') and (c != ')') and (c != ' '))
       {
@@ -424,6 +450,16 @@ std::string loadState(std::string fileName )
   
   memcpy(text, stateString.c_str(), stateSize);
 
+  pddlTreeNode* curNode = &root;
+
+  for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
+  {
+	  if (*t1 == "(")
+	  {
+		  curNode->insert_back(pddlTreeNode((t1+1)))
+	  }
+
+  }
 
   
   
@@ -559,7 +595,9 @@ int main(int argc, char *argv[])
 		return -1;
 	state = loadState("city.problem");
 
-	loadJsonState("city.json");
+//	debug_log().AddLog(root.children[0].data.c_str());
+
+	//loadJsonState("city.json");
 		
 	
 	rect boundingBox;
