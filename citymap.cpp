@@ -123,6 +123,11 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
         }
 	//printf ("scroll");
     }
+  else
+    {
+        io.MouseWheel += (dy != 0.0f) ? dy > 0.0f ? 1 : - 1 : 0;
+	
+    }
 }
 
 

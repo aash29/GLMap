@@ -25,7 +25,7 @@ struct pddlTreeNode
     data = initData;
   }
 
-  std::vector<pddlTreeNode*> search (std::string match, )
+  std::vector<pddlTreeNode*> search (std::string match)
   {
     std::vector<pddlTreeNode* > stack;
     std::vector<pddlTreeNode* > result;
