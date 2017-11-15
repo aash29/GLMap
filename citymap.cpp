@@ -451,18 +451,65 @@ std::string loadState(std::string fileName )
   memcpy(text, stateString.c_str(), stateSize);
 
   pddlTreeNode* curNode = &root;
-
+  std::vector<pddlTreeNode* > stack;
+  
   for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
-  {
-	  if (*t1 == "(")
+    {
+      if (*t1 == "(")
+	{
+	  curNode->insert_back(pddlTreeNode(*(t1+1)));
+	  t1++;
+	  stack.push_back(curNode);
+	  curNode = &(curNode->children[0]);
+	}
+      else
+	if (*t1 == ")")
 	  {
-		  curNode->insert_back(pddlTreeNode((t1+1)))
+	    curNode = stack.back();
+	    stack.pop_back();
 	  }
+	else
+	  {
+	    curNode->insert_back(pddlTreeNode(*(t1)));
+	  }
+    }
 
-  }
+  std::vector<pddlTreeNode*> r1 =  root.search("at");
+  
+  for (auto it1: r1)
+    {
+      debug_log().AddLog("\n");
+      debug_log().AddLog(it1->data.c_str());
+      debug_log().AddLog("\n");      
+    }
 
   
-  
+  /*  
+  curNode = &root;
+
+  stack.clear();
+  stack.push_back(&root);
+
+        
+  while (stack.size()>0)
+    {
+      curNode = stack.back();
+      stack.pop_back();
+      
+      for (auto it1 = curNode->children.begin(); it1 != curNode->children.end(); it1++)
+	{
+	  stack.insert(stack.begin(),&(*it1));
+	}
+      debug_log().AddLog(curNode->data.c_str());
+      debug_log().AddLog("\n");    
+    }
+  */
+  /*
+  ImGui::TreeNode("State1");
+  ImGui::TreeNode("State2");
+  ImGui::TreePop();
+  ImGui::TreePop();
+  */
   return stateOut;  
 };
 
@@ -531,6 +578,15 @@ void sInterface() {
     ImFontAtlas* atlas = ImGui::GetIO().Fonts;
     ImFont* font = atlas->Fonts[0];
     //font->Scale = 2.f;
+
+    if (ImGui::TreeNode("State1"))
+      {
+	if (ImGui::TreeNode("State2"))
+	  {
+	    ImGui::TreePop();
+	  }
+      ImGui::TreePop();
+      }
 
     
   }
