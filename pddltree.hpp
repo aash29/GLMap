@@ -3,6 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <regex>
+
+#include "appLog.h"
 
 
 struct pddlTreeNode
@@ -37,15 +40,27 @@ struct pddlTreeNode
 	cn = stack.back();
 	stack.pop_back();
 
-	if (match==cn->data)
-	  {
-	    //return cn;
-	    result.push_back(cn);
-	  }
+	std::string wholeString(cn->data);
 	
 	for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
 	  {
 	    stack.insert(stack.begin(),&(*it1));
+	    wholeString.append(it1->data);
+	    wholeString.append(" ");	    
+	  }
+
+	debug_log().AddLog(wholeString.c_str());
+	
+	const std::regex re("at.*");
+	
+
+	//if (match==cn->data)
+	if (std::regex_match(wholeString, re))
+	  {
+	    //return cn;
+	    result.push_back(cn);
+	    debug_log().AddLog("found at node \n");
+	    
 	  }
 
 	
