@@ -50,8 +50,8 @@ struct pddlTreeNode
 	  }
 
 	debug_log().AddLog(wholeString.c_str());
-	
-	const std::regex re("at.*");
+	std::string query = ".*" + match + ".*";
+	const std::regex re(query);
 	
 
 	//if (match==cn->data)

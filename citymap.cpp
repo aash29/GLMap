@@ -555,7 +555,7 @@ void sInterface() {
     ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
     ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
-    ImGui::Checkbox("Draw Grid", &drawBlockedCells);
+    ImGui::Checkbox("Draw Grid", &drawGrid);
     
     
     ImGui::End();
@@ -571,10 +571,42 @@ void sInterface() {
 
     if (ImGui::Button("Load"))
       {
-	state = loadState("city.problem");
+		state = loadState("city.problem");
       };
+
+
+	static char buf1[64] = ""; 
+	ImGui::InputText("filter", buf1, 64);
+
+	static std::vector<pddlTreeNode*> result;
+
+	if (ImGui::Button("Search"))
+	{
+		result = root.search(buf1);
+	}
+
+	if (ImGui::TreeNode("Result"))
+	{
+		int i = 0;
+		for (auto p1 : result)
+		{
+			ImGui::PushID(i);
+			if (ImGui::TreeNode(p1->data.c_str()))
+			{
+				for (auto c1 : p1->children)
+				{
+					ImGui::Text(c1.data.c_str());
+				}
+				ImGui::TreePop();	
+			}
+			i++;
+			ImGui::PopID();
+		}
+		ImGui::TreePop();
+	}
+	
     
-      ImGui::End();
+    ImGui::End();
 
     ImGui::ShowTestWindow();
 
