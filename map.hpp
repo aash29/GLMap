@@ -58,7 +58,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   
   if (f1 != jsonObj.end()) {
     //m_force = m_forceLeft;
-    std::cout << "found features";
+    //std::cout << "found features";
     //std::cout << ((*f1)[0]).dump(4);
 
 
@@ -78,7 +78,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
       if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
-		std::cout << "id:" << (*it)["properties"]["id"] << "\n";
+	//std::cout << "id:" << (*it)["properties"]["id"] << "\n";
 		//std::cout <<  (*it)["geometry"]["type"];
 		
 		if ((*it)["geometry"]["type"]=="Polygon"){
@@ -105,7 +105,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 		  a2[j] = new float[c1[j].size()*2];
 		  m3[id].coords.push_back(std::vector<float>());
 		  
-		  std::cout << "contour size:" << c1[j].size() << "\n";
+		  //std::cout << "contour size:" << c1[j].size() << "\n";
 
 		  // zero vert
 		  singlePolygon.nvert++;
@@ -125,7 +125,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			ymin=std::min(ymin, c1[j][i][1]);
 			ymax=std::max(ymax, c1[j][i][1]);
 		  };
-		  std::cout << "adding contour" << "\n";
+		  //std::cout << "adding contour" << "\n";
 		  singlePolygon.nvert++;  // zero vert
 
 		}

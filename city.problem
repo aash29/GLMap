@@ -1,15 +1,1 @@
-(define (problem city_problem)
-  (:domain city_domain)
-  (:objects
-   agent0 - agent
-   agent1 - agent
-   agent2 - agent
-   )
-  (:init
-	(at agent0 10 0)
-   	(at agent1 2 2)
-	(at agent2 5 5)
-  )
-  (:goal
-   )
-  )
+(define (problem city_problem)(:domain city_domain) (:objects agent0 - agent agent1 - agent agent2 - agent) (:init (at agent0 10 0) (at agent1 2 2) (at agent2 5 5)) (:goal ))

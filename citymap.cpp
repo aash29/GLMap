@@ -438,12 +438,15 @@ std::string loadState(std::string fileName )
 	}
       }
   }
+
+
+  debug_log().AddLog("\n ***** tokens: \n");
   for (auto s1 : tokens) {
     debug_log().AddLog(s1.c_str());
     debug_log().AddLog("\n");
   }
   file.close();
-
+  /*
   int p1 = stateString.find("(:objects") + sizeof("(:objects");
 
   stateString.insert(p1," l-0-0 ");
@@ -455,7 +458,8 @@ std::string loadState(std::string fileName )
   text = new char[stateSize];
   
   memcpy(text, stateString.c_str(), stateSize);
-
+  */
+  
   pddlTreeNode* curNode = &root;
   std::vector<pddlTreeNode* > stack;
   
@@ -464,7 +468,7 @@ std::string loadState(std::string fileName )
       if (*t1 == "(")
 	{
 	  curNode->insert_back(pddlTreeNode(*(t1+1)));
-	  t1++;
+	  //t1++;
 	  stack.push_back(curNode);
 	  curNode = &(curNode->children[0]);
 	}
@@ -488,36 +492,10 @@ std::string loadState(std::string fileName )
       debug_log().AddLog(it1->data.c_str());
       debug_log().AddLog("\n");      
     }
-
-  
-  /*  
-  curNode = &root;
-
-  stack.clear();
-  stack.push_back(&root);
-
-        
-  while (stack.size()>0)
-    {
-      curNode = stack.back();
-      stack.pop_back();
-      
-      for (auto it1 = curNode->children.begin(); it1 != curNode->children.end(); it1++)
-	{
-	  stack.insert(stack.begin(),&(*it1));
-	}
-      debug_log().AddLog(curNode->data.c_str());
-      debug_log().AddLog("\n");    
-    }
-  */
-  /*
-  ImGui::TreeNode("State1");
-  ImGui::TreeNode("State2");
-  ImGui::TreePop();
-  ImGui::TreePop();
-  */
   return stateOut;  
 };
+
+
 
 
 void sInterface() {
@@ -555,7 +533,7 @@ void sInterface() {
     ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
     ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
-    ImGui::Checkbox("Draw Grid", &drawBlockedCells);
+    ImGui::Checkbox("Draw Grid", &drawGrid);
     
     
     ImGui::End();
@@ -566,9 +544,9 @@ void sInterface() {
     
 
     //static char* text = &state[0];
-   
+    /*
     ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
-
+    */
     if (ImGui::Button("Load"))
       {
 	state = loadState("city.problem");
@@ -584,19 +562,29 @@ void sInterface() {
     ImFontAtlas* atlas = ImGui::GetIO().Fonts;
     ImFont* font = atlas->Fonts[0];
     //font->Scale = 2.f;
-
-    if (ImGui::TreeNode("State1"))
-      {
-	if (ImGui::TreeNode("State2"))
-	  {
-	    ImGui::TreePop();
-	  }
-      ImGui::TreePop();
-      }
-
-    
   }
 
+
+  visitNodes(&root);
+
+  /*
+  stack.clear();
+  stack.push_back(&root);
+
+        
+  while (stack.size()>0)
+    {
+      curNode = stack.back();
+      stack.pop_back();
+      
+      for (auto it1 = curNode->children.begin(); it1 != curNode->children.end(); it1++)
+	{
+	  stack.insert(stack.begin(),&(*it1));
+	}
+      debug_log().AddLog(curNode->data.c_str());
+      debug_log().AddLog("\n");    
+    }
+  */
 
 };
 

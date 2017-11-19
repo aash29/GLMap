@@ -104,7 +104,7 @@ void main()
 
         void main()
         {
-            gl_Position = Model * vec4(position, -1.0, 1.0);
+           gl_Position = Model * vec4(position, -1.0, 1.0);
         }
 )glsl";
   

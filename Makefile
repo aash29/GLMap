@@ -4,7 +4,7 @@ CC = g++
 CFLAGS =  -g -I./Include -ltess2 -L. -lGLEW -lGL -lglfw -lSOIL
 
 
-map: $(SOURCES) map.hpp shaders.glsl ./Include/path_impl.hpp
+map: $(SOURCES) map.hpp shaders.glsl ./Include/path_impl.hpp pddltree.hpp
 	$(CC) -o map $(SOURCES) $(CFLAGS)
 
 

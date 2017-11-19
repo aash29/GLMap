@@ -8,6 +8,8 @@
 #include "appLog.h"
 
 
+
+
 struct pddlTreeNode
 {
   std::string data;
@@ -71,5 +73,19 @@ struct pddlTreeNode
 
   
 };
+
+pddlTreeNode* visitNodes(pddlTreeNode* node)
+{
+  if (ImGui::TreeNode(node->data.c_str()))
+      {
+	for (std::vector<pddlTreeNode>::iterator cn = node->children.begin(); cn != node->children.end(); cn++)
+	  {
+	    visitNodes(&(*cn));
+	  }
+	ImGui::TreePop();
+      }  
+};
+
+
 
 #endif
