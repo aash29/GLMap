@@ -422,7 +422,7 @@ std::string loadState(std::string fileName )
 		//tokens.push_back(std::string(1, c));
 	};
 
-    if ((c != '(') and (c != ')') and (c != ' '))
+    if ((c != '(') and (c != ')') and (c != ' ') and (c != '\n') and (c != '\t'))
       {
 	curStr += c;
       }
@@ -468,15 +468,26 @@ std::string loadState(std::string fileName )
       if (*t1 == "(")
 	{
 	  curNode->insert_back(pddlTreeNode(*(t1+1)));
-	  //t1++;
+	  t1++;
 	  stack.push_back(curNode);
-	  curNode = &(curNode->children[0]);
+	  curNode = &(curNode->children.back());
+	  continue;
 	}
       else
 	if (*t1 == ")")
 	  {
 	    curNode = stack.back();
 	    stack.pop_back();
+	    /*
+	    debug_log().AddLog("\n  ");
+	    
+	    for (auto it1: curNode->children)
+	      {
+		debug_log().AddLog(it1.data.c_str());
+	      }
+	    debug_log().AddLog("\n  ");
+	    */
+	      
 	  }
 	else
 	  {
@@ -706,7 +717,7 @@ int main(int argc, char *argv[])
 	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
-        glfwSetMouseButtonCallback(window, sMouseButton);
+    glfwSetMouseButtonCallback(window, sMouseButton);
 	glfwSetKeyCallback(window, key);
 	glfwSetCharCallback(window, charCallback);
 	  
@@ -734,6 +745,7 @@ int main(int argc, char *argv[])
 	const int* elems = tessGetElements(tess);
 	const int nverts = tessGetVertexCount(tess);
 	const int nelems = tessGetElementCount(tess);
+
 	
 	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
