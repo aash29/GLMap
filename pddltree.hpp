@@ -51,9 +51,11 @@ struct pddlTreeNode
 	    wholeString.append(" ");	    
 	  }
 
-	debug_log().AddLog(wholeString.c_str());
+	//debug_log().AddLog(wholeString.c_str());
+
 	
-	const std::regex re("at.*");
+	
+	const std::regex re(".*");
 	
 
 	//if (match==cn->data)
@@ -61,7 +63,7 @@ struct pddlTreeNode
 	  {
 	    //return cn;
 	    result.push_back(cn);
-	    debug_log().AddLog("found at node \n");
+	    //debug_log().AddLog("found at node \n");
 	    
 	  }
 

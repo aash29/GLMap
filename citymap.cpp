@@ -28,9 +28,12 @@
 
 #include "path_impl.hpp"
 
-#include "st_tree.h"
+//#include "st_tree.h"
 
 #include "pddltree.hpp"
+
+
+#include "utils.hpp"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -398,21 +401,11 @@ std::string loadState(std::string fileName )
   std::string curStr;
   std::vector<std::string> tokens = std::vector<std::string>();
 
-  //st_tree::tree<std::string > stateTree;
 
-//  stateTree.insert("city");
-
-  //st_tree::tree<std::string >::iterator i1 = stateTree.root();
-
-  /*
-  pddlTreeNode c1;
-  c1.data = std::string("*********lalala*********");
-  */
-
-  //pddlTreeNode* curNode;
-
-  //root.insert_back(pddlTreeNode("***lalalala****"));
-
+  removeSubstrs(stateString,std::string("\t"));
+  removeSubstrs(stateString,std::string("\n"));
+  removeSubstrs(stateString,std::string("\r")); 
+ 
 
   for (int i = 0; i < stateString.length(); i++) {
     char c = stateString[i];
@@ -468,15 +461,26 @@ std::string loadState(std::string fileName )
       if (*t1 == "(")
 	{
 	  curNode->insert_back(pddlTreeNode(*(t1+1)));
-	  //t1++;
+	  t1++;
 	  stack.push_back(curNode);
-	  curNode = &(curNode->children[0]);
+	  curNode = &(curNode->children.back());
+	  continue;
 	}
       else
 	if (*t1 == ")")
 	  {
 	    curNode = stack.back();
 	    stack.pop_back();
+	    /*
+	    debug_log().AddLog("\n  ");
+	    
+	    for (auto it1: curNode->children)
+	      {
+		debug_log().AddLog(it1.data.c_str());
+	      }
+	    debug_log().AddLog("\n  ");
+	    */
+	      
 	  }
 	else
 	  {
@@ -485,13 +489,15 @@ std::string loadState(std::string fileName )
     }
 
   std::vector<pddlTreeNode*> r1 =  root.search("at");
-  
+  /*
   for (auto it1: r1)
     {
       debug_log().AddLog("\n");
       debug_log().AddLog(it1->data.c_str());
       debug_log().AddLog("\n");      
     }
+
+  */
   return stateOut;  
 };
 
@@ -566,6 +572,13 @@ void sInterface() {
 
 
   visitNodes(&root);
+
+
+  std::vector<pddlTreeNode*> s_res = root.search("at");
+
+  visitNodes(s_res.front());
+  
+  
 
   /*
   stack.clear();
@@ -706,7 +719,7 @@ int main(int argc, char *argv[])
 	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
-        glfwSetMouseButtonCallback(window, sMouseButton);
+    glfwSetMouseButtonCallback(window, sMouseButton);
 	glfwSetKeyCallback(window, key);
 	glfwSetCharCallback(window, charCallback);
 	  
@@ -734,6 +747,7 @@ int main(int argc, char *argv[])
 	const int* elems = tessGetElements(tess);
 	const int nverts = tessGetVertexCount(tess);
 	const int nelems = tessGetElementCount(tess);
+
 	
 	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
