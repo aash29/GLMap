@@ -415,7 +415,7 @@ std::string loadState(std::string fileName )
 		//tokens.push_back(std::string(1, c));
 	};
 
-    if ((c != '(') and (c != ')') and (c != ' '))
+    if ((c != '(') and (c != ')') and (c != ' ') and (c != '\n') and (c != '\t'))
       {
 	curStr += c;
       }

@@ -1,6 +1,7 @@
 (define
 	(problem city_problem)
 	(:domain city_domain)
+<<<<<<< HEAD
 	(:objects 
 		agent0 - agent agent1 - agent agent2 - agent
 		)
@@ -10,3 +11,6 @@
 		(at agent2 5 5)
 		)
 	(:goal ))
+=======
+	(:objects agent0 - agent agent1 - agent agent2 - agent) (:init (at agent0 10 0) (at agent1 2 2) (at agent2 5 5)) (:goal ))
+>>>>>>> 4a1e1923c4204fc258efac840c50494bd09df0d5
