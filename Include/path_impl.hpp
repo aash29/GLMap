@@ -64,7 +64,7 @@ struct location_t {
 
 // Now we define our basic map. Why a struct? Because a struct is just a class with
 // everything public in it!
-struct map_t {
+class map_t {
   map_t(const int &x1, const int &x2, const int &y1, const int &y2) : xmin(x1), xmax(x2), ymin(y1), ymax(y2) {
         // Resize the vector to hold the whole map; this way it won't reallocate
         walkable.resize((x2-x1+1)*(y2-y1+1));
@@ -101,7 +101,7 @@ std::shared_ptr<navigation_path<location_t>> path;
 // We're using 1024x768, with 8 pixel wide chars. That gives a console grid of
 // 128 x 96. We'll go with that for the map, even though in reality the screen
 // might change. Worrying about that is for a future example!
-map_t map(-1,5, -2,10);
+// map_t map(-1,5, -2,10);
 
 
 
