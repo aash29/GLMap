@@ -465,23 +465,28 @@ std::string loadState(std::string fileName )
   
   for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
     {
-      if (*t1 == "(")
+
+      if ((*t1 == "(") || (*t1 == ")"))
 	{
-	  curNode->insert_back(pddlTreeNode(*(t1+1)));
-	  //t1++;
-	  stack.push_back(curNode);
-	  curNode = &(curNode->children[0]);
+	  if (*t1 == "(")
+	    {
+	      curNode->insert_back(pddlTreeNode(*(t1+1)));
+	      //t1++;
+	      stack.push_back(curNode);
+	      curNode = &(curNode->children[0]);
+	  
+	    }
+      
+	  if (*t1 == ")")
+	    {
+	      curNode = stack.back();
+	      stack.pop_back();
+	    }
 	}
       else
-	if (*t1 == ")")
-	  {
-	    curNode = stack.back();
-	    stack.pop_back();
-	  }
-	else
-	  {
-	    curNode->insert_back(pddlTreeNode(*(t1)));
-	  }
+	{
+	  curNode->insert_back(pddlTreeNode(*(t1)));
+	}
     }
 
   std::vector<pddlTreeNode*> r1 =  root.search("at");
