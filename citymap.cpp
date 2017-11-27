@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 
@@ -61,9 +65,15 @@ polygon singlePolygon;
 
 int xm,xp,ym,yp;
 
+<<<<<<< HEAD
 map_t* map;
 
 
+=======
+
+map_t* path_map;
+
+>>>>>>> a1663b456210d08064f8980c1e035b4f14cce44b
 
 bool drawGrid = true;
 bool drawBlockedCells = false;
@@ -505,14 +515,15 @@ std::string loadState(std::string fileName )
 		}
 
 
+
 	pddlTreeNode* cn = root.search(":init",".*").front();
 
 	for (int i=-xm+1;i<xp-1;i++)
 		for (int j=-ym+1;j<yp-1;j++)
 		{
-			if (pathfinding_map.walkable[pathfinding_map.at(i, j)])
+			if (path_map->walkable[path_map->at(i, j)])
 			{
-				if (pathfinding_map.walkable[pathfinding_map.at(i-1, j)])
+				if (path_map->walkable[path_map->at(i-1, j)])
 				{
 					pddlTreeNode tn = pddlTreeNode("con");
 
@@ -864,8 +875,6 @@ int main(int argc, char *argv[])
 	float* grid = gridVec.data();
 
 
-	state = loadState("city.problem");
-
 	shaderData gridSh = drawLineShaderInit(grid, 2*(xm+xp+ym+yp));
 
 
@@ -933,7 +942,68 @@ int main(int argc, char *argv[])
 	std::shared_ptr<navigation_path<location_t>> path;
 
 
-	map_t pathfinding_map (-xm, xp, -ym, yp);
+	static map_t pathfinding_map(-xm, xp, -ym, yp);
+
+	path_map = &pathfinding_map;
+
+
+
+	struct navigator {
+		// This lets you define a distance heuristic. Manhattan distance works really well, but
+		// for now we'll just use a simple euclidian distance squared.
+		// The geometry system defines one for us.
+
+		static float get_distance_estimate(location_t &pos, location_t &goal) {
+			float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
+			return d;
+		}
+
+		// Heuristic to determine if we've reached our destination? In some cases, you'd not want
+		// this to be a simple comparison with the goal - for example, if you just want to be
+		// adjacent to (or even a preferred distance from) the goal. In this case,
+		// we're trying to get to the goal rather than near it.
+		static bool is_goal(location_t &pos, location_t &goal) {
+			return pos == goal;
+			//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+			//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+		}
+
+		// This is where we calculate where you can go from a given tile. In this case, we check
+		// all 8 directions, and if the destination is walkable return it as an option.
+		static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+			//std::cout << pos.x << "/" << pos.y << "\n";
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
+			return true;
+		}
+
+		// This function lets you set a cost on a tile transition. For now, we'll always use a cost of 1.0.
+		static float get_cost(location_t &position, location_t &successor) {
+			return 1.0f;
+		}
+
+		// This is a simple comparison to determine if two locations are the same. It just passes
+		// through to the location_t's equality operator in this instance (we didn't do that automatically)
+		// because there are times you might want to behave differently.
+		static bool is_same_state(location_t &lhs, location_t &rhs) {
+			return lhs == rhs;
+		}
+	};
+
+
+
+
+
+	state = loadState("city.problem");
 
 	for (int i = -xm; i < xp; i++)
 	{
@@ -941,8 +1011,8 @@ int main(int argc, char *argv[])
 		{
 			if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*g_camera.gridSize, j*g_camera.gridSize)>0)
 			{
-				//debug_log().AddLog("hit \n");
-				map.walkable[map.at(i, j)] = false;
+				debug_log().AddLog("hit \n");
+				path_map->walkable[path_map->at(i, j)] = false;
 
 			}
 		}
@@ -1022,7 +1092,7 @@ int main(int argc, char *argv[])
 			{
 			  for (int j = -ym; j < yp; j++)
 			    {
-			      if (!map.walkable[map.at(i, j)]) {
+			      if (!path_map->walkable[path_map->at(i, j)]) {
 				drawQuad(quadSh, i, j);
 			      }
 			    }
