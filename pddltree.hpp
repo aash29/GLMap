@@ -30,7 +30,7 @@ struct pddlTreeNode
     data = initData;
   }
 
-  std::vector<pddlTreeNode*> search (std::string match)
+  std::vector<pddlTreeNode*> search (std::string  name, std::string filter)
   {
     std::vector<pddlTreeNode* > stack;
     std::vector<pddlTreeNode* > result;
@@ -42,7 +42,7 @@ struct pddlTreeNode
 	cn = stack.back();
 	stack.pop_back();
 
-	std::string wholeString(cn->data);
+	std::string wholeString;
 	
 	for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
 	  {
@@ -51,30 +51,39 @@ struct pddlTreeNode
 	    wholeString.append(" ");	    
 	  }
 
-	debug_log().AddLog(wholeString.c_str());
-	
-	const std::regex re("at.*");
+	//debug_log().AddLog(wholeString.c_str());
+
+    const std::regex rn(name);
+	const std::regex rf(filter);
 	
 
 	//if (match==cn->data)
-	if (std::regex_match(wholeString, re))
+	if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
 	  {
 	    //return cn;
 	    result.push_back(cn);
-	    debug_log().AddLog("found at node \n");
+	    //debug_log().AddLog("found at node \n");
 	    
 	  }
-
-	
-	
       }
-    return result;
-  }
+      return result;
+  };
 
+  std::string flattenChildren()
+  {
+    std::string result();
+      for (auto n1: children)
+	{
+	  result.append(n1.data);
+	};
+      return result;
+  };
   
 };
 
-pddlTreeNode* visitNodes(pddlTreeNode* node)
+
+
+void visitNodes(pddlTreeNode* node)
 {
   if (ImGui::TreeNode(node->data.c_str()))
       {
@@ -89,3 +98,4 @@ pddlTreeNode* visitNodes(pddlTreeNode* node)
 
 
 #endif
+

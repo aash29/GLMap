@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #define GLEW_STATIC
 #include <GL/glew.h>
 
@@ -28,9 +32,14 @@
 
 #include "path_impl.hpp"
 
-#include "st_tree.h"
+//#include "st_tree.h"
 
 #include "pddltree.hpp"
+
+
+#include "utils.hpp"
+
+#include <stdlib.h>     /* atoi */
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -53,6 +62,11 @@ shaderData lineSh;
 std::string state;
 
 polygon singlePolygon;
+
+int xm,xp,ym,yp;
+
+
+map_t* path_map;
 
 
 bool drawGrid = true;
@@ -326,7 +340,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
       if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GL_TRUE);
       if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-	run = !run;
+ 	run = !run;
     }
   else
     {
@@ -346,7 +360,7 @@ void charCallback(GLFWwindow*, unsigned int c)
 
 
 
-
+/*
 void loadJsonState(std::string name )
 {
   nlohmann::json jsonObj;
@@ -377,11 +391,40 @@ void loadJsonState(std::string name )
   //g_camera.Add
   
 }
+*/
+
+bool doAction(std::string name, std::vector<std::string> parValues)
+{
+  pddlTreeNode* r1 = root.search(":action",name).front();
+  pddlTreeNode* r2 = r1->search(":parameters", ".*").front();
+  std::vector<std::string> parNames;
+  for (auto n1: r2->children)
+    {
+      parNames.push_back(n1.data);
+    };
+  pddlTreeNode* preconditions = r1->search(":preconditions",".*").front();
+  for (auto n2: preconditions->children)
+    {
+      std::string s1 = n2.flattenChildren();
+      
+      for (int i=0; i<parNames.size();i++)
+	{
+	  replaceSubstrs(s1,parNames[i],parValues[i]);
+	};
+      
+      if (root.search(n2.data,s1).size()==0)
+	{
+	  return false;
+	}
+      
+    };
+  
+  
+}
+
 
 std::string loadState(std::string fileName )
 {
-
-  //std::ifstream t("file.txt");
 
   std::ifstream file;
   file.open(std::string(fileName), std::ios::in);
@@ -392,35 +435,23 @@ std::string loadState(std::string fileName )
   
   std::string stateOut(stateString);
 
-  //stateString.erase(std::remove(stateString.begin(), stateString.end(), '\n'), stateString.end());
-
-  //char c = file.get();
   std::string curStr;
   std::vector<std::string> tokens = std::vector<std::string>();
 
-  //st_tree::tree<std::string > stateTree;
 
-//  stateTree.insert("city");
-
-  //st_tree::tree<std::string >::iterator i1 = stateTree.root();
-
-  /*
-  pddlTreeNode c1;
-  c1.data = std::string("*********lalala*********");
-  */
-
-  //pddlTreeNode* curNode;
-
-  //root.insert_back(pddlTreeNode("***lalalala****"));
-
+  removeSubstrs(stateString,std::string("\t"));
+  removeSubstrs(stateString,std::string("\n"));
+  removeSubstrs(stateString,std::string("\r")); 
+ 
 
   for (int i = 0; i < stateString.length(); i++) {
     char c = stateString[i];
-
+    /*
 	if ((c == '(') or (c == ')'))
 	{
 		//tokens.push_back(std::string(1, c));
 	};
+    */
 
     if ((c != '(') and (c != ')') and (c != ' '))
       {
@@ -466,37 +497,85 @@ std::string loadState(std::string fileName )
   for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
     {
 
-      if ((*t1 == "(") || (*t1 == ")"))
+      if ((*t1 == "("))
 	{
-	  if (*t1 == "(")
-	    {
-	      curNode->insert_back(pddlTreeNode(*(t1+1)));
-	      //t1++;
-	      stack.push_back(curNode);
-	      curNode = &(curNode->children[0]);
-	  
-	    }
-      
-	  if (*t1 == ")")
-	    {
-	      curNode = stack.back();
-	      stack.pop_back();
-	    }
+	  curNode->insert_back(pddlTreeNode(*(t1+1)));
+	  t1++;
+	  stack.push_back(curNode);
+	  curNode = &(curNode->children.back());
+	  continue;
 	}
       else
-	{
-	  curNode->insert_back(pddlTreeNode(*(t1)));
-	}
+	if (*t1 == ")")
+	  {
+	    curNode = stack.back();
+	    stack.pop_back();
+	    /*
+	    debug_log().AddLog("\n  ");
+	    
+	    for (auto it1: curNode->children)
+	      {
+		debug_log().AddLog(it1.data.c_str());
+	      }
+	    debug_log().AddLog("\n  ");
+	    */
+	      
+	  }
+	else
+	  {
+	    curNode->insert_back(pddlTreeNode(*(t1)));
+	  }
     }
 
-  std::vector<pddlTreeNode*> r1 =  root.search("at");
-  
+	std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
+
+
+	for (int i=-xm;i<xp;i++)
+		for (int j=-ym;j<yp;j++)
+		{
+			char ss1[50];
+			sprintf ( ss1, "loc_%d_%d", i,j );
+			r1.front()->insert_back(pddlTreeNode(ss1));
+		}
+
+
+
+	pddlTreeNode* cn = root.search(":init",".*").front();
+
+	for (int i=-xm+1;i<xp-1;i++)
+		for (int j=-ym+1;j<yp-1;j++)
+		{
+			if (path_map->walkable[path_map->at(i, j)])
+			{
+				if (path_map->walkable[path_map->at(i-1, j)])
+				{
+					pddlTreeNode tn = pddlTreeNode("con");
+
+					char ss1[50];
+					sprintf ( ss1, "loc_%d_%d", i-1,j );
+					tn.insert_back(pddlTreeNode(ss1));
+
+					char ss2[50];
+					sprintf ( ss2, "loc_%d_%d", i,j );
+					tn.insert_back(pddlTreeNode(ss2));
+
+					cn->insert_back(tn);
+				}
+
+			}
+		}
+
+
+  //std::vector<pddlTreeNode*> r1 =  root.search("at","agent0");
+  /*
   for (auto it1: r1)
     {
       debug_log().AddLog("\n");
       debug_log().AddLog(it1->data.c_str());
       debug_log().AddLog("\n");      
     }
+
+  */
   return stateOut;  
 };
 
@@ -545,19 +624,6 @@ void sInterface() {
     
     ImGui::PopStyleColor();
 
-    ImGui::Begin("State");
-    
-
-    //static char* text = &state[0];
-    /*
-    ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
-    */
-    if (ImGui::Button("Load"))
-      {
-	state = loadState("city.problem");
-      };
-    
-      ImGui::End();
 
     ImGui::ShowTestWindow();
 
@@ -570,27 +636,44 @@ void sInterface() {
   }
 
 
-  visitNodes(&root);
+  //visitNodes(&root);
 
-  /*
-  stack.clear();
-  stack.push_back(&root);
 
-        
-  while (stack.size()>0)
-    {
-      curNode = stack.back();
-      stack.pop_back();
-      
-      for (auto it1 = curNode->children.begin(); it1 != curNode->children.end(); it1++)
-	{
-	  stack.insert(stack.begin(),&(*it1));
+	ImGui::Begin("State");
+
+
+	//static char* text = &state[0];
+	/*
+    ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
+
+*/
+	static char str0[128] = "city";
+	ImGui::InputText("node", str0, IM_ARRAYSIZE(str0));
+
+	static char str1[128] = ".*";
+	ImGui::InputText("filter", str1, IM_ARRAYSIZE(str1));
+
+	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
+	  ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
+
+	static std::vector<pddlTreeNode*> s_res;
+
+	if (ImGui::Button("Load"))
+	{       
+	  s_res  = root.search(std::string(str0),std::string(str1));
+	};
+	for (auto r1:s_res){
+	  visitNodes(r1);
 	}
-      debug_log().AddLog(curNode->data.c_str());
-      debug_log().AddLog("\n");    
-    }
-  */
+	ImGui::End();
 
+
+	ImGui::Begin("Test actions");
+	doAction("move","agent0"
+	ImGui::End();
+
+	
 };
 
 
@@ -648,7 +731,7 @@ int main(int argc, char *argv[])
 
 	if (!tess)
 		return -1;
-	state = loadState("city.problem");
+
 
 //	debug_log().AddLog(root.children[0].data.c_str());
 
@@ -711,7 +794,7 @@ int main(int argc, char *argv[])
 	
 	glfwSetScrollCallback(window, sScrollCallback);
 	glfwSetCursorPosCallback(window, sMouseMotion);
-        glfwSetMouseButtonCallback(window, sMouseButton);
+    glfwSetMouseButtonCallback(window, sMouseButton);
 	glfwSetKeyCallback(window, key);
 	glfwSetCharCallback(window, charCallback);
 	  
@@ -739,6 +822,7 @@ int main(int argc, char *argv[])
 	const int* elems = tessGetElements(tess);
 	const int nverts = tessGetVertexCount(tess);
 	const int nelems = tessGetElementCount(tess);
+
 	
 	//GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
 
@@ -753,7 +837,7 @@ int main(int argc, char *argv[])
 	debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
 
 
-	int xm,xp,ym,yp;
+
 	xm = 0;
 	xp = 0;
 	ym = 0;
@@ -800,8 +884,7 @@ int main(int argc, char *argv[])
 	
 	float* grid = gridVec.data();
 
-	
-	
+
 	shaderData gridSh = drawLineShaderInit(grid, 2*(xm+xp+ym+yp));
 
 
@@ -825,7 +908,7 @@ int main(int argc, char *argv[])
 	int x, y;
 
 	std::vector<std::string> agents;
-
+/*
 	int p1 = state.find("(:objects") + sizeof("(:objects");
 
 	int p2 = state.find(")", p1) - 1;
@@ -856,7 +939,7 @@ int main(int argc, char *argv[])
 	    ss>>type;
 	    
 	}
-
+*/
 	
 	getAgentPos(state, "agent0", x, y);
 	debug_log().AddLog("agent0 pos: %d,%d", x, y);
@@ -867,7 +950,70 @@ int main(int argc, char *argv[])
 	
 
 	std::shared_ptr<navigation_path<location_t>> path;
-	map_t map(-xm, xp, -ym, yp);
+
+
+	static map_t pathfinding_map(-xm, xp, -ym, yp);
+
+	path_map = &pathfinding_map;
+
+
+
+	struct navigator {
+		// This lets you define a distance heuristic. Manhattan distance works really well, but
+		// for now we'll just use a simple euclidian distance squared.
+		// The geometry system defines one for us.
+
+		static float get_distance_estimate(location_t &pos, location_t &goal) {
+			float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
+			return d;
+		}
+
+		// Heuristic to determine if we've reached our destination? In some cases, you'd not want
+		// this to be a simple comparison with the goal - for example, if you just want to be
+		// adjacent to (or even a preferred distance from) the goal. In this case,
+		// we're trying to get to the goal rather than near it.
+		static bool is_goal(location_t &pos, location_t &goal) {
+			return pos == goal;
+			//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+			//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+		}
+
+		// This is where we calculate where you can go from a given tile. In this case, we check
+		// all 8 directions, and if the destination is walkable return it as an option.
+		static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+			//std::cout << pos.x << "/" << pos.y << "\n";
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
+			return true;
+		}
+
+		// This function lets you set a cost on a tile transition. For now, we'll always use a cost of 1.0.
+		static float get_cost(location_t &position, location_t &successor) {
+			return 1.0f;
+		}
+
+		// This is a simple comparison to determine if two locations are the same. It just passes
+		// through to the location_t's equality operator in this instance (we didn't do that automatically)
+		// because there are times you might want to behave differently.
+		static bool is_same_state(location_t &lhs, location_t &rhs) {
+			return lhs == rhs;
+		}
+	};
+
+
+
+
+
+	state = loadState("city.problem");
 
 	for (int i = -xm; i < xp; i++)
 	{
@@ -875,8 +1021,8 @@ int main(int argc, char *argv[])
 		{
 			if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*g_camera.gridSize, j*g_camera.gridSize)>0)
 			{
-				//debug_log().AddLog("hit \n");
-				map.walkable[map.at(i, j)] = false;
+				debug_log().AddLog("hit \n");
+				path_map->walkable[path_map->at(i, j)] = false;
 
 			}
 		}
@@ -930,7 +1076,9 @@ int main(int argc, char *argv[])
 		  glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 		  glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-		  drawLine(gridSh,g_camera);
+
+		  if (drawGrid)
+		    drawLine(gridSh,g_camera);
 
 		  drawMap(mapSh, g_camera);
 		  drawBuildingOutlines( outlineSh, g_camera);
@@ -954,7 +1102,7 @@ int main(int argc, char *argv[])
 			{
 			  for (int j = -ym; j < yp; j++)
 			    {
-			      if (!map.walkable[map.at(i, j)]) {
+			      if (!path_map->walkable[path_map->at(i, j)]) {
 				drawQuad(quadSh, i, j);
 			      }
 			    }

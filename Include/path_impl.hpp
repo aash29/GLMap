@@ -101,60 +101,13 @@ std::shared_ptr<navigation_path<location_t>> path;
 // We're using 1024x768, with 8 pixel wide chars. That gives a console grid of
 // 128 x 96. We'll go with that for the map, even though in reality the screen
 // might change. Worrying about that is for a future example!
-map_t map(-1,5, -2,10);
+// map_t map(-1,5, -2,10);
 
 
 
 // The A* library also requires a helper class to understand your map format.
-struct navigator {
-    // This lets you define a distance heuristic. Manhattan distance works really well, but
-    // for now we'll just use a simple euclidian distance squared.
-    // The geometry system defines one for us.
-    static float get_distance_estimate(location_t &pos, location_t &goal) {
-        float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
-        return d;
-    }
 
-    // Heuristic to determine if we've reached our destination? In some cases, you'd not want
-    // this to be a simple comparison with the goal - for example, if you just want to be
-    // adjacent to (or even a preferred distance from) the goal. In this case,
-    // we're trying to get to the goal rather than near it.
-    static bool is_goal(location_t &pos, location_t &goal) {
-        return pos == goal;
-        //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-        //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-    }
 
-    // This is where we calculate where you can go from a given tile. In this case, we check
-    // all 8 directions, and if the destination is walkable return it as an option.
-    static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-      //std::cout << pos.x << "/" << pos.y << "\n";
-
-        if (map.walkable[map.at(pos.x-1, pos.y-1)]) successors.push_back(location_t(pos.x-1, pos.y-1));
-        if (map.walkable[map.at(pos.x, pos.y-1)]) successors.push_back(location_t(pos.x, pos.y-1));
-        if (map.walkable[map.at(pos.x+1, pos.y-1)]) successors.push_back(location_t(pos.x+1, pos.y-1));
-
-        if (map.walkable[map.at(pos.x-1, pos.y)]) successors.push_back(location_t(pos.x-1, pos.y));
-        if (map.walkable[map.at(pos.x+1, pos.y)]) successors.push_back(location_t(pos.x+1, pos.y));
-
-        if (map.walkable[map.at(pos.x-1, pos.y+1)]) successors.push_back(location_t(pos.x-1, pos.y+1));
-        if (map.walkable[map.at(pos.x, pos.y+1)]) successors.push_back(location_t(pos.x, pos.y+1));
-        if (map.walkable[map.at(pos.x+1, pos.y+1)]) successors.push_back(location_t(pos.x+1, pos.y+1));
-        return true;
-    }
-
-    // This function lets you set a cost on a tile transition. For now, we'll always use a cost of 1.0.
-    static float get_cost(location_t &position, location_t &successor) {
-        return 1.0f;
-    }
-
-    // This is a simple comparison to determine if two locations are the same. It just passes
-    // through to the location_t's equality operator in this instance (we didn't do that automatically)
-    // because there are times you might want to behave differently.
-    static bool is_same_state(location_t &lhs, location_t &rhs) {
-        return lhs == rhs;
-    }
-};
 
 // Lets go really fast!
 constexpr double tick_duration = 1.0;
@@ -172,7 +125,7 @@ int path_test()
 {
     // Initialize with defaults
     //init(config_simple_px("../assets"));
-
+	/*
 
     path = find_path<location_t, navigator>(dude_position, destination);
     if (path->success)
@@ -181,5 +134,6 @@ int path_test()
       debug_log().AddLog("%d,%d", path->steps.front().x,path->steps.front().y);
 
     }
+	*/
     return 0;
 }
