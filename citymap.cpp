@@ -12,7 +12,7 @@
 #include <math.h>
 #include <GLFW/glfw3.h>
 //#include "nanosvg.h"
-#include "tesselator.h"
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -29,6 +29,8 @@
 #include "imgui_impl_glfw_gl3.h"
 #include "appLog.h"
 #include "map.hpp"
+
+#include "tesselator.h"
 
 #include "path_impl.hpp"
 
@@ -393,16 +395,22 @@ void loadJsonState(std::string name )
 }
 */
 
-bool doAction(std::string name, std::vector<std::string> parValues)
+bool doAction(std::string name, std::string parameters)
 {
-  pddlTreeNode* r1 = root.search(":action",name).front();
+  std::vector<std::string> parValues = tokenize(parameters, ' ');
+  pddlTreeNode* r1 = root.search(":action",name+".*").front();
   pddlTreeNode* r2 = r1->search(":parameters", ".*").front();
+  pddlTreeNode* init = root.search(":init", ".*").front();
+  
   std::vector<std::string> parNames;
   for (auto n1: r2->children)
     {
       parNames.push_back(n1.data);
     };
-  pddlTreeNode* preconditions = r1->search(":preconditions",".*").front();
+  pddlTreeNode* preconditions = r1->search(":precondition",".*").front()->search("and",".*").front();
+
+  
+  
   for (auto n2: preconditions->children)
     {
       std::string s1 = n2.flattenChildren();
@@ -411,14 +419,24 @@ bool doAction(std::string name, std::vector<std::string> parValues)
 	{
 	  replaceSubstrs(s1,parNames[i],parValues[i]);
 	};
+
+      debug_log().AddLog(s1.c_str());
+      debug_log().AddLog("\n");
       
-      if (root.search(n2.data,s1).size()==0)
+      debug_log().AddLog(n2.data.c_str());
+      debug_log().AddLog("\n");
+
+      s1 = s1 + ".*";
+      
+      if (init->search(n2.data,s1).size()==0)
 	{
+	   debug_log().AddLog("preconditions not satisfied");
 	  return false;
 	}
       
     };
   
+  return true;
   
 }
 
@@ -670,7 +688,10 @@ void sInterface() {
 
 
 	ImGui::Begin("Test actions");
-	doAction("move","agent0"
+	if (ImGui::Button("Move"))
+	  {
+	    doAction("move","agent0 loc_1_1 loc_2_1");
+	  }
 	ImGui::End();
 
 	

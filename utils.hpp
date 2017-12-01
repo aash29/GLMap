@@ -19,4 +19,26 @@ void replaceSubstrs(string &s,
      s.replace(i,i+n,q);
 }
 
+std::vector<std::string> tokenize (std::string s1, char sep)
+{
+  std::string curStr;
+  std::vector<std::string> tokens;
+  for (int i = 0; i < s1.length(); i++) {
+    char c = s1[i];
+    if (c != sep)
+      {
+	curStr += c;
+      }
+    else
+      {
+	if (curStr!="")
+	  tokens.push_back(curStr);
+	curStr = "";
+      }
+  }
+  tokens.push_back(curStr);
+  
+  return tokens;
+}
+
 

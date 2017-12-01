@@ -71,10 +71,11 @@ struct pddlTreeNode
 
   std::string flattenChildren()
   {
-    std::string result();
+    std::string result;
       for (auto n1: children)
 	{
 	  result.append(n1.data);
+	  result.append(" ");
 	};
       return result;
   };
