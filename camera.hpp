@@ -28,7 +28,7 @@ struct Camera {
   int m_width;
   int m_height;
 
-  static constexpr float gridSize = 0.05f;
+  static constexpr float gridSize = 0.1f;
   
 };
 extern Camera g_camera;

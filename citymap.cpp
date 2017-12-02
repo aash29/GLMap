@@ -408,9 +408,7 @@ bool doAction(std::string name, std::string parameters)
       parNames.push_back(n1.data);
     };
   pddlTreeNode* preconditions = r1->search(":precondition",".*").front()->search("and",".*").front();
-
-  
-  
+ 
   for (auto n2: preconditions->children)
     {
       std::string s1 = n2.flattenChildren();
@@ -561,27 +559,36 @@ std::string loadState(std::string fileName )
 	pddlTreeNode* cn = root.search(":init",".*").front();
 
 	for (int i=-xm+1;i<xp-1;i++)
-		for (int j=-ym+1;j<yp-1;j++)
+	  for (int j=-ym+1;j<yp-1;j++)
+	    {
+	      if (path_map->walkable[path_map->at(i, j)])
 		{
-			if (path_map->walkable[path_map->at(i, j)])
-			{
-				if (path_map->walkable[path_map->at(i-1, j)])
-				{
-					pddlTreeNode tn = pddlTreeNode("con");
+		  for (int k=-1; k<2; k++)
+		    for (int l=-1;l<2;l++)
+		      if (k!=l)
+			  if (path_map->walkable[path_map->at(i+k, j+l)])
+			    {
+			      pddlTreeNode tn = pddlTreeNode("con");
+					
+			      char ss1[50];
+			      sprintf ( ss1, "loc_%d_%d", i,j );
+			      tn.insert_back(pddlTreeNode(ss1));
+				      
+			      sprintf ( ss1, "loc_%d_%d", i+k,j+l );
+			      tn.insert_back(pddlTreeNode(ss1));
+				      
+			      /*
+				char ss2[50];
+				sprintf ( ss2, "loc_%d_%d", i,j );
+				tn.insert_back(pddlTreeNode(ss2));
+			      */
 
-					char ss1[50];
-					sprintf ( ss1, "loc_%d_%d", i-1,j );
-					tn.insert_back(pddlTreeNode(ss1));
-
-					char ss2[50];
-					sprintf ( ss2, "loc_%d_%d", i,j );
-					tn.insert_back(pddlTreeNode(ss2));
-
-					cn->insert_back(tn);
-				}
-
-			}
+			      cn->insert_back(tn);
+			    }
+			
 		}
+
+	    }
 
 
   //std::vector<pddlTreeNode*> r1 =  root.search("at","agent0");
@@ -1056,7 +1063,7 @@ int main(int argc, char *argv[])
 	debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
 	*/
 	
-	location_t dude_position {0,0};
+	location_t dude_position {5,5};
 	location_t destination {4,5};
 
 

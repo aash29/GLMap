@@ -12,9 +12,9 @@
 
 float angleNorth= 0.f;
 
-//float gridSize = Camera::gridSize;
+float gridSize = Camera::gridSize;
 
-float gridSize = 0.05f;
+//float gridSize = 0.05f;
 
 glm::mat4 setupCam()
 {
