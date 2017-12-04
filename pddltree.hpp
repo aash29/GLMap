@@ -30,7 +30,16 @@ struct pddlTreeNode
     data = initData;
   }
 
-  std::vector<pddlTreeNode*> search (std::string  name, std::string filter)
+std::vector<pddlTreeNode*> search (std::string  name, std::string filter = ".*")
+  {
+    const std::regex rn(name);
+    const std::regex rf(filter);
+    return searchRegex (rn, rf);
+
+  };
+
+  
+  std::vector<pddlTreeNode*> searchRegex (std::regex rn, std::regex rf)
   {
     std::vector<pddlTreeNode* > stack;
     std::vector<pddlTreeNode* > result;
@@ -50,20 +59,9 @@ struct pddlTreeNode
 	    wholeString.append(it1->data);
 	    wholeString.append(" ");	    
 	  }
-
-	//debug_log().AddLog(wholeString.c_str());
-
-    const std::regex rn(name);
-	const std::regex rf(filter);
-	
-
-	//if (match==cn->data)
 	if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
 	  {
-	    //return cn;
 	    result.push_back(cn);
-	    //debug_log().AddLog("found at node \n");
-	    
 	  }
       }
       return result;

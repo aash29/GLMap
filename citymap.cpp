@@ -398,8 +398,8 @@ void loadJsonState(std::string name )
 bool doAction(std::string name, std::string parameters)
 {
   std::vector<std::string> parValues = tokenize(parameters, ' ');
-  pddlTreeNode* r1 = root.search(":action",name+".*").front();
-  pddlTreeNode* r2 = r1->search(":parameters", ".*").front();
+  pddlTreeNode* action = root.search(":action",name+".*").front();
+  pddlTreeNode* r2 = action->search(":parameters", ".*").front();
   pddlTreeNode* init = root.search(":init", ".*").front();
   
   std::vector<std::string> parNames;
@@ -407,7 +407,7 @@ bool doAction(std::string name, std::string parameters)
     {
       parNames.push_back(n1.data);
     };
-  pddlTreeNode* preconditions = r1->search(":precondition",".*").front()->search("and",".*").front();
+  pddlTreeNode* preconditions = action->search(":precondition",".*").front()->search("and",".*").front();
  
   for (auto n2: preconditions->children)
     {
@@ -430,6 +430,26 @@ bool doAction(std::string name, std::string parameters)
 	{
 	   debug_log().AddLog("preconditions not satisfied");
 	  return false;
+	}
+
+      //all preconditions met
+      auto effects =  action->search(":effects")->front().children[0]; // and
+      for (auto n1 : effects)
+	{
+	  if (n1.data == "not") //remove effects from state
+	    {
+	      pddlTreeNode n2 = n1.children[0];
+	      
+	      for (auto it = init.children.begin(); it != init.children.end(); it++)
+		{
+		  auto n3 = it->search(it->data,it->flattenChildren())
+		    if (n3.size()>0)
+		      init.erase(it);
+		}
+	    }
+	  else //add effects to state
+	    {
+	    }
 	}
       
     };
