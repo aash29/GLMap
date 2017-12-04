@@ -41,9 +41,10 @@
 
 #include "utils.hpp"
 
-#include <stdlib.h>     /* atoi */
-
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+
+using namespace std;
+
 
 pddlTreeNode root("city");
 
@@ -433,22 +434,42 @@ bool doAction(std::string name, std::string parameters)
 	}
 
       //all preconditions met
-      auto effects =  action->search(":effects")->front().children[0]; // and
+      vector<pddlTreeNode> effects =  action->search(":effect").front()->children[0].children; // and
       for (auto n1 : effects)
 	{
 	  if (n1.data == "not") //remove effects from state
 	    {
 	      pddlTreeNode n2 = n1.children[0];
-	      
-	      for (auto it = init.children.begin(); it != init.children.end(); it++)
-		{
-		  auto n3 = it->search(it->data,it->flattenChildren())
-		    if (n3.size()>0)
-		      init.erase(it);
+			
+		  string effectName = n2.data;
+
+		  string effectParameters = n2.flattenChildren();
+
+		  for (int i = 0; i<parNames.size(); i++)
+		  {
+			  replaceSubstrs(effectParameters, parNames[i], parValues[i]);
+		  };
+		  effectParameters.append(".*");
+
+
+		  for (auto it = init->children.begin(); it != init->children.end(); it++)
+		  {
+			  vector<pddlTreeNode*> n3 = it->search(effectName, effectParameters);
+			  if (n3.size() > 0)
+			  {
+			    init->children.erase(it);
+				break;
+			  }
 		}
 	    }
 	  else //add effects to state
 	    {
+		  init->insert_back(pddlTreeNode(n1.data));
+		  for (int i = 0; i < parValues.size(); i++)
+		  {
+			  init->children.back().insert_back(pddlTreeNode(parValues[i]));
+		  }
+		  
 	    }
 	}
       
