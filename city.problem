@@ -1,10 +1,12 @@
 (define
 	(problem city_problem)
 	(:domain city_domain)
+	(:constants )
 	(:objects 
-		agent0 - agent )
+		agent0 - agent food0 - food )
 	(:init
 		(at agent0 loc_1_1)
+		(at food0 loc_1_1)
 		)
 	(:action move
 		 (:parameters ?agent ?from ?to)
@@ -19,6 +21,5 @@
 			)
 		)
 	)
-
 (:goal )
 )

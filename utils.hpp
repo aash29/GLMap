@@ -1,9 +1,11 @@
+#ifndef __UTILS_HPP__
+#define __UTILS_HPP__
+
 #include <string>
 
 using namespace std;
-
-
-void removeSubstrs(string &s,
+struct utils {
+static void removeSubstrs(string &s,
                    const string &p) {
    string::size_type n = p.length();
 
@@ -11,7 +13,7 @@ void removeSubstrs(string &s,
       s.erase(i, n);
 }
 
-void replaceSubstrs(string &s,
+static void replaceSubstrs(string &s,
 		    const string &p, const string &q) {
    string::size_type n = p.length();
 
@@ -19,7 +21,7 @@ void replaceSubstrs(string &s,
      s.replace(i,i+n,q);
 }
 
-std::vector<std::string> tokenize (std::string s1, char sep)
+static std::vector<std::string> tokenize (std::string s1, char sep)
 {
   std::string curStr;
   std::vector<std::string> tokens;
@@ -40,5 +42,6 @@ std::vector<std::string> tokenize (std::string s1, char sep)
   
   return tokens;
 }
+};
 
-
+#endif

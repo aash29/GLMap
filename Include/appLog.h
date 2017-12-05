@@ -5,6 +5,7 @@
 #ifndef APPLOG_H
 #define APPLOG_H
 #include "imgui.h"
+#include <string>
 
 struct AppLog
 {
@@ -19,6 +20,12 @@ struct AppLog
   {
   }
   */
+  void AddLog(std::string text)
+  {
+    text=text+"\n";
+    AddLog(text.c_str());
+  }
+
   void    AddLog(const char* fmt, ...) IM_FMTARGS(2)
   {
         int old_size = Buf.size();

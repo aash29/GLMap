@@ -362,7 +362,7 @@ shaderData drawQuadInit()
 }
 
 
-void drawQuad(shaderData sh, int posx, int posy)
+void drawQuad(shaderData sh, float posx, float posy)
 {
   glBindVertexArray(sh.vao);
   

@@ -31,7 +31,7 @@ void drawBuildingOutlines( shaderData sh, Camera cam);
 shaderData texQuadInit();
 void texQuadDraw(shaderData sh, int posx, int posy);
 shaderData drawQuadInit();
-void drawQuad(shaderData sh, int posx, int posy);
+void drawQuad(shaderData sh, float posx, float posy);
 
 extern float angleNorth;
 
