@@ -7,7 +7,7 @@
 
 #include "appLog.h"
 
-
+using namespace std;
 
 
 struct pddlTreeNode
@@ -30,7 +30,51 @@ struct pddlTreeNode
     data = initData;
   }
 
-  std::vector<pddlTreeNode*> search (std::string  name, std::string filter)
+
+  pddlTreeNode* findFirst(std::string  name, std::string filter = ".*")
+  {
+	  const std::regex rn(name);
+	  const std::regex rf(filter);
+	  return findFirstRegex(rn, rf);
+
+  }
+
+  pddlTreeNode* findFirstRegex(std::regex rn, std::regex rf)
+  {
+	  std::vector<pddlTreeNode* > stack;
+	  stack.push_back(this);
+	  pddlTreeNode* cn;
+
+	  while (stack.size()>0)
+	  {
+		  cn = stack.back();
+		  stack.pop_back();
+
+		  std::string wholeString;
+
+		  for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
+		  {
+			  stack.insert(stack.begin(), &(*it1));
+			  wholeString.append(it1->data);
+			  wholeString.append(" ");
+		  }
+		  if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
+		  {
+			  return cn;
+		  }
+	  }
+	  return NULL;
+  };
+
+std::vector<pddlTreeNode*> search (std::string  name, std::string filter = ".*")
+  {
+    const std::regex rn(name);
+    const std::regex rf(filter);
+    return searchRegex (rn, rf);
+  };
+
+  
+  std::vector<pddlTreeNode*> searchRegex (std::regex rn, std::regex rf)
   {
     std::vector<pddlTreeNode* > stack;
     std::vector<pddlTreeNode* > result;
@@ -50,28 +94,28 @@ struct pddlTreeNode
 	    wholeString.append(it1->data);
 	    wholeString.append(" ");	    
 	  }
-
-	//debug_log().AddLog(wholeString.c_str());
-
-    const std::regex rn(name);
-	const std::regex rf(filter);
-	
-
-	//if (match==cn->data)
 	if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
 	  {
-	    //return cn;
 	    result.push_back(cn);
-	    //debug_log().AddLog("found at node \n");
-	    
 	  }
       }
       return result;
   };
 
-
+  std::string flattenChildren()
+  {
+    std::string result;
+      for (auto n1: children)
+	{
+	  result.append(n1.data);
+	  result.append(" ");
+	};
+      return result;
+  };
   
 };
+
+
 
 void visitNodes(pddlTreeNode* node)
 {

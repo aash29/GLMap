@@ -12,7 +12,7 @@
 #include <math.h>
 #include <GLFW/glfw3.h>
 //#include "nanosvg.h"
-#include "tesselator.h"
+
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -30,6 +30,8 @@
 #include "appLog.h"
 #include "map.hpp"
 
+#include "tesselator.h"
+
 #include "path_impl.hpp"
 
 //#include "st_tree.h"
@@ -39,9 +41,10 @@
 
 #include "utils.hpp"
 
-#include <stdlib.h>     /* atoi */
-
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+
+using namespace std;
+
 
 pddlTreeNode root("city");
 
@@ -340,7 +343,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
       if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 	glfwSetWindowShouldClose(window, GL_TRUE);
       if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-	run = !run;
+ 	run = !run;
     }
   else
     {
@@ -392,6 +395,89 @@ void loadJsonState(std::string name )
   
 }
 */
+
+bool doAction(std::string name, std::string parameters)
+{
+  std::vector<std::string> parValues = tokenize(parameters, ' ');
+  pddlTreeNode* action = root.search(":action",name+".*").front();
+  pddlTreeNode* r2 = action->search(":parameters", ".*").front();
+  pddlTreeNode* init = root.search(":init", ".*").front();
+  
+  std::vector<std::string> parNames;
+  for (auto n1: r2->children)
+    {
+      parNames.push_back(n1.data);
+    };
+  pddlTreeNode* preconditions = action->search(":precondition",".*").front()->search("and",".*").front();
+ 
+  for (auto n2: preconditions->children)
+    {
+      std::string s1 = n2.flattenChildren();
+      
+      for (int i=0; i<parNames.size();i++)
+	{
+	  replaceSubstrs(s1,parNames[i],parValues[i]);
+	};
+
+      debug_log().AddLog(s1.c_str());
+      debug_log().AddLog("\n");
+      
+      debug_log().AddLog(n2.data.c_str());
+      debug_log().AddLog("\n");
+
+      s1 = s1 + ".*";
+      
+      if (init->search(n2.data,s1).size()==0)
+	{
+	   debug_log().AddLog("preconditions not satisfied");
+	  return false;
+	}
+
+      //all preconditions met
+      vector<pddlTreeNode> effects =  action->search(":effect").front()->children[0].children; // and
+      for (auto n1 : effects)
+	{
+	  if (n1.data == "not") //remove effects from state
+	    {
+	      pddlTreeNode n2 = n1.children[0];
+			
+		  string effectName = n2.data;
+
+		  string effectParameters = n2.flattenChildren();
+
+		  for (int i = 0; i<parNames.size(); i++)
+		  {
+			  replaceSubstrs(effectParameters, parNames[i], parValues[i]);
+		  };
+		  effectParameters.append(".*");
+
+
+		  for (auto it = init->children.begin(); it != init->children.end(); it++)
+		  {
+			  vector<pddlTreeNode*> n3 = it->search(effectName, effectParameters);
+			  if (n3.size() > 0)
+			  {
+			    init->children.erase(it);
+				break;
+			  }
+		}
+	    }
+	  else //add effects to state
+	    {
+		  init->insert_back(pddlTreeNode(n1.data));
+		  for (int i = 0; i < parValues.size(); i++)
+		  {
+			  init->children.back().insert_back(pddlTreeNode(parValues[i]));
+		  }
+		  
+	    }
+	}
+      
+    };
+  
+  return true;
+  
+}
 
 
 std::string loadState(std::string fileName )
@@ -467,7 +553,8 @@ std::string loadState(std::string fileName )
   
   for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
     {
-      if (*t1 == "(")
+
+      if ((*t1 == "("))
 	{
 	  curNode->insert_back(pddlTreeNode(*(t1+1)));
 	  t1++;
@@ -513,27 +600,36 @@ std::string loadState(std::string fileName )
 	pddlTreeNode* cn = root.search(":init",".*").front();
 
 	for (int i=-xm+1;i<xp-1;i++)
-		for (int j=-ym+1;j<yp-1;j++)
+	  for (int j=-ym+1;j<yp-1;j++)
+	    {
+	      if (path_map->walkable[path_map->at(i, j)])
 		{
-			if (path_map->walkable[path_map->at(i, j)])
-			{
-				if (path_map->walkable[path_map->at(i-1, j)])
-				{
-					pddlTreeNode tn = pddlTreeNode("con");
+		  for (int k=-1; k<2; k++)
+		    for (int l=-1;l<2;l++)
+		      if (k!=l)
+			  if (path_map->walkable[path_map->at(i+k, j+l)])
+			    {
+			      pddlTreeNode tn = pddlTreeNode("con");
+					
+			      char ss1[50];
+			      sprintf ( ss1, "loc_%d_%d", i,j );
+			      tn.insert_back(pddlTreeNode(ss1));
+				      
+			      sprintf ( ss1, "loc_%d_%d", i+k,j+l );
+			      tn.insert_back(pddlTreeNode(ss1));
+				      
+			      /*
+				char ss2[50];
+				sprintf ( ss2, "loc_%d_%d", i,j );
+				tn.insert_back(pddlTreeNode(ss2));
+			      */
 
-					char ss1[50];
-					sprintf ( ss1, "loc_%d_%d", i-1,j );
-					tn.insert_back(pddlTreeNode(ss1));
-
-					char ss2[50];
-					sprintf ( ss2, "loc_%d_%d", i,j );
-					tn.insert_back(pddlTreeNode(ss2));
-
-					cn->insert_back(tn);
-				}
-
-			}
+			      cn->insert_back(tn);
+			    }
+			
 		}
+
+	    }
 
 
   //std::vector<pddlTreeNode*> r1 =  root.search("at","agent0");
@@ -616,10 +712,7 @@ void sInterface() {
 	/*
     ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
 
-	if (ImGui::Button("Load"))
-	{t
-		state = loadState("city.problem");
-	};
+
 */
 	static char str0[128] = "city";
 	ImGui::InputText("node", str0, IM_ARRAYSIZE(str0));
@@ -630,34 +723,26 @@ void sInterface() {
 	if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
 	  ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
+	static std::vector<pddlTreeNode*> s_res;
 
-    std::vector<pddlTreeNode*> s_res = root.search(std::string(str0),std::string(str1));
-
+	if (ImGui::Button("Load"))
+	{       
+	  s_res  = root.search(std::string(str0),std::string(str1));
+	};
 	for (auto r1:s_res){
-		visitNodes(r1);
+	  visitNodes(r1);
 	}
-
 	ImGui::End();
 
 
-  /*
-  stack.clear();
-  stack.push_back(&root);
-        
-  while (stack.size()>0)
-    {
-      curNode = stack.back();
-      stack.pop_back();
-      
-      for (auto it1 = curNode->children.begin(); it1 != curNode->children.end(); it1++)
-	{
-	  stack.insert(stack.begin(),&(*it1));
-	}
-      debug_log().AddLog(curNode->data.c_str());
-      debug_log().AddLog("\n");    
-    }
-  */
+	ImGui::Begin("Test actions");
+	if (ImGui::Button("Move"))
+	  {
+	    doAction("move","agent0 loc_1_1 loc_2_1");
+	  }
+	ImGui::End();
 
+	
 };
 
 
@@ -1019,7 +1104,7 @@ int main(int argc, char *argv[])
 	debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
 	*/
 	
-	location_t dude_position {0,0};
+	location_t dude_position {5,5};
 	location_t destination {4,5};
 
 

@@ -2,11 +2,23 @@
 	(problem city_problem)
 	(:domain city_domain)
 	(:objects 
-		agent0 - agent agent1 - agent agent2 - agent
-		)
+		agent0 - agent )
 	(:init
-		(at agent0 10 0)
-		(at agent1 2 2)
-		(at agent2 5 5)
+		(at agent0 loc_1_1)
 		)
-	(:goal ))
+	(:action move
+		 (:parameters ?agent ?from ?to)
+		 (:precondition (and
+		 	       (at ?agent ?from)
+			       (con ?from ?to)
+			       )
+	         )
+		(:effect (and
+			(at ?agent ?to)
+			(not (at ?agent ?from))
+			)
+		)
+	)
+
+(:goal )
+)
