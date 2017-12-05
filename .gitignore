@@ -11,3 +11,5 @@
 /ogl1~
 /ogl2
 /ogl2~
+*.ini
+imgui.ini

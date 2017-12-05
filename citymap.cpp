@@ -65,15 +65,9 @@ polygon singlePolygon;
 
 int xm,xp,ym,yp;
 
-<<<<<<< HEAD
-map_t* map;
-
-
-=======
 
 map_t* path_map;
 
->>>>>>> a1663b456210d08064f8980c1e035b4f14cce44b
 
 bool drawGrid = true;
 bool drawBlockedCells = false;
