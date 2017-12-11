@@ -17,19 +17,53 @@ data = initData;
 }
 
 
+
+pddlTreeNode* pddlTreeNode::findFirstExact(std::string  name, std::string filter)
+{
+    std::vector<pddlTreeNode* > stack;
+    stack.push_back(this);
+    pddlTreeNode* cn;
+
+    while (stack.size()>0)
+    {
+        cn = stack.back();
+        stack.pop_back();
+
+        std::string wholeString;
+
+        for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
+        {
+            stack.insert(stack.begin(), &(*it1));
+            wholeString.append(it1->data);
+            wholeString.append(" ");
+        }
+
+	wholeString.pop_back();
+
+	
+        if ((cn->data == name) && (wholeString == filter))
+        {
+            return cn;
+        }
+    }
+    return NULL;
+
+}
+
+
 pddlTreeNode* pddlTreeNode::findFirst(std::string  name, std::string filter)
 {
     const std::regex rn(name);
     const std::regex rf(filter);
 
     if (filter==".*")
-        return findFirstName(rn);
+        return findFirstName(name);
     else
         return findFirstRegex(rn, rf);
 }
 
 
-pddlTreeNode* pddlTreeNode::findFirstName(std::regex rn)
+pddlTreeNode* pddlTreeNode::findFirstName(std::string name)
 {
     std::vector<pddlTreeNode* > stack;
     stack.push_back(this);
@@ -45,7 +79,7 @@ pddlTreeNode* pddlTreeNode::findFirstName(std::regex rn)
             stack.insert(stack.begin(), &(*it1));
         }
 
-        if (std::regex_match(cn->data, rn))
+        if (cn->data == name)
         {
             return cn;
         }
@@ -108,6 +142,8 @@ std::vector<pddlTreeNode*> pddlTreeNode::searchRegex (std::regex rn, std::regex 
             wholeString.append(it1->data);
             wholeString.append(" ");
         }
+	wholeString.pop_back();
+
         if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
         {
             result.push_back(cn);
@@ -124,6 +160,9 @@ std::string pddlTreeNode::flattenChildren()
         result.append(n1.data);
         result.append(" ");
     };
+
+    //result.erase(result.find_last_not_of(" \n\r\t")+1);
+    result.pop_back();
     return result;
 };
 

@@ -26,8 +26,10 @@ struct pddlTreeNode
 
   pddlTreeNode* findFirstRegex(std::regex rn, std::regex rf);
 
-  pddlTreeNode* findFirstName(std::regex rn);
+  pddlTreeNode* findFirstName(std::string name);
 
+  pddlTreeNode* findFirstExact(std::string  name, std::string filter);
+  
   std::vector<pddlTreeNode*> search (std::string  name, std::string filter = ".*");
 
   

@@ -420,15 +420,15 @@ bool doAction(std::string name, std::string parameters)
 {
     std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
     pddlTreeNode* action = root.findFirst(":action",name+".*");
-    pddlTreeNode* r2 = action->findFirst(":parameters");
-    pddlTreeNode* init = root.findFirst(":init");
+    pddlTreeNode* r2 = action->findFirstName(":parameters");
+    pddlTreeNode* init = root.findFirstName(":init");
 
     std::vector<std::string> parNames;
     for (auto n1: r2->children)
     {
         parNames.push_back(n1.data);
     };
-    pddlTreeNode* preconditions = action->search(":precondition",".*").front()->search("and",".*").front();
+    pddlTreeNode* preconditions = action->findFirstName(":precondition")->findFirstName("and");
 
     for (auto n2: preconditions->children) {
         std::string s1 = n2.flattenChildren();
@@ -437,21 +437,22 @@ bool doAction(std::string name, std::string parameters)
             utils::replaceSubstrs(s1, parNames[i], parValues[i]);
         };
 
-        debug_log().AddLog(s1.c_str());
-        debug_log().AddLog("\n");
+        debug_log().AddLog(s1);
+        //debug_log().AddLog("\n");
 
-        debug_log().AddLog(n2.data.c_str());
-        debug_log().AddLog("\n");
+        debug_log().AddLog(n2.data);
+        //debug_log().AddLog("\n");
 
-        s1 = s1 + ".*";
+        //s1 = s1 + ".*";
 
-        if (init->search(n2.data, s1).size() == 0) {
+        //if (init->search(n2.data, s1).size() == 0) {
+	if (init->findFirstExact(n2.data, s1) == NULL) {
             debug_log().AddLog("preconditions not satisfied");
             return false;
         }
     }
     //all preconditions met
-    vector<pddlTreeNode> effects =  action->search(":effect").front()->children[0].children; // and
+    vector<pddlTreeNode> effects =  action->findFirstName(":effect")->children[0].children; // and
     for (auto n1 : effects)
     {
         if (n1.data == "not") //remove effects from state
@@ -466,12 +467,12 @@ bool doAction(std::string name, std::string parameters)
             {
                 utils::replaceSubstrs(effectParameters, parNames[i], parValues[i]);
             };
-            effectParameters.append(".*");
+            //effectParameters.append(".*");
 
 
             for (auto it = init->children.begin(); it != init->children.end(); it++)
             {
-                pddlTreeNode* n3 = it->findFirst(effectName, effectParameters);
+                pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
                 if (n3 != NULL)
                 {
                     init->children.erase(it);
