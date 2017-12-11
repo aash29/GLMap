@@ -36,6 +36,4 @@ void drawQuad(shaderData sh, float posx, float posy);
 extern float angleNorth;
 
 
-
-
 #endif

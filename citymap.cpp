@@ -42,6 +42,8 @@
 #include "utils.hpp"
 #include "agent.h"
 
+#include <unordered_set>
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 using namespace std;
@@ -64,6 +66,7 @@ std::string selected;
 shaderData lineSh;
 
 std::string state;
+std::unordered_set<string> setState;
 
 polygon singlePolygon;
 
@@ -74,7 +77,7 @@ map_t* path_map;
 
 
 bool drawGrid = true;
-bool drawBlockedCells = false;
+bool drawBlockedCells = true;
 
 char* text;
 int stateSize;
@@ -416,12 +419,31 @@ void loadJsonState(std::string name )
 }
 */
 
+std::unordered_set<string> hashState()
+{
+
+  std::unordered_set<string> result;
+  
+  pddlTreeNode* init = root.findFirstName(":init");
+  for (pddlTreeNode p1: init->children)
+    {
+      result.insert(p1.flattenChildren());
+    }
+  
+}
+
+
 bool doAction(std::string name, std::string parameters)
 {
-    std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-    pddlTreeNode* action = root.findFirst(":action",name+".*");
-    pddlTreeNode* r2 = action->findFirstName(":parameters");
-    pddlTreeNode* init = root.findFirstName(":init");
+
+
+  using milli = std::chrono::milliseconds;
+  auto start = std::chrono::high_resolution_clock::now();
+  
+  std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
+  pddlTreeNode* action = root.findFirst(":action",name+".*");
+  pddlTreeNode* r2 = action->findFirstName(":parameters");
+  pddlTreeNode* init = root.findFirstName(":init");
 
     std::vector<std::string> parNames;
     for (auto n1: r2->children)
@@ -446,10 +468,22 @@ bool doAction(std::string name, std::string parameters)
         //s1 = s1 + ".*";
 
         //if (init->search(n2.data, s1).size() == 0) {
+
+	
+	auto n3 = setState.find(n2.data+s1);
+
+	if (n3==setState.end())
+	  {
+	    debug_log().AddLog("preconditions not satisfied");
+            return false;
+	  }
+
+	/*
 	if (init->findFirstExact(n2.data, s1) == NULL) {
             debug_log().AddLog("preconditions not satisfied");
             return false;
         }
+	*/
     }
     //all preconditions met
     vector<pddlTreeNode> effects =  action->findFirstName(":effect")->children[0].children; // and
@@ -470,15 +504,32 @@ bool doAction(std::string name, std::string parameters)
             //effectParameters.append(".*");
 
 
+	    auto n3 = setState.find(effectName+effectParameters);
+
+	    if (n3!=setState.end())
+	      {
+		setState.erase(n3);
+		
+		pddlTreeNode* n3 = init->findFirstExact(effectName, effectParameters);
+	      }
+	    /*	    
             for (auto it = init->children.begin(); it != init->children.end(); it++)
             {
-                pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
+	      //pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
+	      
+		
                 if (n3 != NULL)
                 {
                     init->children.erase(it);
                     break;
                 }
+
+		
+
+		
             }
+
+	    */
         }
         else //add effects to state
         {
@@ -503,6 +554,10 @@ bool doAction(std::string name, std::string parameters)
         }
 
     };
+
+    auto finish = std::chrono::high_resolution_clock::now();
+
+    debug_log().AddLog("time taken:%g",std::chrono::duration_cast<milli>(finish - start).count());
 
     return true;
 
@@ -1062,7 +1117,8 @@ int main(int argc, char *argv[])
     }
 
     state = loadState("city.problem");
-
+    setState = hashState();
+    
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
     /*
     debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
