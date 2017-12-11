@@ -18,6 +18,34 @@ data = initData;
 
 
 
+pddlTreeNode* pddlTreeNode::findFirstExact1stChild(std::string  name, std::string filter)
+{
+	std::vector<pddlTreeNode* > stack;
+	stack.push_back(this);
+	pddlTreeNode* cn;
+
+	while (stack.size()>0)
+	{
+		cn = stack.back();
+		stack.pop_back();
+
+
+		for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
+		{
+			stack.insert(stack.begin(), &(*it1));
+		}
+
+		if (cn->children.size()>0)
+
+			if ((cn->data == name) && (cn->children[0].data == filter))
+			{
+				return cn;
+			}
+		}
+	return NULL;
+}
+
+
 pddlTreeNode* pddlTreeNode::findFirstExact(std::string  name, std::string filter)
 {
     std::vector<pddlTreeNode* > stack;
@@ -38,7 +66,8 @@ pddlTreeNode* pddlTreeNode::findFirstExact(std::string  name, std::string filter
             wholeString.append(" ");
         }
 
-	wholeString.pop_back();
+		if (!wholeString.empty())
+			wholeString.pop_back();
 
 	
         if ((cn->data == name) && (wholeString == filter))
@@ -142,7 +171,8 @@ std::vector<pddlTreeNode*> pddlTreeNode::searchRegex (std::regex rn, std::regex 
             wholeString.append(it1->data);
             wholeString.append(" ");
         }
-	wholeString.pop_back();
+	if (!wholeString.empty())
+		wholeString.pop_back();
 
         if (std::regex_match(cn->data, rn) && std::regex_match(wholeString, rf))
         {

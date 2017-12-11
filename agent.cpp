@@ -4,12 +4,13 @@
 
 #include "agent.h"
 #include "utils.hpp"
+#include <sstream>
 
 using namespace std;
 
 void agent::getAgentPos(pddlTreeNode* state)
 {
-    pddlTreeNode* pos = state->findFirst("at",id+".*");
+    pddlTreeNode* pos = state->findFirstExact1stChild("at",id);
 
     string loc = pos->children[1].data;
 

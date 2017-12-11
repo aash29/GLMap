@@ -28,6 +28,8 @@ struct pddlTreeNode
 
   pddlTreeNode* findFirstName(std::string name);
 
+  pddlTreeNode* findFirstExact1stChild(std::string  name, std::string filter);
+
   pddlTreeNode* findFirstExact(std::string  name, std::string filter);
   
   std::vector<pddlTreeNode*> search (std::string  name, std::string filter = ".*");

@@ -50,6 +50,7 @@ using namespace std;
 
 
 pddlTreeNode root("city");
+pddlTreeNode* init;
 
 //Camera g_camera;
 
@@ -427,23 +428,23 @@ std::unordered_set<string> hashState()
   pddlTreeNode* init = root.findFirstName(":init");
   for (pddlTreeNode p1: init->children)
     {
-      result.insert(p1.flattenChildren());
+      result.insert(p1.data +" "+ p1.flattenChildren());
     }
+  return result;
   
 }
 
 
 bool doAction(std::string name, std::string parameters)
 {
-
-
   using milli = std::chrono::milliseconds;
   auto start = std::chrono::high_resolution_clock::now();
   
   std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-  pddlTreeNode* action = root.findFirst(":action",name+".*");
+  //pddlTreeNode* action = root.findFirst(":action",name+".*");
+  pddlTreeNode* action = root.findFirstName(":action");
   pddlTreeNode* r2 = action->findFirstName(":parameters");
-  pddlTreeNode* init = root.findFirstName(":init");
+
 
     std::vector<std::string> parNames;
     for (auto n1: r2->children)
@@ -470,7 +471,7 @@ bool doAction(std::string name, std::string parameters)
         //if (init->search(n2.data, s1).size() == 0) {
 
 	
-	auto n3 = setState.find(n2.data+s1);
+	auto n3 = setState.find(n2.data+" "+s1);
 
 	if (n3==setState.end())
 	  {
@@ -504,60 +505,52 @@ bool doAction(std::string name, std::string parameters)
             //effectParameters.append(".*");
 
 
-	    auto n3 = setState.find(effectName+effectParameters);
+	    auto n3 = setState.find(effectName+" "+effectParameters);
 
-	    if (n3!=setState.end())
-	      {
-		setState.erase(n3);
-		
-		pddlTreeNode* n3 = init->findFirstExact(effectName, effectParameters);
-	      }
-	    /*	    
-            for (auto it = init->children.begin(); it != init->children.end(); it++)
-            {
-	      //pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
-	      
-		
-                if (n3 != NULL)
-                {
-                    init->children.erase(it);
-                    break;
-                }
+			if (n3!=setState.end())
+			{
+	    		setState.erase(n3);
 
+				for (auto it = init->children.begin(); it != init->children.end(); it++)
+				{
+					std::string s1 = it->flattenChildren();
+					if ((it->data == effectName) && (s1 == effectParameters))
+					{
+						init->children.erase(it);
+						break;
+					}
+					//pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
+				}
+			  }
+	    	    
 		
 
 		
-            }
-
-	    */
-        }
-        else //add effects to state
+		}
+			else //add effects to state
         {
             init->insert_back(pddlTreeNode(n1.data));
 
-
+			string s2;
             for (pddlTreeNode n2 : n1.children) {
                 string s1 = n2.data;
                 for (int i = 0; i < parNames.size(); i++) {
                     utils::replaceSubstrs(s1, parNames[i], parValues[i]);
                 };
                 init->children.back().insert_back(pddlTreeNode(s1));
+				s2.append(" ");
+				s2.append(s1);
                 debug_log().AddLog(s1);
-                //debug_log().AddLog("\n");
             }
-            /*for (int i = 0; i < parValues.size(); i++)
-            {
-            init->children.back().insert_back(pddlTreeNode(parValues[i]));
-          }
-            */
 
+			setState.insert(n1.data + s2);
         }
 
     };
 
     auto finish = std::chrono::high_resolution_clock::now();
 
-    debug_log().AddLog("time taken:%g",std::chrono::duration_cast<milli>(finish - start).count());
+    debug_log().AddLog("time taken:%d",std::chrono::duration_cast<milli>(finish - start).count());
 
     return true;
 
@@ -817,7 +810,7 @@ void moveAgent(int dx, int dy)
     s1+= "loc_" + to_string(agent0.x+dx) +"_"+to_string(agent0.y+dy);
     doAction("move", s1);
 
-    agent0.getAgentPos(root.findFirst(":init"));
+    agent0.getAgentPos(init);
 };
 
 
@@ -1118,6 +1111,8 @@ int main(int argc, char *argv[])
 
     state = loadState("city.problem");
     setState = hashState();
+
+	init = root.findFirstName(":init");
     
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
     /*
@@ -1140,7 +1135,7 @@ int main(int argc, char *argv[])
     }
 
 
-    agent0.getAgentPos(&root);
+    agent0.getAgentPos(init);
 
 
     while (!glfwWindowShouldClose(window))
