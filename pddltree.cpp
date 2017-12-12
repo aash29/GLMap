@@ -122,6 +122,7 @@ pddlTreeNode* pddlTreeNode::findFirstName(std::string name)
 {
     std::vector<pddlTreeNode* > stack;
     stack.push_back(this);
+
     pddlTreeNode* cn;
 
     while (stack.size()>0)
@@ -131,7 +132,8 @@ pddlTreeNode* pddlTreeNode::findFirstName(std::string name)
 
         for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
         {
-            stack.insert(stack.begin(), &(*it1));
+	  //stack.insert(stack.begin(), &(*it1));
+	  stack.push_back(&(*it1));
         }
 
         if (cn->data == name)
@@ -146,6 +148,7 @@ pddlTreeNode* pddlTreeNode::findFirstRegex(std::regex rn, std::regex rf)
 {
     std::vector<pddlTreeNode* > stack;
     stack.push_back(this);
+    
     pddlTreeNode* cn;
 
     while (stack.size()>0)
@@ -157,7 +160,7 @@ pddlTreeNode* pddlTreeNode::findFirstRegex(std::regex rn, std::regex rf)
 
         for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
         {
-            stack.insert(stack.begin(), &(*it1));
+	    stack.push_back(&(*it1));
             wholeString.append(it1->data);
             wholeString.append(" ");
         }

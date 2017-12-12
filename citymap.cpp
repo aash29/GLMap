@@ -44,6 +44,8 @@
 
 #include <unordered_set>
 
+#include <gperftools/profiler.h>
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
 using namespace std;
@@ -437,6 +439,7 @@ std::unordered_set<string> hashState()
 
 bool doAction(std::string name, std::string parameters)
 {
+  
   using milli = std::chrono::milliseconds;
   auto start = std::chrono::high_resolution_clock::now();
   
@@ -510,7 +513,6 @@ bool doAction(std::string name, std::string parameters)
 			if (n3!=setState.end())
 			{
 	    		setState.erase(n3);
-
 				for (auto it = init->children.begin(); it != init->children.end(); it++)
 				{
 					std::string s1 = it->flattenChildren();
@@ -640,7 +642,6 @@ std::string loadState(std::string fileName )
 
     std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
 
-
     for (int i=-xm;i<xp;i++)
         for (int j=-ym;j<yp;j++)
         {
@@ -649,9 +650,10 @@ std::string loadState(std::string fileName )
             r1.front()->insert_back(pddlTreeNode(ss1));
         }
 
+    init = root.findFirstName(":init");
 
 
-    pddlTreeNode* cn = root.search(":init",".*").front();
+    pddlTreeNode* cn = init;
 
     for (int i=-xm+1;i<xp-1;i++)
         for (int j=-ym+1;j<yp-1;j++)
@@ -678,18 +680,6 @@ std::string loadState(std::string fileName )
             }
 
         }
-
-
-    //std::vector<pddlTreeNode*> r1 =  root.search("at","agent0");
-    /*
-    for (auto it1: r1)
-      {
-        debug_log().AddLog("\n");
-        debug_log().AddLog(it1->data.c_str());
-        debug_log().AddLog("\n");
-      }
-
-    */
     return stateOut;
 };
 
@@ -805,12 +795,16 @@ void sInterface() {
 
 void moveAgent(int dx, int dy)
 {
-    string s1 = "agent0 ";
-    s1+= "loc_" + to_string(agent0.x) +"_"+to_string(agent0.y)+ " ";
-    s1+= "loc_" + to_string(agent0.x+dx) +"_"+to_string(agent0.y+dy);
-    doAction("move", s1);
+  ProfilerStart("nameOfProfile.log");
+  
+  string s1 = "agent0 ";
+  s1+= "loc_" + to_string(agent0.x) +"_"+to_string(agent0.y)+ " ";
+  s1+= "loc_" + to_string(agent0.x+dx) +"_"+to_string(agent0.y+dy);
+  doAction("move", s1);
 
-    agent0.getAgentPos(init);
+  agent0.getAgentPos(init);
+
+  ProfilerStop();
 };
 
 
@@ -1100,7 +1094,7 @@ int main(int argc, char *argv[])
     {
         for (int j = -ym; j < yp; j++)
         {
-            if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, i*g_camera.gridSize, j*g_camera.gridSize)>0)
+	  if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0)
             {
                 debug_log().AddLog("hit \n");
                 path_map->walkable[path_map->at(i, j)] = false;
@@ -1112,7 +1106,6 @@ int main(int argc, char *argv[])
     state = loadState("city.problem");
     setState = hashState();
 
-	init = root.findFirstName(":init");
     
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
     /*
@@ -1194,7 +1187,7 @@ int main(int argc, char *argv[])
                     for (int j = -ym; j < yp; j++)
                     {
                         if (!path_map->walkable[path_map->at(i, j)]) {
-                            drawQuad(quadSh, i+1/2, j+1/2);
+                            drawQuad(quadSh, i+0.5f, j+0.5f);
                         }
                     }
                 };
