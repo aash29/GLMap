@@ -441,8 +441,8 @@ bool doAction(std::string name, std::string parameters)
   auto start = std::chrono::high_resolution_clock::now();
   
   std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-  //pddlTreeNode* action = root.findFirst(":action",name+".*");
-  pddlTreeNode* action = root.findFirstName(":action");
+  pddlTreeNode* action = root.findFirst(":action",name+".*");
+  //pddlTreeNode* action = root.findFirstName(":action");
   pddlTreeNode* r2 = action->findFirstName(":parameters");
 
 
@@ -898,8 +898,8 @@ int main(int argc, char *argv[])
     //g_camera.m_span = (xmax-xmin)/2;
     g_camera.m_span = 0.5f;
 
-    g_camera.m_center.x = 0.1f;
-    g_camera.m_center.y = 0.8f;
+    g_camera.m_center.x = 0.8f;
+    g_camera.m_center.y = 0.0f;
 
 
     window = glfwCreateWindow(width, height, "logistics", NULL, NULL);

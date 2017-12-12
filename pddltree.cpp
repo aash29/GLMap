@@ -18,6 +18,30 @@ data = initData;
 
 
 
+
+pddlTreeNode* traverseTree(pddlTreeNode* cn, std::string  name, std::string filter)
+{
+	pddlTreeNode* result = NULL;
+
+	if (cn->children.size()>0)
+		if ((cn->data == name) && (cn->children[0].data == filter))
+		{
+			return cn;
+		}
+
+		for (std::vector<pddlTreeNode>::iterator child = cn->children.begin(); child != cn->children.end(); child++)
+		{
+			result = traverseTree(&(*child),name,filter);
+			if (result != NULL)
+				return result;
+		}
+
+		return result;
+
+}
+
+
+
 pddlTreeNode* pddlTreeNode::findFirstExact1stChild(std::string  name, std::string filter)
 {
 	std::vector<pddlTreeNode* > stack;
@@ -44,6 +68,8 @@ pddlTreeNode* pddlTreeNode::findFirstExact1stChild(std::string  name, std::strin
 		}
 	return NULL;
 }
+
+
 
 
 pddlTreeNode* pddlTreeNode::findFirstExact(std::string  name, std::string filter)
@@ -210,4 +236,6 @@ void visitNodes(pddlTreeNode* node)
         ImGui::TreePop();
     }
 };
+
+
 

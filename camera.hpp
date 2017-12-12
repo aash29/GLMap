@@ -8,8 +8,8 @@
 
 struct Camera {
   Camera() {
-    m_center.x = 0.0f;
-    m_center.y = 0.0f;
+    m_center.x = 0.5f;
+    m_center.y = 0.5f;
     m_span = 1.0f;
     m_zoom = 1.0f;
     m_width = 1280;
@@ -28,7 +28,7 @@ struct Camera {
   int m_width;
   int m_height;
 
-  static constexpr float gridSize = 0.05f;
+  static constexpr float gridSize = 0.02f;
   
 };
 extern Camera g_camera;

@@ -8,9 +8,9 @@
 
 using namespace std;
 
-void agent::getAgentPos(pddlTreeNode* state)
+void agent::getAgentPos(pddlTreeNode* r1)
 {
-    pddlTreeNode* pos = state->findFirstExact1stChild("at",id);
+    pddlTreeNode* pos = traverseTree(r1,"at",id);
 
     string loc = pos->children[1].data;
 

@@ -34,13 +34,12 @@ struct pddlTreeNode
   
   std::vector<pddlTreeNode*> search (std::string  name, std::string filter = ".*");
 
-  
   std::vector<pddlTreeNode*> searchRegex (std::regex rn, std::regex rf);
   std::string flattenChildren();
 };
 
 
-
+pddlTreeNode* traverseTree(pddlTreeNode* cn, std::string  name, std::string filter);
 void visitNodes(pddlTreeNode* node);
 
 
