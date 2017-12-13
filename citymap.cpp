@@ -31,19 +31,15 @@
 #include "map.hpp"
 
 #include "tesselator.h"
-
 #include "path_impl.hpp"
 
 //#include "st_tree.h"
 
 #include "pddltree.hpp"
-
-
 #include "utils.hpp"
 #include "agent.h"
 
 #include <unordered_set>
-
 #include <gperftools/profiler.h>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -67,7 +63,6 @@ glm::vec2 selp;
 std::map<std::string, building> city;
 std::string selected;
 shaderData lineSh;
-
 std::string state;
 std::unordered_set<string> setState;
 
@@ -129,8 +124,6 @@ void poolFree( void* userData, void* ptr )
     TESS_NOTUSED(userData);
     TESS_NOTUSED(ptr);
 }
-
-
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
@@ -422,6 +415,8 @@ void loadJsonState(std::string name )
 }
 */
 
+
+
 std::unordered_set<string> hashState()
 {
 
@@ -684,6 +679,19 @@ std::string loadState(std::string fileName )
 };
 
 
+void endTurn() {
+  if (agent0.plan.size()>0)
+    {
+      action a1 = agent0.plan.front();
+      doAction(a1.name, a1.params);
+      
+      agent0.plan.erase(agent0.plan.begin());
+      
+      agent0.getAgentPos(init);
+
+    }
+}
+
 
 
 void sInterface() {
@@ -768,7 +776,7 @@ void sInterface() {
     {
         s_res  = root.search(std::string(str0),std::string(str1));
     };
-    for (auto r1:s_res){
+    for (auto r1 : s_res){
         visitNodes(r1);
     }
     ImGui::End();
@@ -787,6 +795,13 @@ void sInterface() {
     {
         doAction(actionName,actionParameters);
     }
+
+    if (ImGui::Button("End Turn"))
+    {
+      endTurn();
+    }
+
+
     ImGui::End();
 
 
@@ -795,7 +810,7 @@ void sInterface() {
 
 void moveAgent(int dx, int dy)
 {
-  ProfilerStart("nameOfProfile.log");
+  //ProfilerStart("nameOfProfile.log");
   
   string s1 = "agent0 ";
   s1+= "loc_" + to_string(agent0.x) +"_"+to_string(agent0.y)+ " ";
@@ -804,8 +819,9 @@ void moveAgent(int dx, int dy)
 
   agent0.getAgentPos(init);
 
-  ProfilerStop();
+  //ProfilerStop();
 };
+
 
 
 int main(int argc, char *argv[])
@@ -1114,7 +1130,7 @@ int main(int argc, char *argv[])
     debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
     */
 
-    location_t dude_position {5,5};
+    location_t dude_position {1,1};
     location_t destination {4,5};
 
 
@@ -1122,12 +1138,24 @@ int main(int argc, char *argv[])
     if (path->success)
     {
         debug_log().AddLog("path found \n");
+
+	location_t curPos = dude_position;
+	
         for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
-            debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+	  if (!(curPos==*p1))
+	    {
+	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+	      string s1 = "agent0 ";
+	      s1+= "loc_" + to_string(curPos.x) +"_"+to_string(curPos.y)+ " ";
+	      s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
+
+	      curPos = *p1;
+	      agent0.plan.push_back({"move", s1});
+	    }
         }
     }
-
-
+    
+    
     agent0.getAgentPos(init);
 
 

@@ -8,11 +8,18 @@
 #include <string>
 #include "pddltree.hpp"
 
+struct action {
+  std::string name;
+  std::string params;
+};
+
 class agent {
 public:
     int x;
     int y;
     std::string id;
+
+    std::vector<action> plan;
 
     void update();
 
