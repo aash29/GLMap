@@ -4,6 +4,10 @@
 	(:constants )
 	(:objects 
 		agent0 - agent food0 - food )
+	(:predicates
+		(at ?who ?loc)
+		(has ?who ?what)
+	)
 	(:init
 		(at agent0 loc_1_1)
 		(at food0 loc_1_1)
@@ -16,8 +20,15 @@
 			       )
 	         )
 		(:effect (and
-			(at ?agent ?to)
-			(not (at ?agent ?from))
+				(at ?agent ?to)
+				(not (at ?agent ?from))
+				(forall (?x)
+					(when (and (has ?agent ?x))
+					      (and (not (at ?x ?from))
+					      	   (at ?x to)
+					      )
+					)
+				)
 			)
 		)
 	)

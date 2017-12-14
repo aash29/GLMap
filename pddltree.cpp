@@ -87,7 +87,7 @@ pddlTreeNode* pddlTreeNode::findFirstExact(std::string  name, std::string filter
 
         for (auto it1 = cn->children.begin(); it1 != cn->children.end(); it1++)
         {
-            stack.insert(stack.begin(), &(*it1));
+            stack.push_back(&(*it1));
             wholeString.append(it1->data);
             wholeString.append(" ");
         }

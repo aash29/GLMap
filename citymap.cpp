@@ -432,6 +432,40 @@ std::unordered_set<string> hashState()
 }
 
 
+
+bool doConcreteAction (vector<string> precond, vector<string> peff, vector<string> neff, vector<string> qeff)
+{
+
+  for (string p1 : precond)
+    {
+      auto n3 = setState.find(p1);
+  
+      if (n3==setState.end())
+	  {
+	    debug_log().AddLog("preconditions not satisfied");
+            return false;
+	  }
+    }
+
+  for (auto e1 : peff)
+    {
+
+      setState.insert(e1);
+      vector<string> s1 = utils::tokenize(e1,' ');
+      init->insert_back(pddlTreeNode(s1[0]));
+      
+
+      
+      for (int i = 1; i<s1.size();i++) {
+	init->children.back().insert_back(pddlTreeNode(s1[i]));
+      }
+      
+    }
+  
+  
+  
+}
+
 bool doAction(std::string name, std::string parameters)
 {
   
@@ -459,10 +493,8 @@ bool doAction(std::string name, std::string parameters)
         };
 
         debug_log().AddLog(s1);
-        //debug_log().AddLog("\n");
 
         debug_log().AddLog(n2.data);
-        //debug_log().AddLog("\n");
 
         //s1 = s1 + ".*";
 
@@ -476,18 +508,26 @@ bool doAction(std::string name, std::string parameters)
 	    debug_log().AddLog("preconditions not satisfied");
             return false;
 	  }
-
+	
 	/*
 	if (init->findFirstExact(n2.data, s1) == NULL) {
             debug_log().AddLog("preconditions not satisfied");
             return false;
         }
 	*/
+	
     }
     //all preconditions met
-    vector<pddlTreeNode> effects =  action->findFirstName(":effect")->children[0].children; // and
+    vector<pddlTreeNode> effects =  action->findFirstName(":effect")->children[0].children; // "and"
     for (auto n1 : effects)
     {
+
+      if (n1.data == "forall")
+	{
+	  
+	}
+      
+      
         if (n1.data == "not") //remove effects from state
         {
             pddlTreeNode n2 = n1.children[0];
@@ -518,16 +558,12 @@ bool doAction(std::string name, std::string parameters)
 					}
 					//pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
 				}
-			  }
-	    	    
-		
-
-		
-		}
-			else //add effects to state
-        {
+			}
+	}
+	else //add effects to state
+	  {
             init->insert_back(pddlTreeNode(n1.data));
-
+	    
 			string s2;
             for (pddlTreeNode n2 : n1.children) {
                 string s1 = n2.data;
