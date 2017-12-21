@@ -22,13 +22,6 @@
 		(:effect (and
 				(at ?agent ?to)
 				(not (at ?agent ?from))
-				(forall (?x)
-					(when (and (has ?agent ?x))
-					      (and (not (at ?x ?from))
-					      	   (at ?x to)
-					      )
-					)
-				)
 			)
 		)
 	)

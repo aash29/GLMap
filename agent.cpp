@@ -6,26 +6,45 @@
 #include "utils.hpp"
 #include <sstream>
 
+
 using namespace std;
 
-void agent::getAgentPos(pddlTreeNode* r1)
+void agent::getAgentPos(unordered_set<string> setState)
 {
-    pddlTreeNode* pos = traverseTree(r1,"at",id);
+    
+	/*
+	pddlTreeNode* pos = traverseTree(r1,"at",id);
 
     string loc = pos->children[1].data;
 
     vector<string> coords = utils::tokenize(loc,'_');
+	*/
+
+	string agentName;
+	agentName = string("at") + " " + id;
+	string::size_type n = agentName.length();
+
+	for (string p1: setState)
+	{
+		string::size_type i = p1.find(agentName);
+		if (i != string::npos)
+		{
+			vector<string> words = utils::tokenize(p1, ' ');
 
 
-    std::stringstream ss1(coords[1]);
-    ss1 >> x;
-    std::stringstream ss2(coords[2]);
-    ss2 >> y;
+			vector<string> coords = utils::tokenize(words[2], '_');
+
+			x = std::stoi(coords[1]);
+			y = std::stoi(coords[2]);
+
+		}
+	}
+
 
 
 }
 
-actionPrefab::actionPrefab(pddlTreeNode* action)
+void actionPrefab::init(pddlTreeNode* action)
 {
 	pddlTreeNode* r2 = action->findFirstName(":parameters");
 
@@ -106,5 +125,16 @@ vector<string> actionPrefab::getPosEffects(string parameters)
 	std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
 
 	result = subsParams(posEffectsWithVars, parValues);
+	return result;
+}
+
+
+vector<string> actionPrefab::getNegEffects(string parameters)
+{
+	vector<string> result;
+
+	std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
+
+	result = subsParams(negEffectsWithVars, parValues);
 	return result;
 }

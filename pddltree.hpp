@@ -15,7 +15,7 @@ struct pddlTreeNode
   std::string data;
   std::vector <pddlTreeNode>  children;
 
-  void insert_back(pddlTreeNode n1);
+  pddlTreeNode* insert_back(pddlTreeNode n1);
 
   pddlTreeNode(char* initData);
 

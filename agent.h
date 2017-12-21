@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "pddltree.hpp"
+#include <unordered_set>
 
 using namespace std;
 
@@ -26,7 +27,7 @@ private:
 	vector<string> subsParams(vector<string> expr, vector<string> values);
 
 public :
-	actionPrefab(pddlTreeNode* action);
+	void init(pddlTreeNode* action);
 	vector<string> getPreconditions(string parameters);
 	vector<string> getPosEffects(string parameters);
 	vector<string> getNegEffects(string parameters);
@@ -45,7 +46,7 @@ public:
 
     void update();
 
-    void getAgentPos(pddlTreeNode* state);
+    void getAgentPos(unordered_set<string> setState);
 };
 
 

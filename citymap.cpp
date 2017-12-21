@@ -63,8 +63,14 @@ glm::vec2 selp;
 std::map<std::string, building> city;
 std::string selected;
 shaderData lineSh;
+
+
 std::string state;
 std::unordered_set<string> setState;
+std::unordered_set<string> constants;
+
+map<string, actionPrefab> actionPrefabs;
+
 
 polygon singlePolygon;
 
@@ -417,12 +423,12 @@ void loadJsonState(std::string name )
 
 
 
-std::unordered_set<string> hashState()
+std::unordered_set<string> hashState(string nodeName )
 {
 
   std::unordered_set<string> result;
   
-  pddlTreeNode* init = root.findFirstName(":init");
+  pddlTreeNode* init = root.findFirstName(nodeName);
   for (pddlTreeNode p1: init->children)
     {
       result.insert(p1.data +" "+ p1.flattenChildren());
@@ -469,86 +475,46 @@ bool doConcreteAction (vector<string> precond, vector<string> peff, vector<strin
 bool doAction(std::string name, std::string parameters)
 {
   
-  using milli = std::chrono::milliseconds;
+  using micro = std::chrono::microseconds;
   auto start = std::chrono::high_resolution_clock::now();
   
-  std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-  pddlTreeNode* action = root.findFirst(":action",name+".*");
+  //std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
+  //pddlTreeNode* action = root.findFirst(":action",name+".*");
   //pddlTreeNode* action = root.findFirstName(":action");
-  pddlTreeNode* r2 = action->findFirstName(":parameters");
+  //pddlTreeNode* r2 = action->findFirstName(":parameters");
 
+  actionPrefab a1 = actionPrefabs[name];
 
-    std::vector<std::string> parNames;
-    for (auto n1: r2->children)
-    {
-        parNames.push_back(n1.data);
-    };
-
-    pddlTreeNode* preconditions = action->findFirstName(":precondition")->findFirstName("and");
-
-    for (auto n2: preconditions->children) {
-        std::string s1 = n2.flattenChildren();
-
-        for (int i = 0; i < parNames.size(); i++) {
-            utils::replaceSubstrs(s1, parNames[i], parValues[i]);
-        };
-
-        debug_log().AddLog(s1);
-
-        debug_log().AddLog(n2.data);
-
-        //s1 = s1 + ".*";
-
-        //if (init->search(n2.data, s1).size() == 0) {
-
+  vector<string> groundedPreconditions = a1.getPreconditions(parameters);
 	
-	auto n3 = setState.find(n2.data+" "+s1);
+	
+  for (string p1: groundedPreconditions)
+  {
+	auto n3 = setState.find(p1);
+	auto n4 = constants.find(p1);
 
-	if (n3==setState.end())
+	if ((n3==setState.end()) && (n4 == constants.end()))
 	  {
 	    debug_log().AddLog("preconditions not satisfied");
             return false;
 	  }
 	
-	/*
-	if (init->findFirstExact(n2.data, s1) == NULL) {
-            debug_log().AddLog("preconditions not satisfied");
-            return false;
-        }
-	*/
-	
     }
     //all preconditions met
-    vector<pddlTreeNode> effects =  action->findFirstName(":effect")->children[0].children; // "and"
-    for (auto n1 : effects)
-    {
 
-      if (n1.data == "forall")
+  vector<string> grndPosEffect = a1.getPosEffects(parameters);
+  vector<string> grndNegEffect = a1.getNegEffects(parameters);
+
+	for (string e1: grndNegEffect)
 	{
-	  
-	}
-      
-      
-        if (n1.data == "not") //remove effects from state
-        {
-            pddlTreeNode n2 = n1.children[0];
 
-            string effectName = n2.data;
-
-            string effectParameters = n2.flattenChildren();
-
-            for (int i = 0; i<parNames.size(); i++)
-            {
-                utils::replaceSubstrs(effectParameters, parNames[i], parValues[i]);
-            };
-            //effectParameters.append(".*");
-
-
-	    auto n3 = setState.find(effectName+" "+effectParameters);
+	    auto n3 = setState.find(e1);
 
 			if (n3!=setState.end())
 			{
-	    		setState.erase(n3);
+	    		setState.erase(e1);
+
+				/*
 				for (auto it = init->children.begin(); it != init->children.end(); it++)
 				{
 					std::string s1 = it->flattenChildren();
@@ -559,11 +525,14 @@ bool doAction(std::string name, std::string parameters)
 					}
 					//pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
 				}
+				*/
 			}
 	}
-	else //add effects to state
-	  {
-            init->insert_back(pddlTreeNode(n1.data));
+
+	for (string e1 : grndPosEffect)
+	{
+		/*
+	           init->insert_back(pddlTreeNode(n1.data));
 	    
 			string s2;
             for (pddlTreeNode n2 : n1.children) {
@@ -576,15 +545,14 @@ bool doAction(std::string name, std::string parameters)
 				s2.append(s1);
                 debug_log().AddLog(s1);
             }
+			*/
 
-			setState.insert(n1.data + s2);
-        }
-
-    };
+			setState.insert(e1);
+     }
 
     auto finish = std::chrono::high_resolution_clock::now();
 
-    debug_log().AddLog("time taken:%d",std::chrono::duration_cast<milli>(finish - start).count());
+    debug_log().AddLog("time taken:%d",std::chrono::duration_cast<micro>(finish - start).count());
 
     return true;
 
@@ -684,8 +652,11 @@ std::string loadState(std::string fileName )
 
     init = root.findFirstName(":init");
 
+	pddlTreeNode* constNode = root.insert_back(pddlTreeNode(":constants"));
 
-    pddlTreeNode* cn = init;
+
+
+    pddlTreeNode* cn = constNode;
 
     for (int i=-xm+1;i<xp-1;i++)
         for (int j=-ym+1;j<yp-1;j++)
@@ -724,7 +695,7 @@ void endTurn() {
       
       agent0.plan.erase(agent0.plan.begin());
       
-      agent0.getAgentPos(init);
+      agent0.getAgentPos(setState);
 
     }
 }
@@ -854,7 +825,7 @@ void moveAgent(int dx, int dy)
   s1+= "loc_" + to_string(agent0.x+dx) +"_"+to_string(agent0.y+dy);
   doAction("move", s1);
 
-  agent0.getAgentPos(init);
+  agent0.getAgentPos(setState);
 
   //ProfilerStop();
 };
@@ -866,9 +837,9 @@ int main(int argc, char *argv[])
     //GLFWwindow* window;
     const GLFWvidmode* mode;
     int width,height,i,j;
-
-
     float t = 0.0f, pt = 0.0f;
+
+
     TESSalloc ma;
     TESStesselator* tess = 0;
     const int nvp = 3;
@@ -945,7 +916,7 @@ int main(int argc, char *argv[])
 
     g_camera.m_center.x = 0.8f;
     g_camera.m_center.y = 0.0f;
-
+	//GLFWwindow* window = glfwCreateWindow(640, 480, "My Title", glfwGetPrimaryMonitor(), NULL);
 
     window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
     if (!window) {
@@ -1155,12 +1126,13 @@ int main(int argc, char *argv[])
     }
 
     state = loadState("city.problem");
-    setState = hashState();
+    setState = hashState(":init");
+	constants = hashState(":constants");
 
-	map<string, actionPrefab> actionPrefabs;
 	
-	actionPrefab a1 = actionPrefab(root.findFirst(":action", "move.*"));
-	actionPrefabs.insert(pair<string, actionPrefab>("move", actionPrefab(root.findFirst(":action", "move.*"))));
+	static actionPrefab a1;
+	a1.init(root.findFirst(":action", "move.*"));
+	actionPrefabs.insert(pair<string, actionPrefab>("move", a1));
 
 	vector<string> s1 =a1.getPreconditions("agent0 loc-1-1 loc-1-2");
 
@@ -1199,7 +1171,7 @@ int main(int argc, char *argv[])
     }
     
     
-    agent0.getAgentPos(init);
+    agent0.getAgentPos(setState);
 
 
     while (!glfwWindowShouldClose(window))
@@ -1278,3 +1250,15 @@ int main(int argc, char *argv[])
     glfwTerminate();
     return 0;
 }
+
+
+/*
+(forall (?x)
+(when (and (has ?agent ?x))
+(and (not (at ?x ?from))
+(at ?x to)
+)
+)
+)
+*/
+

@@ -1,9 +1,10 @@
 
 #include "pddltree.hpp"
 
-void pddlTreeNode::insert_back(pddlTreeNode n1)
+pddlTreeNode* pddlTreeNode::insert_back(pddlTreeNode n1)
 {
     children.push_back(n1);
+	return &(children.back());
 }
 
 pddlTreeNode::pddlTreeNode(char* initData)
