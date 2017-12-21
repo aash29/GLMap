@@ -18,7 +18,7 @@ static void replaceSubstrs(string &s,
    string::size_type n = p.length();
 
    for (string::size_type i = s.find(p); i != string::npos; i = s.find(p))
-     s.replace(i,i+n,q);
+     s.replace(i,n,q);
 }
 
 static std::vector<std::string> tokenize (std::string s1, char sep)

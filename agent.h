@@ -6,12 +6,34 @@
 #define GLMAP_AGENT_H
 
 #include <string>
+#include <vector>
 #include "pddltree.hpp"
+
+using namespace std;
 
 struct action {
   std::string name;
   std::string params;
 };
+
+class actionPrefab {
+	string name;
+	vector<string> parNames;
+	vector<string> precondsWithVars;
+	vector<string> posEffectsWithVars;
+	vector<string> negEffectsWithVars;
+private:
+	vector<string> subsParams(vector<string> expr, vector<string> values);
+
+public :
+	actionPrefab(pddlTreeNode* action);
+	vector<string> getPreconditions(string parameters);
+	vector<string> getPosEffects(string parameters);
+	vector<string> getNegEffects(string parameters);
+};
+
+
+
 
 class agent {
 public:

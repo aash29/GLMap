@@ -40,7 +40,7 @@
 #include "agent.h"
 
 #include <unordered_set>
-#include <gperftools/profiler.h>
+//#include <gperftools/profiler.h>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 
@@ -483,6 +483,7 @@ bool doAction(std::string name, std::string parameters)
     {
         parNames.push_back(n1.data);
     };
+
     pddlTreeNode* preconditions = action->findFirstName(":precondition")->findFirstName("and");
 
     for (auto n2: preconditions->children) {
@@ -865,6 +866,8 @@ int main(int argc, char *argv[])
     //GLFWwindow* window;
     const GLFWvidmode* mode;
     int width,height,i,j;
+
+
     float t = 0.0f, pt = 0.0f;
     TESSalloc ma;
     TESStesselator* tess = 0;
@@ -881,10 +884,6 @@ int main(int argc, char *argv[])
     TESS_NOTUSED(argv);
 
     printf("loading...\n");
-    // Load assets
-    //bg = svgParseFromFile("F:\\cpp\\GLMap\\Bin\\bg2.svg");
-    //if (!bg) return -1;
-
 
     memset(&ma, 0, sizeof(ma));
     ma.memalloc = stdAlloc;
@@ -931,8 +930,8 @@ int main(int argc, char *argv[])
 
     mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-    width = mode->width - 40;
-    height = mode->height - 80;
+    width = mode->width;
+    height = mode->height;
 
 
     //width = 600;
@@ -1158,7 +1157,15 @@ int main(int argc, char *argv[])
     state = loadState("city.problem");
     setState = hashState();
 
-    
+	map<string, actionPrefab> actionPrefabs;
+	
+	actionPrefab a1 = actionPrefab(root.findFirst(":action", "move.*"));
+	actionPrefabs.insert(pair<string, actionPrefab>("move", actionPrefab(root.findFirst(":action", "move.*"))));
+
+	vector<string> s1 =a1.getPreconditions("agent0 loc-1-1 loc-1-2");
+
+	debug_log().AddLog(a1.getPreconditions("agent0 loc-1-1 loc-1-2")[0]);
+
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
     /*
     debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
