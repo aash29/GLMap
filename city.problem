@@ -11,6 +11,8 @@
 	)
 	(:init
 		(at agent0 loc_1_1)
+		(at agent1 loc_2_2)
+		(at agent2 loc_3_3)
 		(at food0 loc_1_1)
 		)
 	(:action move

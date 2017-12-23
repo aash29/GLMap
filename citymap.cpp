@@ -43,6 +43,7 @@
 //#include <gperftools/profiler.h>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
+#define strVec vector<string> 
 
 using namespace std;
 
@@ -70,6 +71,8 @@ std::unordered_set<string> setState;
 std::unordered_set<string> constants;
 
 map<string, actionPrefab> actionPrefabs;
+map <string, strVec> objects;
+map<string, agent> agents;
 
 
 polygon singlePolygon;
@@ -336,7 +339,7 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 //#define USE_POOL 1
 
 
-void moveAgent(int dx, int dy);
+void moveAgent(string id, int dx, int dy);
 int run = 1;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -353,19 +356,19 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
             run = !run;
         if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
         {
-            moveAgent(1,0);
+	  moveAgent("agent0",1,0);
         }
         if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
         {
-            moveAgent(-1,0);
+            moveAgent("agent0",-1,0);
         }
         if (key == GLFW_KEY_UP && action == GLFW_PRESS)
         {
-            moveAgent(0,1);
+            moveAgent("agent0",0,1);
         }
         if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         {
-            moveAgent(0,-1);
+            moveAgent("agent0",0,-1);
         }
 
 
@@ -643,8 +646,29 @@ std::string loadState(std::string fileName )
 
     pddlTreeNode* obj = root.findFirstName(":objects");
 
-    obj->children
-    
+
+    strVec currentType;
+    for (int i = 0; i< obj->children.size(); i++)
+      {
+	
+	if (obj->children[i].data=="-")
+	  {
+	    objects[obj->children[i+1].data].insert(objects[obj->children[i+1].data].begin(),currentType.begin(),currentType.end());
+	    currentType.clear();
+	    i++;
+	  }
+	else
+	  {
+	    currentType.push_back(obj->children[i].data);
+	  }
+      }
+
+    debug_log().AddLog("agents: \n");
+		       
+    for (string o1: objects["agent"])
+      {
+	debug_log().AddLog(o1);
+      }
     
     std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
 
@@ -822,16 +846,17 @@ void sInterface() {
 };
 
 
-void moveAgent(int dx, int dy)
+void moveAgent(string id, int dx, int dy)
 {
   //ProfilerStart("nameOfProfile.log");
   
-  string s1 = "agent0 ";
-  s1+= "loc_" + to_string(agent0.x) +"_"+to_string(agent0.y)+ " ";
-  s1+= "loc_" + to_string(agent0.x+dx) +"_"+to_string(agent0.y+dy);
+  string s1 = id+" ";
+  agent a0 = agents[id];
+  s1+= "loc_" + to_string(a0.x) +"_"+to_string(a0.y)+ " ";
+  s1+= "loc_" + to_string(a0.x+dx) +"_"+to_string(a0.y+dy);
   doAction("move", s1);
 
-  agent0.getAgentPos(setState);
+  agents[id].getAgentPos(setState);
 
   //ProfilerStop();
 };
@@ -1049,8 +1074,15 @@ int main(int argc, char *argv[])
 
     int x, y;
 
-    std::vector<std::string> agents;
-    agent0.id = "agent0";
+
+    for (string o1: objects["agents"])
+      {
+	agents.insert(std::pair<string, agent>(o1,agent()));
+        agents[o1].id = o1;
+      };
+	
+    
+    //agent0.id = "agent0";
 
 
     std::shared_ptr<navigation_path<location_t>> path;
@@ -1139,11 +1171,11 @@ int main(int argc, char *argv[])
 	static actionPrefab a1;
 	a1.init(root.findFirst(":action", "move.*"));
 	actionPrefabs.insert(pair<string, actionPrefab>("move", a1));
-
+	/*
 	vector<string> s1 =a1.getPreconditions("agent0 loc-1-1 loc-1-2");
 
 	debug_log().AddLog(a1.getPreconditions("agent0 loc-1-1 loc-1-2")[0]);
-
+	*/
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
     /*
     debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
@@ -1176,8 +1208,11 @@ int main(int argc, char *argv[])
         }
     }
     
-    
-    agent0.getAgentPos(setState);
+    for (auto a0: agents)
+      {
+	a0.second.getAgentPos(setState);
+      };
+    //agent0.getAgentPos(setState);
 
 
     while (!glfwWindowShouldClose(window))
@@ -1216,9 +1251,11 @@ int main(int argc, char *argv[])
 
 
 
-
-            texQuadDraw(texSh,agent0.x,agent0.y);
-            /*
+	    for (auto a0: agents)
+	      {
+		texQuadDraw(texSh,a0.second.x,a0.second.y);
+	      };
+		/*
               for (std::string s1 : agents){
 
                 getAgentPos(state, s1, x, y);

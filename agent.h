@@ -38,8 +38,8 @@ public :
 
 class agent {
 public:
-    int x;
-    int y;
+    int x = -1;
+    int y = -1;
     std::string id;
 
     std::vector<action> plan;
