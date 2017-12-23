@@ -1075,12 +1075,7 @@ int main(int argc, char *argv[])
     int x, y;
 
 
-    for (string o1: objects["agents"])
-      {
-	agents.insert(std::pair<string, agent>(o1,agent()));
-        agents[o1].id = o1;
-      };
-	
+
     
     //agent0.id = "agent0";
 
@@ -1167,6 +1162,14 @@ int main(int argc, char *argv[])
     setState = hashState(":init");
 	constants = hashState(":constants");
 
+
+	for (string o1 : objects["agent"])
+	{
+		agents.insert(std::pair<string, agent>(o1, agent()));
+		agents[o1].id = o1;
+	};
+
+
 	
 	static actionPrefab a1;
 	a1.init(root.findFirst(":action", "move.*"));
@@ -1177,11 +1180,7 @@ int main(int argc, char *argv[])
 	debug_log().AddLog(a1.getPreconditions("agent0 loc-1-1 loc-1-2")[0]);
 	*/
     debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
-    /*
-    debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
-    debug_log().AddLog("x=2,y=2, at(x,y)= %d \n", map.at(2,2));
-    debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
-    */
+  
 
     location_t dude_position {1,1};
     location_t destination {4,5};
@@ -1208,9 +1207,9 @@ int main(int argc, char *argv[])
         }
     }
     
-    for (auto a0: agents)
+    for (auto a0 = agents.begin(); a0!=agents.end();a0++)
       {
-	a0.second.getAgentPos(setState);
+		a0->second.getAgentPos(setState);
       };
     //agent0.getAgentPos(setState);
 
