@@ -640,6 +640,12 @@ std::string loadState(std::string fileName )
         }
     }
 
+
+    pddlTreeNode* obj = root.findFirstName(":objects");
+
+    obj->children
+    
+    
     std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
 
     for (int i=-xm;i<xp;i++)
