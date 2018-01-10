@@ -138,3 +138,32 @@ vector<string> actionPrefab::getNegEffects(string parameters)
 	result = subsParams(negEffectsWithVars, parValues);
 	return result;
 }
+
+void agent::goTo(int targetx, int targety)
+{
+
+	location_t dude_position{ x,y };
+	location_t destination{ targetx, targety };
+
+
+	path = find_path<location_t, navigator>(dude_position, destination);
+	if (path->success)
+	{
+		debug_log().AddLog("path found \n");
+
+		location_t curPos = dude_position;
+
+		for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
+			if (!(curPos == *p1))
+			{
+				debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+				string s1 = id;
+				s1 += "loc_" + to_string(curPos.x) + "_" + to_string(curPos.y) + " ";
+				s1 += "loc_" + to_string(p1->x) + "_" + to_string(p1->y);
+
+				curPos = *p1;
+				plan.push_back({ "move", s1 });
+			}
+		}
+	}
+}

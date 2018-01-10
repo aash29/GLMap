@@ -42,6 +42,8 @@
 #include <unordered_set>
 //#include <gperftools/profiler.h>
 
+#include "camera.hpp"
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string> 
 
@@ -61,14 +63,14 @@ bool rightMouseDown;
 glm::vec2 lastp;
 glm::vec2 selp;
 
-std::map<std::string, building> city;
-std::string selected;
+map<string, building> city;
+string selected;
 shaderData lineSh;
 
 
-std::string state;
-std::unordered_set<string> setState;
-std::unordered_set<string> constants;
+string state;
+unordered_set<string> setState;
+unordered_set<string> constants;
 
 map<string, actionPrefab> actionPrefabs;
 map <string, strVec> objects;
@@ -92,47 +94,7 @@ int stateSize;
 agent agent0;
 
 
-void* stdAlloc(void* userData, unsigned int size)
-{
-    int* allocated = ( int*)userData;
-    TESS_NOTUSED(userData);
-    *allocated += (int)size;
-    return malloc(size);
-}
 
-void stdFree(void* userData, void* ptr)
-{
-    TESS_NOTUSED(userData);
-    free(ptr);
-}
-
-struct MemPool
-{
-    unsigned char* buf;
-    unsigned int cap;
-    unsigned int size;
-};
-
-void* poolAlloc( void* userData, unsigned int size )
-{
-    struct MemPool* pool = (struct MemPool*)userData;
-    size = (size+0x7) & ~0x7;
-    if (pool->size + size < pool->cap)
-    {
-        unsigned char* ptr = pool->buf + pool->size;
-        pool->size += size;
-        return ptr;
-    }
-    printf("out of mem: %d < %d!\n", pool->size + size, pool->cap);
-    return 0;
-}
-
-void poolFree( void* userData, void* ptr )
-{
-    // empty
-    TESS_NOTUSED(userData);
-    TESS_NOTUSED(ptr);
-}
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
@@ -159,83 +121,6 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 }
 
 
-static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
-{
-    int i, j, c = 0;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-        if ( ((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-            c = !c;
-    }
-    return c;
-}
-
-
-std::string selectBuilding(float testx, float testy)
-{
-    glm::mat4 rotN;
-    rotN = glm::rotate(rotN, glm::radians(-angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    std::vector<float> unCol = std::vector<float>();
-    std::vector<float> unDraw = std::vector<float>();
-
-    unCol.push_back(0.f);
-    unCol.push_back(0.f);
-
-    for (auto b1: city)
-    {
-        std::string id1 = b1.first;
-        for (auto it: city[id1].coords)
-        {
-            //numVert+=round(it.size()/2);
-            unCol.insert(unCol.end(),it.begin(),it.end());
-            unDraw.push_back(it[0]);
-            unDraw.push_back(it[1]);
-            for (int i=2;i<it.size();i=i+2)
-            {
-                unDraw.push_back(it[i]);
-                unDraw.push_back(it[i+1]);
-                unDraw.push_back(it[i]);
-                unDraw.push_back(it[i+1]);
-            }
-            unDraw.push_back(it[0]);
-            unDraw.push_back(it[1]);
-            //unDraw.insert(unDraw.end(),it.begin(),it.end());
-            unCol.push_back(0.f);
-            unCol.push_back(0.f);
-            //numVert++;
-        };
-
-
-        float* cont1 = unCol.data();
-        int numVert = round(unCol.size()/2);
-
-        double* vertx = new double[numVert];
-        double* verty = new double[numVert];
-
-        for (int i = 0; i<numVert; i++){
-            vertx[i]=cont1[2*i];
-            verty[i]=cont1[2*i+1];
-        }
-        /*
-         debug_log().AddLog("vertx one building:");
-        for (int i=0; i< numVert; i++){
-
-      debug_log().AddLog("%g,",vertx[i] );
-        };
-        debug_log().AddLog("\n");
-        */
-        if (pnpoly(numVert, vertx, verty, testx, testy)>0)
-        {
-            return id1;
-        }
-        delete vertx;
-        delete verty;
-
-
-    }
-    return std::string("none");
-
-};
 
 
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
@@ -253,7 +138,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 
         // Use the mouse to move things around.
         if (button == GLFW_MOUSE_BUTTON_1) {
-            std::string id1 = selectBuilding(selp.x,selp.y);
+            string id1 = selectBuilding(city,selp.x,selp.y);
             debug_log().AddLog(id1.c_str());
             debug_log().AddLog("\n");
             /*
@@ -270,12 +155,12 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             }
 
 
-            std::vector<float> unDraw = std::vector<float>();
+            vector<float> unDraw = vector<float>();
 
-            if (id1!=std::string("none"))
+            if (id1!=string("none"))
             {
                 selected = id1;
-                std::vector<float> unDraw = std::vector<float>();
+                vector<float> unDraw = vector<float>();
 
                 for (auto it: city[id1].coords)
                 {
@@ -301,9 +186,9 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
                 //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
             }
             else {
-                selected=std::string("none");
+                selected=string("none");
             };
-            std::cout << id1 <<"\n";
+            cout << id1 <<"\n";
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -389,47 +274,10 @@ void charCallback(GLFWwindow*, unsigned int c)
         io.AddInputCharacter((unsigned short)c);
 };
 
-
-
-/*
-void loadJsonState(std::string name )
-{
-  nlohmann::json jsonObj;
-
-  std::ifstream file;
-  file.open(std::string(name), std::ios::in);
-  if (file) {
-    printf("file open \n");
-    jsonObj << file;
-    file.close();
-  }
-
-  nlohmann::json::iterator f1 = jsonObj.find("objects");
-
-  debug_log().AddLog("********** \n");
-  debug_log().AddLog(f1->dump().c_str());
-  debug_log().AddLog("\n");
-  debug_log().AddLog("********** \n");
-
-
-  nlohmann::json::iterator f2 = f1->find("name");
-  debug_log().AddLog(f2->dump().c_str());
-  debug_log().AddLog("\n");
-
-  //std::cout << f1;
-  //auto f1 = jsonObj.find("objects");
-
-  //g_camera.Add
-
-}
-*/
-
-
-
-std::unordered_set<string> hashState(string nodeName )
+unordered_set<string> hashState(string nodeName )
 {
 
-  std::unordered_set<string> result;
+  unordered_set<string> result;
   
   pddlTreeNode* init = root.findFirstName(nodeName);
   for (pddlTreeNode p1: init->children)
@@ -439,7 +287,6 @@ std::unordered_set<string> hashState(string nodeName )
   return result;
   
 }
-
 
 
 bool doConcreteAction (vector<string> precond, vector<string> peff, vector<string> neff, vector<string> qeff)
@@ -475,7 +322,7 @@ bool doConcreteAction (vector<string> precond, vector<string> peff, vector<strin
   
 }
 
-bool doAction(std::string name, std::string parameters)
+bool doAction(string name, string parameters)
 {
   
   using micro = std::chrono::microseconds;
@@ -562,24 +409,24 @@ bool doAction(std::string name, std::string parameters)
 }
 
 
-std::string loadState(std::string fileName )
+string loadState(string fileName )
 {
 
-    std::ifstream file;
-    file.open(std::string(fileName), std::ios::in);
+    ifstream file;
+    file.open(string(fileName), ios::in);
 
-    std::string stateString((std::istreambuf_iterator<char>(file)),
-                            std::istreambuf_iterator<char>());
+    string stateString((istreambuf_iterator<char>(file)),
+                            istreambuf_iterator<char>());
 
 
-    std::string stateOut(stateString);
+    string stateOut(stateString);
 
-    std::string curStr;
-    std::vector<std::string> tokens = std::vector<std::string>();
+    string curStr;
+    vector<string> tokens = vector<string>();
 
-    utils::removeSubstrs(stateString,std::string("\t"));
-    utils::removeSubstrs(stateString,std::string("\n"));
-    utils::removeSubstrs(stateString,std::string("\r"));
+    utils::removeSubstrs(stateString,string("\t"));
+    utils::removeSubstrs(stateString,string("\n"));
+    utils::removeSubstrs(stateString,string("\r"));
 
 
     for (int i = 0; i < stateString.length(); i++) {
@@ -602,7 +449,7 @@ std::string loadState(std::string fileName )
 
             curStr = "";
             if (c != ' ') {
-                tokens.push_back(std::string(1, c));
+                tokens.push_back(string(1, c));
                 curStr = "";
             }
         }
@@ -618,7 +465,7 @@ std::string loadState(std::string fileName )
 
 
     pddlTreeNode* curNode = &root;
-    std::vector<pddlTreeNode* > stack;
+    vector<pddlTreeNode* > stack;
 
     for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
     {
@@ -670,7 +517,7 @@ std::string loadState(std::string fileName )
 	debug_log().AddLog(o1);
       }
     
-    std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
+    vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
 
     for (int i=-xm;i<xp;i++)
         for (int j=-ym;j<yp;j++)
@@ -718,16 +565,23 @@ std::string loadState(std::string fileName )
 
 
 void endTurn() {
-  if (agent0.plan.size()>0)
-    {
-      action a1 = agent0.plan.front();
-      doAction(a1.name, a1.params);
-      
-      agent0.plan.erase(agent0.plan.begin());
-      
-      agent0.getAgentPos(setState);
 
-    }
+
+	for (auto a0 = agents.begin(); a0 != agents.end();a0++)
+	{
+
+		if (a0->second.plan.size() > 0)
+		{
+			action a1 = a0->second.plan.front();
+			doAction(a1.name, a1.params);
+
+			a0->second.plan.erase(a0->second.plan.begin());
+
+			a0->second.getAgentPos(setState);
+
+		}
+		a0->second.getAgentPos(setState);
+	}
 }
 
 
@@ -756,13 +610,13 @@ void sInterface() {
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
-        if (selected!=std::string("none"))
+        if (selected!=string("none"))
         {
 
-            ImGui::Text((std::string("id:") + city[selected].id).c_str());
+            ImGui::Text((string("id:") + city[selected].id).c_str());
         }
 
-        ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+        ImGui::SliderFloat("North dir", &(g_camera.angleNorth), -90.f, 90.f);
 
         ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
@@ -808,11 +662,11 @@ void sInterface() {
         ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
 
 
-    static std::vector<pddlTreeNode*> s_res;
+    static vector<pddlTreeNode*> s_res;
 
     if (ImGui::Button("Load"))
     {
-        s_res  = root.search(std::string(str0),std::string(str1));
+        s_res  = root.search(string(str0),string(str1));
     };
     for (auto r1 : s_res){
         visitNodes(r1);
@@ -998,7 +852,7 @@ int main(int argc, char *argv[])
     float stub[4] = {0.f,0.f,0.f,0.f};
     lineSh = drawLineShaderInit(stub, 2);
 
-    std::vector<float> gridVec = std::vector<float>();
+    vector<float> gridVec = vector<float>();
 
 
     debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
@@ -1056,7 +910,7 @@ int main(int argc, char *argv[])
 
 
 
-    std::vector<float> outlines = getOutlines(city);
+    vector<float> outlines = getOutlines(city);
     debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
 
     float* outlinesData = outlines.data();
@@ -1075,12 +929,7 @@ int main(int argc, char *argv[])
     int x, y;
 
 
-
-    
-    //agent0.id = "agent0";
-
-
-    std::shared_ptr<navigation_path<location_t>> path;
+    shared_ptr<navigation_path<location_t>> path;
 
 
     static map_t pathfinding_map(-xm, xp, -ym, yp);
@@ -1111,7 +960,7 @@ int main(int argc, char *argv[])
 
         // This is where we calculate where you can go from a given tile. In this case, we check
         // all 8 directions, and if the destination is walkable return it as an option.
-        static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+        static bool get_successors(location_t pos, vector<location_t> &successors) {
             //std::cout << pos.x << "/" << pos.y << "\n";
 
             if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
@@ -1165,7 +1014,7 @@ int main(int argc, char *argv[])
 
 	for (string o1 : objects["agent"])
 	{
-		agents.insert(std::pair<string, agent>(o1, agent()));
+		agents.insert(pair<string, agent>(o1, agent()));
 		agents[o1].id = o1;
 	};
 
@@ -1202,7 +1051,7 @@ int main(int argc, char *argv[])
 	      s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
 
 	      curPos = *p1;
-	      agent0.plan.push_back({"move", s1});
+	      agents["agent0"].plan.push_back({"move", s1});
 	    }
         }
     }
@@ -1245,7 +1094,7 @@ int main(int argc, char *argv[])
 
             drawMap(mapSh, g_camera);
             drawBuildingOutlines( outlineSh, g_camera);
-            if (selected!=std::string("none"))
+            if (selected!=string("none"))
                 drawLine(lineSh, g_camera);
 
 
@@ -1254,16 +1103,6 @@ int main(int argc, char *argv[])
 	      {
 		texQuadDraw(texSh,a0.second.x,a0.second.y);
 	      };
-		/*
-              for (std::string s1 : agents){
-
-                getAgentPos(state, s1, x, y);
-
-
-                texQuadDraw(texSh,x,y);
-              }
-              */
-
 
             if (drawBlockedCells)
             {

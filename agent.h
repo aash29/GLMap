@@ -8,7 +8,10 @@
 #include <string>
 #include <vector>
 #include "pddltree.hpp"
+#include "path_impl.hpp"
 #include <unordered_set>
+#include "map.hpp"
+
 
 using namespace std;
 
@@ -47,6 +50,8 @@ public:
     void update();
 
     void getAgentPos(unordered_set<string> setState);
+
+	void goTo(int x, int y);
 };
 
 
