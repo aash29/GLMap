@@ -9,6 +9,8 @@
 #include <vector>
 #include "pddltree.hpp"
 #include <unordered_set>
+#include <functional>
+
 
 using namespace std;
 
@@ -44,6 +46,9 @@ public:
 
     std::vector<action> plan;
 
+    std::vector<std::function<int()> > planFunc;
+
+    
     void update();
 
     void getAgentPos(unordered_set<string> setState);

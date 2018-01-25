@@ -831,7 +831,7 @@ void sInterface() {
 
     if (ImGui::Button("Move"))
     {
-        doAction(actionName,actionParameters);
+      doAction(actionName,actionParameters);
     }
 
     if (ImGui::Button("End Turn"))
@@ -898,11 +898,6 @@ int main(int argc, char *argv[])
 
     if (!tess)
         return -1;
-
-
-//	debug_log().AddLog(root.children[0].data.c_str());
-
-    //loadJsonState("city.json");
 
 
     rect boundingBox;
@@ -1002,8 +997,6 @@ int main(int argc, char *argv[])
 
 
     debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
-
-
 
     xm = 0;
     xp = 0;
@@ -1165,7 +1158,7 @@ int main(int argc, char *argv[])
 
     state = loadState("city.problem");
     setState = hashState(":init");
-	constants = hashState(":constants");
+    constants = hashState(":constants");
 
 	
 	static actionPrefab a1;
@@ -1215,6 +1208,13 @@ int main(int argc, char *argv[])
     //agent0.getAgentPos(setState);
 
 
+    agent0.planFunc.push_back(
+			      [&agent0](){
+				agent0.x++;
+				return 0;
+			      });
+
+    
     while (!glfwWindowShouldClose(window))
     {
         float ct = (float)glfwGetTime();

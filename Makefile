@@ -22,3 +22,5 @@ gltest: gltest.cpp graphics.cpp
 .PHONY : clean
 clean :
 	rm -f map *.o
+run:
+	optirun ./map
