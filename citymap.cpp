@@ -92,6 +92,8 @@ int stateSize;
 agent agent0;
 
 
+void endTurn();
+
 void* stdAlloc(void* userData, unsigned int size)
 {
     int* allocated = ( int*)userData;
@@ -346,30 +348,74 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO &io = ImGui::GetIO();
 
+	int dx, dy;
+
     if (!io.WantCaptureKeyboard)
     {
         TESS_NOTUSED(scancode);
         TESS_NOTUSED(mods);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GL_TRUE);
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-            run = !run;
-        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-        {
-	  moveAgent("agent0",1,0);
-        }
-        if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-        {
-            moveAgent("agent0",-1,0);
+		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+			run = !run;
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+		{
+			dx = 1, dy = 0;
+
+			agents["agent0"].planFunc.push_back(
+				[&, dx, dy]() {
+				path_map[agents["agent0"].x + dx
+				agents["agent0"].x = agents["agent0"].x + dx;
+				agents["agent0"].y = agents["agent0"].y + dy;
+				return 0;
+			});
+
+			endTurn();
+		}
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+		{
+			dx = -1, dy = 0;
+
+			agents["agent0"].planFunc.push_back(
+				[&, dx, dy]() {
+				agents["agent0"].x = agents["agent0"].x + dx;
+				agents["agent0"].y = agents["agent0"].y + dy;
+				return 0;
+			});
+
+			endTurn();
         }
         if (key == GLFW_KEY_UP && action == GLFW_PRESS)
         {
-            moveAgent("agent0",0,1);
+			dx = 0, dy = 1;
+
+			agents["agent0"].planFunc.push_back(
+				[&, dx, dy]() {
+				agents["agent0"].x = agents["agent0"].x + dx;
+				agents["agent0"].y = agents["agent0"].y + dy;
+				return 0;
+			});
+
+			endTurn();
+
         }
         if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
         {
-            moveAgent("agent0",0,-1);
+			dx = 0, dy = -1;
+
+
+			agents["agent0"].planFunc.push_back(
+				[&, dx, dy]() {
+				agents["agent0"].x = agents["agent0"].x + dx;
+				agents["agent0"].y = agents["agent0"].y + dy;
+				return 0;
+			});
+
+			endTurn();
         }
+
+
+
 
 
     }
@@ -389,40 +435,6 @@ void charCallback(GLFWwindow*, unsigned int c)
         io.AddInputCharacter((unsigned short)c);
 };
 
-
-
-/*
-void loadJsonState(std::string name )
-{
-  nlohmann::json jsonObj;
-
-  std::ifstream file;
-  file.open(std::string(name), std::ios::in);
-  if (file) {
-    printf("file open \n");
-    jsonObj << file;
-    file.close();
-  }
-
-  nlohmann::json::iterator f1 = jsonObj.find("objects");
-
-  debug_log().AddLog("********** \n");
-  debug_log().AddLog(f1->dump().c_str());
-  debug_log().AddLog("\n");
-  debug_log().AddLog("********** \n");
-
-
-  nlohmann::json::iterator f2 = f1->find("name");
-  debug_log().AddLog(f2->dump().c_str());
-  debug_log().AddLog("\n");
-
-  //std::cout << f1;
-  //auto f1 = jsonObj.find("objects");
-
-  //g_camera.Add
-
-}
-*/
 
 
 
@@ -560,7 +572,6 @@ bool doAction(std::string name, std::string parameters)
     return true;
 
 }
-
 
 std::string loadState(std::string fileName )
 {
@@ -718,14 +729,14 @@ std::string loadState(std::string fileName )
 
 
 void endTurn() {
-  if (agent0.plan.size()>0)
+  if (agents["agent0"].planFunc.size()>0)
     {
-      action a1 = agent0.plan.front();
-      doAction(a1.name, a1.params);
+	  agents["agent0"].planFunc.front()();
+      //doAction(a1.name, a1.params);
       
-      agent0.plan.erase(agent0.plan.begin());
+	  agents["agent0"].planFunc.erase(agents["agent0"].planFunc.begin());
       
-      agent0.getAgentPos(setState);
+      //agent0.getAgentPos(setState);
 
     }
 }
@@ -1067,15 +1078,18 @@ int main(int argc, char *argv[])
 
     int x, y;
 
-
+	/*
     for (string o1: objects["agents"])
       {
 	agents.insert(std::pair<string, agent>(o1,agent()));
         agents[o1].id = o1;
       };
-	
+	*/
     
-    //agent0.id = "agent0";
+	agents.insert(std::pair<string, agent>("agent0", agent()));
+	agents["agent0"].id = "agent0";
+	agents["agent0"].x = 1;
+	agents["agent0"].y = 1;
 
 
     std::shared_ptr<navigation_path<location_t>> path;
@@ -1201,19 +1215,16 @@ int main(int argc, char *argv[])
         }
     }
     
-    for (auto a0: agents)
-      {
-	a0.second.getAgentPos(setState);
-      };
+    
     //agent0.getAgentPos(setState);
 
-
+	/*
     agent0.planFunc.push_back(
-			      [&agent0](){
+			      [&](){
 				agent0.x++;
 				return 0;
 			      });
-
+				  */
     
     while (!glfwWindowShouldClose(window))
     {
@@ -1253,7 +1264,7 @@ int main(int argc, char *argv[])
 
 	    for (auto a0: agents)
 	      {
-		texQuadDraw(texSh,a0.second.x,a0.second.y);
+			texQuadDraw(texSh,a0.second.x,a0.second.y);
 	      };
 		/*
               for (std::string s1 : agents){
