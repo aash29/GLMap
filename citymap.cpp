@@ -364,10 +364,17 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 			agents["agent0"].planFunc.push_back(
 				[&, dx, dy]() {
-				path_map[agents["agent0"].x + dx
-				agents["agent0"].x = agents["agent0"].x + dx;
-				agents["agent0"].y = agents["agent0"].y + dy;
-				return 0;
+				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+				    {
+				    agents["agent0"].x = agents["agent0"].x + dx;
+				    agents["agent0"].y = agents["agent0"].y + dy;
+				    return 0;
+				    }
+				  else {
+				    return 1;
+				  };
+				      
+				
 			});
 
 			endTurn();
@@ -378,10 +385,17 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 			agents["agent0"].planFunc.push_back(
 				[&, dx, dy]() {
-				agents["agent0"].x = agents["agent0"].x + dx;
-				agents["agent0"].y = agents["agent0"].y + dy;
-				return 0;
-			});
+				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+				    {
+				    agents["agent0"].x = agents["agent0"].x + dx;
+				    agents["agent0"].y = agents["agent0"].y + dy;
+				    return 0;
+				    }
+				  else {
+				    return 1;
+				  };
+				}
+							   )
 
 			endTurn();
         }
@@ -391,11 +405,17 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 			agents["agent0"].planFunc.push_back(
 				[&, dx, dy]() {
-				agents["agent0"].x = agents["agent0"].x + dx;
-				agents["agent0"].y = agents["agent0"].y + dy;
-				return 0;
-			});
-
+				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+				    {
+				    agents["agent0"].x = agents["agent0"].x + dx;
+				    agents["agent0"].y = agents["agent0"].y + dy;
+				    return 0;
+				    }
+				  else {
+				    return 1;
+				  };
+				}
+							    );
 			endTurn();
 
         }
@@ -403,13 +423,17 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         {
 			dx = 0, dy = -1;
 
-
 			agents["agent0"].planFunc.push_back(
 				[&, dx, dy]() {
-				agents["agent0"].x = agents["agent0"].x + dx;
-				agents["agent0"].y = agents["agent0"].y + dy;
-				return 0;
-			});
+				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+				    {
+				    agents["agent0"].x = agents["agent0"].x + dx;
+				    agents["agent0"].y = agents["agent0"].y + dy;
+				    return 0;
+				    }
+				  else {
+				    return 1;
+				  };
 
 			endTurn();
         }
