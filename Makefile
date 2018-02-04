@@ -23,4 +23,6 @@ gltest: gltest.cpp graphics.cpp
 clean :
 	rm -f map *.o
 run:
-	optirun ./map
+	optirun ./map ./maps/little.txt
+debug:
+	optirun 

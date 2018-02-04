@@ -395,7 +395,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 				    return 1;
 				  };
 				}
-							   )
+							    );
 
 			endTurn();
         }
@@ -420,7 +420,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
         }
         if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-        {
+	  {
 			dx = 0, dy = -1;
 
 			agents["agent0"].planFunc.push_back(
@@ -434,13 +434,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 				  else {
 				    return 1;
 				  };
-
+				}
+							    );
 			endTurn();
-        }
-
-
-
-
+        				
+	  }
 
     }
     else
@@ -839,9 +837,10 @@ void sInterface() {
     static char str1[128] = ".*";
     ImGui::InputText("filter", str1, IM_ARRAYSIZE(str1));
 
+    /*
     if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
         ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-
+    */
 
     static std::vector<pddlTreeNode*> s_res;
 
@@ -937,8 +936,9 @@ int main(int argc, char *argv[])
 
     rect boundingBox;
 
+    
 
-    city = loadLevel("little.geojson",tess, boundingBox, singlePolygon);
+    city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
 
     printf("go...\n");
 
@@ -1070,7 +1070,7 @@ int main(int argc, char *argv[])
     for (float y=0; y > boundingBox.ymin; y=y-g_camera.gridSize)
     {
         gridVec.push_back(boundingBox.xmin);
-        gridVec.push_back(y- g_camera.gridSize / 2);
+        gridVec.push_back(y - g_camera.gridSize / 2);
         gridVec.push_back(boundingBox.xmax);
         gridVec.push_back(y - g_camera.gridSize / 2);
         ym++;
@@ -1175,10 +1175,6 @@ int main(int argc, char *argv[])
             return lhs == rhs;
         }
     };
-
-
-
-
 
 
     for (int i = -xm; i < xp; i++)

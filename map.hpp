@@ -66,20 +66,26 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	float** a2;
 	float* a1[10];
 
-
+	/*
 	xmin = 30.2882633f;
 	xmax = 30.2882633f;
 	ymin = 59.9379525f;
 	ymax = 59.9379525f;
+	*/
 
+	xmin = 1.f;
+	xmax = 10.f;
+	ymin = 1.f;
+	ymax = 10.f;
+	
 
 	singlePolygon.nvert = 0;
 	
 
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
-      if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
-	//std::cout << "id:" << (*it)["properties"]["id"] << "\n";
-		//std::cout <<  (*it)["geometry"]["type"];
+      if (((*it)["properties"]).find("building") != ((*it)["properties"]).end() )  {
+	std::cout << "id:" << (*it)["properties"]["id"] << "\n";
+		std::cout <<  (*it)["geometry"]["type"];
 		
 		if ((*it)["geometry"]["type"]=="Polygon"){
 
@@ -105,7 +111,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 		  a2[j] = new float[c1[j].size()*2];
 		  m3[id].coords.push_back(std::vector<float>());
 		  
-		  //std::cout << "contour size:" << c1[j].size() << "\n";
+		  std::cout << "contour size:" << c1[j].size() << "\n";
 
 		  // zero vert
 		  singlePolygon.nvert++;
@@ -149,15 +155,19 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   uppery = 1.f;
 
   lowerx = 0.f * (xmax-xmin)/(ymax-ymin); 
-  upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
+  //upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
 
+  upperx = 1.f * (xmax-xmin)/(ymax-ymin);
+
+  
   boundingBox.xmin = 0.f;
   boundingBox.xmax = 0.f;
   boundingBox.ymin = 0.f;
   boundingBox.ymax = 0.f;
 
 
-  float aN = 30.f*glm::pi<float>()/180;
+  //float aN = 30.f*glm::pi<float>()/180;
+  float aN = 0.f;
   
   glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
 
@@ -174,7 +184,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
     for (auto &it : m3) {
 	for (int j = 0; j < it.second.coords.size(); j++) {
 	singlePolygon.vertx[spCounter] = 0.f;
-	singlePolygon.vertx[spCounter] = 0.f;
+	singlePolygon.verty[spCounter] = 0.f;
 	spCounter++;
 	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
 
@@ -202,7 +212,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
 
 	  singlePolygon.vertx[spCounter] = 0.f;
-	  singlePolygon.vertx[spCounter] = 0.f;
+	  singlePolygon.verty[spCounter] = 0.f;
 	  spCounter++;
 
 	  
