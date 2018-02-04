@@ -1024,20 +1024,6 @@ int main(int argc, char *argv[])
         return -1;
 
 
-    rect boundingBox;
-    
-    if (argc == 1)
-      m_showOpenDialog = true;
-    else
-      city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
-
-    printf("go...\n");
-
-    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
-        return -1;
-    printf("Memory used: %.1f kB\n", allocated/1024.0f);
-
-
     if (!glfwInit()) {
         printf("Failed to init GLFW.");
         return -1;
@@ -1068,8 +1054,9 @@ int main(int argc, char *argv[])
 
     g_camera.m_center.x = 0.8f;
     g_camera.m_center.y = 0.0f;
-	//GLFWwindow* window = glfwCreateWindow(640, 480, "My Title", glfwGetPrimaryMonitor(), NULL);
 
+
+    
     window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -1091,15 +1078,118 @@ int main(int argc, char *argv[])
 
     ImGui_ImplGlfwGL3_Init(window, false);
 
-
-    //glfwSetWindowAspectRatio(window, width, height);
-
-    //sInterfaceInit();
-
-    //glEnable(GL_DEPTH_TEST);
-
-
+    
     glfwSetTime(0);
+
+
+    
+    rect boundingBox;
+    
+    if (argc == 1)
+      {  
+      m_showOpenDialog = true;
+    
+    while (m_showOpenDialog)
+      {
+	
+        glfwPollEvents();
+
+        ImGui_ImplGlfwGL3_NewFrame();
+
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	
+	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
+      
+	if (ImGui::Begin("Open level", &m_showOpenDialog)) {
+	
+	  // left
+	  static char selected[100] = "";
+	  ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+	  tinydir_dir dir;
+	  if (tinydir_open(&dir, "./maps/") != -1) {
+	    tinydir_file file;
+	    int i = 0;
+
+	    while (dir.has_next) {
+	      if (tinydir_readfile(&dir, &file) != -1) {
+		//ImGui::TextWrapped(file.name);
+		//coinsLog.AddLog(file.extension, "\n");
+		if (!strcmp(file.extension, "txt")) {
+		  if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
+		    strcpy(selected, file.name);
+		}
+	      }
+	      tinydir_next(&dir);
+	      i++;
+	    }
+	    tinydir_close(&dir);
+	  }
+
+	  ImGui::EndChild();
+	  ImGui::SameLine();
+
+	  // right
+	  ImGui::BeginGroup();
+	  ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
+	  ImGui::Text("Selected level: %s", selected);
+	  ImGui::Separator();
+
+	  char pathToFile[100] = "";
+	  strcat(pathToFile, "./maps/");
+	  strcat(pathToFile, selected);
+
+	  std::ifstream t(pathToFile);
+	  std::stringstream buffer;
+	  buffer << t.rdbuf();
+
+	  static char bstr[5000];
+
+
+
+	  strcpy(bstr,buffer.str().c_str());
+
+	  //coinsLog.AddLog(buffer.str().c_str());
+	  ImGui::TextWrapped(bstr);
+
+
+	  ImGui::EndChild();
+	  ImGui::BeginChild("buttons");
+	  if (ImGui::Button("Load"))
+	    {
+	      printf(selected);
+	      city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
+	      m_showOpenDialog = false;
+	      
+	    };
+	  ImGui::SameLine();
+	  ImGui::EndChild();
+	  ImGui::EndGroup();
+	}
+	ImGui::End();
+	
+	ImGui::Render();
+	
+	glfwSwapBuffers(window);
+        glfwPollEvents();
+      }
+      }
+
+    else
+      city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
+
+    printf("go...\n");
+
+    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
+        return -1;
+    printf("Memory used: %.1f kB\n", allocated/1024.0f);
+
+
+    
+
+    
 
     const float* verts = tessGetVertices(tess);
     const int* vinds = tessGetVertexIndices(tess);
