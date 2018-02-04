@@ -39,6 +39,9 @@
 #include "utils.hpp"
 #include "agent.h"
 
+#include "tinydir.h"
+
+
 #include <unordered_set>
 //#include <gperftools/profiler.h>
 
@@ -85,6 +88,8 @@ map_t* path_map;
 
 bool drawGrid = true;
 bool drawBlockedCells = true;
+bool m_showOpenDialog = true;
+
 
 char* text;
 int stateSize;
@@ -877,6 +882,91 @@ void sInterface() {
     ImGui::End();
 
 
+    if (m_showOpenDialog) {
+      ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
+      
+      if (ImGui::Begin("Open level", &m_showOpenDialog)) {
+	
+	// left
+	static char selected[100] = "";
+	ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+	tinydir_dir dir;
+	if (tinydir_open(&dir, "./maps/") != -1) {
+	  tinydir_file file;
+	  int i = 0;
+
+	  while (dir.has_next) {
+	    if (tinydir_readfile(&dir, &file) != -1) {
+	      //ImGui::TextWrapped(file.name);
+	      //coinsLog.AddLog(file.extension, "\n");
+	      if (!strcmp(file.extension, "txt")) {
+		if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
+		  strcpy(selected, file.name);
+	      }
+	    }
+	    tinydir_next(&dir);
+	    i++;
+	  }
+	  tinydir_close(&dir);
+	}
+
+	ImGui::EndChild();
+	ImGui::SameLine();
+
+	// right
+	ImGui::BeginGroup();
+	ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
+	ImGui::Text("Selected level: %s", selected);
+	ImGui::Separator();
+
+	char pathToFile[100] = "";
+	strcat(pathToFile, "./maps/");
+	strcat(pathToFile, selected);
+
+	std::ifstream t(pathToFile);
+	std::stringstream buffer;
+	buffer << t.rdbuf();
+
+	static char bstr[5000];
+
+
+
+	strcpy(bstr,buffer.str().c_str());
+
+	//coinsLog.AddLog(buffer.str().c_str());
+	ImGui::TextWrapped(bstr);
+
+
+	/*
+	  if (tinydir_open(&dir, "../") != -1) {
+	  tinydir_file file;
+	  while (dir.has_next)
+	  {
+	  if (tinydir_readfile(&dir, &file) != -1) {
+	  ImGui::TextWrapped(file.name);
+	  }
+	  tinydir_next(&dir);
+	  }
+	  }
+	*/
+
+
+	ImGui::EndChild();
+	ImGui::BeginChild("buttons");
+	if (ImGui::Button("Load"))
+	  {
+	    //city = loadLevel(selected, tess, boundingBox, singlePolygon);
+	  };
+	ImGui::SameLine();
+	ImGui::EndChild();
+	ImGui::EndGroup();
+      }
+      ImGui::End();
+    }
+
+
+    
+
 };
 
 
@@ -935,10 +1025,11 @@ int main(int argc, char *argv[])
 
 
     rect boundingBox;
-
     
-
-    city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
+    if (argc == 1)
+      m_showOpenDialog = true;
+    else
+      city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
 
     printf("go...\n");
 
@@ -994,10 +1085,6 @@ int main(int argc, char *argv[])
     glfwSetMouseButtonCallback(window, sMouseButton);
     glfwSetKeyCallback(window, key);
     glfwSetCharCallback(window, charCallback);
-
-
-
-
 
     glewExperimental = GL_TRUE;
     glewInit();
