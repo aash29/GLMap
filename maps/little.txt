@@ -1,0 +1,76 @@
+{
+    "features": [
+        {
+            "geometry": {
+                "coordinates": [
+                    [
+                        [
+                            1.0,
+                            1.0
+                        ],
+                        [
+                            1.0,
+                            10.0
+                        ],
+                        [
+                            10.0,
+                            10.0
+                        ],
+                        [
+                            10.0,
+                            1.0
+                        ],
+			[                        
+                            1.0,
+                            1.0
+                        ]
+                    ]
+                ],
+                "type": "Polygon"
+            },
+            "properties": {
+                "type": "wall",
+                "id": "0",
+		"building": "yes"
+		
+            }
+        },
+	{
+            "geometry": {
+                "coordinates": [
+                    [
+                        [
+                            10.0,
+                            10.0
+                        ],
+                        [
+                            10.0,
+                            19.0
+                        ],
+                        [
+                            19.0,
+                            19.0
+                        ],
+                        [
+                            19.0,
+                            10.0
+                        ],
+			[
+			    10.0,
+			    10.0
+			]
+                    ]
+                ],
+                "type": "Polygon"
+            },
+            "properties": {
+                "type": "wall",
+                "id": "1",
+		"building": "yes"
+		
+            }
+        }
+
+    ],
+    "type": "FeatureCollection"
+}

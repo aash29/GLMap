@@ -25,4 +25,4 @@ clean :
 run:
 	optirun ./map ./maps/little.txt
 debug:
-	optirun 
+	optirun gdb ./map -ex=r
