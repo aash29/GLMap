@@ -41,7 +41,6 @@
 
 #include "tinydir.h"
 
-
 #include <unordered_set>
 //#include <gperftools/profiler.h>
 
@@ -1081,7 +1080,6 @@ int main(int argc, char *argv[])
     
     glfwSetTime(0);
 
-
     
     rect boundingBox;
     
@@ -1294,7 +1292,6 @@ int main(int argc, char *argv[])
 
 
     std::shared_ptr<navigation_path<location_t>> path;
-
 
     static map_t pathfinding_map(-xm, xp, -ym, yp);
 
