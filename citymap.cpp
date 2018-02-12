@@ -261,15 +261,17 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_1) {
             std::string id1 = selectBuilding(selp.x,selp.y);
             debug_log().AddLog(id1.c_str());
-            debug_log().AddLog("\n");
+	    debug_log().AddLog(city[id1].type);
+	    debug_log().AddLog("\n");
             /*
-            debug_log().AddLog("vertx single polygon:");
+	      debug_log().AddLog("vertx single polygon:");
             for (int i=0; i< singlePolygon.nvert; i++){
 
           debug_log().AddLog("%g,",singlePolygon.vertx[i] );
             };
             debug_log().AddLog("\n");
             */
+	    
             if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, selp.x, selp.y)>0)
             {
                 debug_log().AddLog("hit \n");
@@ -1185,10 +1187,7 @@ int main(int argc, char *argv[])
     printf("Memory used: %.1f kB\n", allocated/1024.0f);
 
 
-    
-
-    
-
+   
     const float* verts = tessGetVertices(tess);
     const int* vinds = tessGetVertexIndices(tess);
     const int* elems = tessGetElements(tess);
@@ -1300,27 +1299,18 @@ int main(int argc, char *argv[])
 
 
     struct navigator {
-        // This lets you define a distance heuristic. Manhattan distance works really well, but
-        // for now we'll just use a simple euclidian distance squared.
-        // The geometry system defines one for us.
 
         static float get_distance_estimate(location_t &pos, location_t &goal) {
             float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
             return d;
         }
 
-        // Heuristic to determine if we've reached our destination? In some cases, you'd not want
-        // this to be a simple comparison with the goal - for example, if you just want to be
-        // adjacent to (or even a preferred distance from) the goal. In this case,
-        // we're trying to get to the goal rather than near it.
         static bool is_goal(location_t &pos, location_t &goal) {
             return pos == goal;
             //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
             //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
         }
 
-        // This is where we calculate where you can go from a given tile. In this case, we check
-        // all 8 directions, and if the destination is walkable return it as an option.
         static bool get_successors(location_t pos, std::vector<location_t> &successors) {
             //std::cout << pos.x << "/" << pos.y << "\n";
 
@@ -1337,19 +1327,25 @@ int main(int argc, char *argv[])
             return true;
         }
 
-        // This function lets you set a cost on a tile transition. For now, we'll always use a cost of 1.0.
         static float get_cost(location_t &position, location_t &successor) {
             return 1.0f;
         }
-
-        // This is a simple comparison to determine if two locations are the same. It just passes
-        // through to the location_t's equality operator in this instance (we didn't do that automatically)
-        // because there are times you might want to behave differently.
         static bool is_same_state(location_t &lhs, location_t &rhs) {
             return lhs == rhs;
         }
     };
 
+    struct n1 : navigator
+    {
+      static bool is_goal(location_t &pos, location_t &goal) {
+	return pos == goal;
+	//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+	//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+      }
+
+    };
+
+    
 
     for (int i = -xm; i < xp; i++)
     {
@@ -1363,26 +1359,18 @@ int main(int argc, char *argv[])
             }
         }
     }
-
+    /*
     state = loadState("city.problem");
     setState = hashState(":init");
     constants = hashState(":constants");
 
 	
-	static actionPrefab a1;
-	a1.init(root.findFirst(":action", "move.*"));
-	actionPrefabs.insert(pair<string, actionPrefab>("move", a1));
-	/*
-	vector<string> s1 =a1.getPreconditions("agent0 loc-1-1 loc-1-2");
-
-	debug_log().AddLog(a1.getPreconditions("agent0 loc-1-1 loc-1-2")[0]);
-	*/
-    debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
-    /*
-    debug_log().AddLog("x=0,y=0, at(x,y)= %d \n", map.at(0,0));
-    debug_log().AddLog("x=2,y=2, at(x,y)= %d \n", map.at(2,2));
-    debug_log().AddLog("x=0,y=1, at(x,y)= %d \n", map.at(0,1));
+    static actionPrefab a1;
+    a1.init(root.findFirst(":action", "move.*"));
+    actionPrefabs.insert(pair<string, actionPrefab>("move", a1));
     */
+
+    debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
 
     location_t dude_position {1,1};
     location_t destination {4,5};
@@ -1399,12 +1387,15 @@ int main(int argc, char *argv[])
 	  if (!(curPos==*p1))
 	    {
 	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+
+	      /*
 	      string s1 = "agent0 ";
 	      s1+= "loc_" + to_string(curPos.x) +"_"+to_string(curPos.y)+ " ";
 	      s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
 
 	      curPos = *p1;
 	      agent0.plan.push_back({"move", s1});
+	      */
 	    }
         }
     }

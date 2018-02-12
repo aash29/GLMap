@@ -10,6 +10,8 @@ struct building
   std::string name;
   std::string addrNumber;
   std::string addrStreet;
+  std::string type;
+  
   std::vector<std::vector<float> > coords;
 };
 
@@ -103,7 +105,10 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 		if (((*it)["properties"]).find("addr:street") != ((*it)["properties"]).end())
 		  m3[id].addrStreet = (*it)["properties"]["addr:street"];
 		if (((*it)["properties"]).find("addr:housenumber") != ((*it)["properties"]).end())
-		m3[id].addrNumber = (*it)["properties"]["addr:housenumber"];
+		  m3[id].addrNumber = (*it)["properties"]["addr:housenumber"];
+		if (((*it)["properties"]).find("type") != ((*it)["properties"]).end())
+		  m3[id].type = (*it)["properties"]["type"];
+		
 		
 
 		for (int j = 0; j<c1.size();j++){

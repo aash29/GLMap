@@ -24,5 +24,7 @@ clean :
 	rm -f map *.o
 run:
 	optirun ./map ./maps/little.txt
+vo:
+	optirun ./map ./maps/little.geojson
 debug:
 	optirun gdb ./map -ex=r
