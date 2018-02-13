@@ -156,6 +156,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
   float lowerx,lowery,upperx,uppery;
 
+  /*
   lowery = 0.f;
   uppery = 1.f;
 
@@ -163,12 +164,19 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   //upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
 
   upperx = 1.f * (xmax-xmin)/(ymax-ymin);
+  */
+
+  lowery = ymin;
+  lowerx = xmin;
+
+  upperx = xmax;
+  uppery = ymax;
 
   
-  boundingBox.xmin = 0.f;
-  boundingBox.xmax = 0.f;
-  boundingBox.ymin = 0.f;
-  boundingBox.ymax = 0.f;
+  boundingBox.xmin = xmin;
+  boundingBox.xmax = xmax;
+  boundingBox.ymin = ymin;
+  boundingBox.ymax = ymax;
 
 
   //float aN = 30.f*glm::pi<float>()/180;

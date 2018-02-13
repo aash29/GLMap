@@ -880,9 +880,9 @@ void sInterface() {
       static bool is_goal(location_t &pos, location_t &goal) {
        //   return (pos==goal);
 	std::string id1 = selectBuilding(pos.x,pos.y);
-	debug_log().AddLog(id1);
+	//debug_log().AddLog(id1);
 	//string s1 = city[id1].type;
-	return 	(city[id1].type=="shop");
+	return 	( (city[id1].type.compare("shop")==0));
 	//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
 	//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
       }
@@ -901,12 +901,12 @@ void sInterface() {
 
           location_t tbegin (30,35);
           location_t tend (31,35);
-
+	/*
           if (n1::is_goal(bpLoc,epLoc)) {
               debug_log().AddLog("goal");
           }
-
-	/*
+		  */
+	
 	path = find_path<location_t, n1>(bpLoc, epLoc);
 
     if (path->success)
@@ -924,7 +924,7 @@ void sInterface() {
         }
 
     }
-*/
+
 	
       };
 
@@ -1156,11 +1156,11 @@ int main(int argc, char *argv[])
     g_camera.m_width = width;
     g_camera.m_height = height;
 
-    //g_camera.m_span = (xmax-xmin)/2;
-    g_camera.m_span = 0.5f;
+    g_camera.m_span = (xmax-xmin)/2;
+    //g_camera.m_span = 0.5f;
 
-    g_camera.m_center.x = 0.8f;
-    g_camera.m_center.y = 0.0f;
+    g_camera.m_center.x = (xmax + xmin) / 2;
+    g_camera.m_center.y = (ymax + ymin) / 2;
 
 
     

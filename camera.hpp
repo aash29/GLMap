@@ -8,7 +8,7 @@
 
 struct Camera {
   Camera() {
-    m_center.x = 0.5f;
+    m_center.x = .5f;
     m_center.y = 0.5f;
     m_span = 1.0f;
     m_zoom = 1.0f;
