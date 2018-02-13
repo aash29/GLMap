@@ -75,10 +75,10 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	ymax = 59.9379525f;
 	*/
 
-	xmin = 1.f;
-	xmax = 10.f;
-	ymin = 1.f;
-	ymax = 10.f;
+	xmin = 0.f;
+	xmax = 30.f;
+	ymin = 0.f;
+	ymax = 40.f;
 	
 
 	singlePolygon.nvert = 0;
@@ -130,11 +130,11 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			
 			singlePolygon.nvert++;
 
-			xmin=std::min(xmin, c1[j][i][0]);
-			xmax=std::max(xmax, c1[j][i][0]);
+			//xmin=std::min(xmin, c1[j][i][0]);
+			//xmax=std::max(xmax, c1[j][i][0]);
 	    
-			ymin=std::min(ymin, c1[j][i][1]);
-			ymax=std::max(ymax, c1[j][i][1]);
+			//ymin=std::min(ymin, c1[j][i][1]);
+			//ymax=std::max(ymax, c1[j][i][1]);
 		  };
 		  //std::cout << "adding contour" << "\n";
 		  singlePolygon.nvert++;  // zero vert

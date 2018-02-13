@@ -79,7 +79,10 @@ map<string, agent> agents;
 
 polygon singlePolygon;
 
-int xm,xp,ym,yp;
+int xm = 0;
+int xp = 30;
+int ym = 0;
+int yp = 40;
 
 
 map_t* path_map;
@@ -94,6 +97,45 @@ char* text;
 int stateSize;
 
 agent agent0;
+
+map_t pathfinding_map(xm,xp,ym,yp);
+
+    struct navigator {
+
+        static float get_distance_estimate(location_t &pos, location_t &goal) {
+            float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
+            return d;
+        }
+
+        static bool is_goal(location_t &pos, location_t &goal) {
+            return pos == goal;
+            //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+            //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+        }
+
+        static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+            //std::cout << pos.x << "/" << pos.y << "\n";
+
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
+
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
+
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
+            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
+            return true;
+        }
+
+        static float get_cost(location_t &position, location_t &successor) {
+            return 1.0f;
+        }
+        static bool is_same_state(location_t &lhs, location_t &rhs) {
+            return lhs == rhs;
+        }
+    };
 
 
 void endTurn();
@@ -784,12 +826,11 @@ void sInterface() {
         ImGuiStyle &style = ImGui::GetStyle();
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-        ImGui::Begin("Info");
+
+
+	ImGui::Begin("Info");
         glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
         glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
-
-
-
         ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
         ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
 
@@ -825,8 +866,73 @@ void sInterface() {
     }
 
 
-    //visitNodes(&root);
+    ImGui::Begin("Path");
 
+
+    static int beginPos[2] = {2,2};
+    ImGui::InputInt2("start", beginPos);
+
+    static int endPos[2];
+    ImGui::InputInt2("end", endPos);
+
+    struct n1 : navigator
+    {
+      static bool is_goal(location_t &pos, location_t &goal) {
+       //   return (pos==goal);
+	std::string id1 = selectBuilding(pos.x,pos.y);
+	debug_log().AddLog(id1);
+	//string s1 = city[id1].type;
+	return 	(city[id1].type=="shop");
+	//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+	//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+      }
+
+    };
+
+    
+
+     if (ImGui::Button("Find"))
+      {
+	std::shared_ptr<navigation_path<location_t>> path;
+
+	location_t bpLoc(beginPos[0],beginPos[1]);
+
+	location_t epLoc(endPos[0],endPos[1]);
+
+          location_t tbegin (30,35);
+          location_t tend (31,35);
+
+          if (n1::is_goal(bpLoc,epLoc)) {
+              debug_log().AddLog("goal");
+          }
+
+	/*
+	path = find_path<location_t, n1>(bpLoc, epLoc);
+
+    if (path->success)
+    {
+        debug_log().AddLog("path found \n");
+
+	location_t curPos = dude_position;
+	
+        for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
+	  if (!(curPos==*p1))
+	    {
+	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+
+	    }
+        }
+
+    }
+*/
+	
+      };
+
+
+    
+    ImGui::End();
+
+    
 
     ImGui::Begin("State");
 
@@ -1100,8 +1206,8 @@ int main(int argc, char *argv[])
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	
-	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
+
+	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_Always);
       
 	if (ImGui::Begin("Open level", &m_showOpenDialog)) {
 	
@@ -1206,13 +1312,13 @@ int main(int argc, char *argv[])
 
 
     debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
-
+    /*
     xm = 0;
     xp = 0;
     ym = 0;
     yp = 0;
-
-
+    */
+    /*
     for (float x=0; x < boundingBox.xmax; x=x+g_camera.gridSize)
     {
         gridVec.push_back(x + g_camera.gridSize/2);
@@ -1250,7 +1356,7 @@ int main(int argc, char *argv[])
         ym++;
     }
 
-
+    */
     float* grid = gridVec.data();
 
 
@@ -1286,66 +1392,16 @@ int main(int argc, char *argv[])
     
 	agents.insert(std::pair<string, agent>("agent0", agent()));
 	agents["agent0"].id = "agent0";
-	agents["agent0"].x = 1;
-	agents["agent0"].y = 1;
+	agents["agent0"].x = 4;
+	agents["agent0"].y = 27;
 
 
     std::shared_ptr<navigation_path<location_t>> path;
 
-    static map_t pathfinding_map(-xm, xp, -ym, yp);
-
+    //pathfinding_map = map_t(-xm, xp, -ym, yp);
+    
     path_map = &pathfinding_map;
 
-
-
-    struct navigator {
-
-        static float get_distance_estimate(location_t &pos, location_t &goal) {
-            float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
-            return d;
-        }
-
-        static bool is_goal(location_t &pos, location_t &goal) {
-            return pos == goal;
-            //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-            //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-        }
-
-        static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-            //std::cout << pos.x << "/" << pos.y << "\n";
-
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
-
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
-
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
-            return true;
-        }
-
-        static float get_cost(location_t &position, location_t &successor) {
-            return 1.0f;
-        }
-        static bool is_same_state(location_t &lhs, location_t &rhs) {
-            return lhs == rhs;
-        }
-    };
-
-    struct n1 : navigator
-    {
-      static bool is_goal(location_t &pos, location_t &goal) {
-	return pos == goal;
-	//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-	//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-      }
-
-    };
-
-    
 
     for (int i = -xm; i < xp; i++)
     {
@@ -1353,8 +1409,8 @@ int main(int argc, char *argv[])
         {
 	  if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0)
             {
-                debug_log().AddLog("hit \n");
-                path_map->walkable[path_map->at(i, j)] = false;
+	      //debug_log().AddLog("hit \n");
+	      //path_map->walkable[path_map->at(i, j)] = false;
 
             }
         }
@@ -1375,7 +1431,7 @@ int main(int argc, char *argv[])
     location_t dude_position {1,1};
     location_t destination {4,5};
 
-
+    
     path = find_path<location_t, navigator>(dude_position, destination);
     if (path->success)
     {
