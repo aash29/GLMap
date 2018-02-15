@@ -68,7 +68,7 @@ void main()
     vec4 d1 = normalize(gl_in[1].gl_Position - gl_in[0].gl_Position);
     vec4 n1 = vec4(-d1.y,d1.x, 0.0, 0.0);
     
-    float linewidth = 0.0005f;
+    float linewidth = 0.025f;
 
     gl_Position = Model*(gl_in[0].gl_Position + linewidth * n1);
     EmitVertex();

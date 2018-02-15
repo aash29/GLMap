@@ -45,7 +45,7 @@
 //#include <gperftools/profiler.h>
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
-#define strVec vector<string> 
+#define strVec vector<string>
 
 using namespace std;
 
@@ -100,42 +100,42 @@ agent agent0;
 
 map_t pathfinding_map(xm,xp,ym,yp);
 
-    struct navigator {
+struct navigator {
 
-        static float get_distance_estimate(location_t &pos, location_t &goal) {
-            float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
-            return d;
-        }
+    static float get_distance_estimate(location_t &pos, location_t &goal) {
+        float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
+        return d;
+    }
 
-        static bool is_goal(location_t &pos, location_t &goal) {
-            return pos == goal;
-            //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-            //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-        }
+    static bool is_goal(location_t &pos, location_t &goal) {
+        return pos == goal;
+        //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+        //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+    }
 
-        static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-            //std::cout << pos.x << "/" << pos.y << "\n";
+    static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+        //std::cout << pos.x << "/" << pos.y << "\n";
 
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
 
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
 
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
-            if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
-            return true;
-        }
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
+        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
+        return true;
+    }
 
-        static float get_cost(location_t &position, location_t &successor) {
-            return 1.0f;
-        }
-        static bool is_same_state(location_t &lhs, location_t &rhs) {
-            return lhs == rhs;
-        }
-    };
+    static float get_cost(location_t &position, location_t &successor) {
+        return 1.0f;
+    }
+    static bool is_same_state(location_t &lhs, location_t &rhs) {
+        return lhs == rhs;
+    }
+};
 
 
 void endTurn();
@@ -303,8 +303,8 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_1) {
             std::string id1 = selectBuilding(selp.x,selp.y);
             debug_log().AddLog(id1.c_str());
-	    debug_log().AddLog(city[id1].type);
-	    debug_log().AddLog("\n");
+            debug_log().AddLog(city[id1].type);
+            debug_log().AddLog("\n");
             /*
 	      debug_log().AddLog("vertx single polygon:");
             for (int i=0; i< singlePolygon.nvert; i++){
@@ -313,7 +313,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             };
             debug_log().AddLog("\n");
             */
-	    
+
             if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, selp.x, selp.y)>0)
             {
                 debug_log().AddLog("hit \n");
@@ -396,7 +396,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO &io = ImGui::GetIO();
 
-	int dx, dy;
+    int dx, dy;
 
     if (!io.WantCaptureKeyboard)
     {
@@ -404,89 +404,89 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         TESS_NOTUSED(mods);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GL_TRUE);
-		if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-			run = !run;
-		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-		{
-			dx = 1, dy = 0;
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+            run = !run;
+        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
+        {
+            dx = 1, dy = 0;
 
-			agents["agent0"].planFunc.push_back(
-				[&, dx, dy]() {
-				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
-				    {
-				    agents["agent0"].x = agents["agent0"].x + dx;
-				    agents["agent0"].y = agents["agent0"].y + dy;
-				    return 0;
-				    }
-				  else {
-				    return 1;
-				  };
-				      
-				
-			});
+            agents["agent0"].planFunc.push_back(
+                    [&, dx, dy]() {
+                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        {
+                            agents["agent0"].x = agents["agent0"].x + dx;
+                            agents["agent0"].y = agents["agent0"].y + dy;
+                            return 0;
+                        }
+                        else {
+                            return 1;
+                        };
 
-			endTurn();
-		}
-		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-		{
-			dx = -1, dy = 0;
 
-			agents["agent0"].planFunc.push_back(
-				[&, dx, dy]() {
-				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
-				    {
-				    agents["agent0"].x = agents["agent0"].x + dx;
-				    agents["agent0"].y = agents["agent0"].y + dy;
-				    return 0;
-				    }
-				  else {
-				    return 1;
-				  };
-				}
-							    );
+                    });
 
-			endTurn();
+            endTurn();
+        }
+        if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
+        {
+            dx = -1, dy = 0;
+
+            agents["agent0"].planFunc.push_back(
+                    [&, dx, dy]() {
+                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        {
+                            agents["agent0"].x = agents["agent0"].x + dx;
+                            agents["agent0"].y = agents["agent0"].y + dy;
+                            return 0;
+                        }
+                        else {
+                            return 1;
+                        };
+                    }
+            );
+
+            endTurn();
         }
         if (key == GLFW_KEY_UP && action == GLFW_PRESS)
         {
-			dx = 0, dy = 1;
+            dx = 0, dy = 1;
 
-			agents["agent0"].planFunc.push_back(
-				[&, dx, dy]() {
-				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
-				    {
-				    agents["agent0"].x = agents["agent0"].x + dx;
-				    agents["agent0"].y = agents["agent0"].y + dy;
-				    return 0;
-				    }
-				  else {
-				    return 1;
-				  };
-				}
-							    );
-			endTurn();
+            agents["agent0"].planFunc.push_back(
+                    [&, dx, dy]() {
+                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        {
+                            agents["agent0"].x = agents["agent0"].x + dx;
+                            agents["agent0"].y = agents["agent0"].y + dy;
+                            return 0;
+                        }
+                        else {
+                            return 1;
+                        };
+                    }
+            );
+            endTurn();
 
         }
         if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-	  {
-			dx = 0, dy = -1;
+        {
+            dx = 0, dy = -1;
 
-			agents["agent0"].planFunc.push_back(
-				[&, dx, dy]() {
-				  if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
-				    {
-				    agents["agent0"].x = agents["agent0"].x + dx;
-				    agents["agent0"].y = agents["agent0"].y + dy;
-				    return 0;
-				    }
-				  else {
-				    return 1;
-				  };
-				}
-							    );
-			endTurn();
-        				
-	  }
+            agents["agent0"].planFunc.push_back(
+                    [&, dx, dy]() {
+                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        {
+                            agents["agent0"].x = agents["agent0"].x + dx;
+                            agents["agent0"].y = agents["agent0"].y + dy;
+                            return 0;
+                        }
+                        else {
+                            return 1;
+                        };
+                    }
+            );
+            endTurn();
+
+        }
 
     }
     else
@@ -511,15 +511,15 @@ void charCallback(GLFWwindow*, unsigned int c)
 std::unordered_set<string> hashState(string nodeName )
 {
 
-  std::unordered_set<string> result;
-  
-  pddlTreeNode* init = root.findFirstName(nodeName);
-  for (pddlTreeNode p1: init->children)
+    std::unordered_set<string> result;
+
+    pddlTreeNode* init = root.findFirstName(nodeName);
+    for (pddlTreeNode p1: init->children)
     {
-      result.insert(p1.data +" "+ p1.flattenChildren());
+        result.insert(p1.data +" "+ p1.flattenChildren());
     }
-  return result;
-  
+    return result;
+
 }
 
 
@@ -527,113 +527,113 @@ std::unordered_set<string> hashState(string nodeName )
 bool doConcreteAction (vector<string> precond, vector<string> peff, vector<string> neff, vector<string> qeff)
 {
 
-  for (string p1 : precond)
+    for (string p1 : precond)
     {
-      auto n3 = setState.find(p1);
-  
-      if (n3==setState.end())
-	  {
-	    debug_log().AddLog("preconditions not satisfied");
+        auto n3 = setState.find(p1);
+
+        if (n3==setState.end())
+        {
+            debug_log().AddLog("preconditions not satisfied");
             return false;
-	  }
+        }
     }
 
-  for (auto e1 : peff)
+    for (auto e1 : peff)
     {
 
-      setState.insert(e1);
-      vector<string> s1 = utils::tokenize(e1,' ');
-      init->insert_back(pddlTreeNode(s1[0]));
-      
+        setState.insert(e1);
+        vector<string> s1 = utils::tokenize(e1,' ');
+        init->insert_back(pddlTreeNode(s1[0]));
 
-      
-      for (int i = 1; i<s1.size();i++) {
-	init->children.back().insert_back(pddlTreeNode(s1[i]));
-      }
-      
+
+
+        for (int i = 1; i<s1.size();i++) {
+            init->children.back().insert_back(pddlTreeNode(s1[i]));
+        }
+
     }
-  
-  
-  
+
+
+
 }
 
 bool doAction(std::string name, std::string parameters)
 {
-  
-  using micro = std::chrono::microseconds;
-  auto start = std::chrono::high_resolution_clock::now();
-  
-  //std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-  //pddlTreeNode* action = root.findFirst(":action",name+".*");
-  //pddlTreeNode* action = root.findFirstName(":action");
-  //pddlTreeNode* r2 = action->findFirstName(":parameters");
 
-  actionPrefab a1 = actionPrefabs[name];
+    using micro = std::chrono::microseconds;
+    auto start = std::chrono::high_resolution_clock::now();
 
-  vector<string> groundedPreconditions = a1.getPreconditions(parameters);
-	
-	
-  for (string p1: groundedPreconditions)
-  {
-	auto n3 = setState.find(p1);
-	auto n4 = constants.find(p1);
+    //std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
+    //pddlTreeNode* action = root.findFirst(":action",name+".*");
+    //pddlTreeNode* action = root.findFirstName(":action");
+    //pddlTreeNode* r2 = action->findFirstName(":parameters");
 
-	if ((n3==setState.end()) && (n4 == constants.end()))
-	  {
-	    debug_log().AddLog("preconditions not satisfied");
+    actionPrefab a1 = actionPrefabs[name];
+
+    vector<string> groundedPreconditions = a1.getPreconditions(parameters);
+
+
+    for (string p1: groundedPreconditions)
+    {
+        auto n3 = setState.find(p1);
+        auto n4 = constants.find(p1);
+
+        if ((n3==setState.end()) && (n4 == constants.end()))
+        {
+            debug_log().AddLog("preconditions not satisfied");
             return false;
-	  }
-	
+        }
+
     }
     //all preconditions met
 
-  vector<string> grndPosEffect = a1.getPosEffects(parameters);
-  vector<string> grndNegEffect = a1.getNegEffects(parameters);
+    vector<string> grndPosEffect = a1.getPosEffects(parameters);
+    vector<string> grndNegEffect = a1.getNegEffects(parameters);
 
-	for (string e1: grndNegEffect)
-	{
+    for (string e1: grndNegEffect)
+    {
 
-	    auto n3 = setState.find(e1);
+        auto n3 = setState.find(e1);
 
-			if (n3!=setState.end())
-			{
-	    		setState.erase(e1);
+        if (n3!=setState.end())
+        {
+            setState.erase(e1);
 
-				/*
-				for (auto it = init->children.begin(); it != init->children.end(); it++)
-				{
-					std::string s1 = it->flattenChildren();
-					if ((it->data == effectName) && (s1 == effectParameters))
-					{
-						init->children.erase(it);
-						break;
-					}
-					//pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
-				}
-				*/
-			}
-	}
+            /*
+            for (auto it = init->children.begin(); it != init->children.end(); it++)
+            {
+                std::string s1 = it->flattenChildren();
+                if ((it->data == effectName) && (s1 == effectParameters))
+                {
+                    init->children.erase(it);
+                    break;
+                }
+                //pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
+            }
+            */
+        }
+    }
 
-	for (string e1 : grndPosEffect)
-	{
-		/*
-	           init->insert_back(pddlTreeNode(n1.data));
-	    
-			string s2;
+    for (string e1 : grndPosEffect)
+    {
+        /*
+               init->insert_back(pddlTreeNode(n1.data));
+
+            string s2;
             for (pddlTreeNode n2 : n1.children) {
                 string s1 = n2.data;
                 for (int i = 0; i < parNames.size(); i++) {
                     utils::replaceSubstrs(s1, parNames[i], parValues[i]);
                 };
                 init->children.back().insert_back(pddlTreeNode(s1));
-				s2.append(" ");
-				s2.append(s1);
+                s2.append(" ");
+                s2.append(s1);
                 debug_log().AddLog(s1);
             }
-			*/
+            */
 
-			setState.insert(e1);
-     }
+        setState.insert(e1);
+    }
 
     auto finish = std::chrono::high_resolution_clock::now();
 
@@ -730,27 +730,27 @@ std::string loadState(std::string fileName )
 
     strVec currentType;
     for (int i = 0; i< obj->children.size(); i++)
-      {
-	
-	if (obj->children[i].data=="-")
-	  {
-	    objects[obj->children[i+1].data].insert(objects[obj->children[i+1].data].begin(),currentType.begin(),currentType.end());
-	    currentType.clear();
-	    i++;
-	  }
-	else
-	  {
-	    currentType.push_back(obj->children[i].data);
-	  }
-      }
+    {
+
+        if (obj->children[i].data=="-")
+        {
+            objects[obj->children[i+1].data].insert(objects[obj->children[i+1].data].begin(),currentType.begin(),currentType.end());
+            currentType.clear();
+            i++;
+        }
+        else
+        {
+            currentType.push_back(obj->children[i].data);
+        }
+    }
 
     debug_log().AddLog("agents: \n");
-		       
+
     for (string o1: objects["agent"])
-      {
-	debug_log().AddLog(o1);
-      }
-    
+    {
+        debug_log().AddLog(o1);
+    }
+
     std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
 
     for (int i=-xm;i<xp;i++)
@@ -763,7 +763,7 @@ std::string loadState(std::string fileName )
 
     init = root.findFirstName(":init");
 
-	pddlTreeNode* constNode = root.insert_back(pddlTreeNode(":constants"));
+    pddlTreeNode* constNode = root.insert_back(pddlTreeNode(":constants"));
 
 
 
@@ -799,15 +799,16 @@ std::string loadState(std::string fileName )
 
 
 void endTurn() {
-  if (agents["agent0"].planFunc.size()>0)
-    {
-	  agents["agent0"].planFunc.front()();
-      //doAction(a1.name, a1.params);
-      
-	  agents["agent0"].planFunc.erase(agents["agent0"].planFunc.begin());
-      
-      //agent0.getAgentPos(setState);
+    for (auto a1:agents) {
+        if (agents[a1.first].planFunc.size() > 0) {
+            agents[a1.first].planFunc.front()();
+            //doAction(a1.name, a1.params);
 
+            agents[a1.first].planFunc.erase(agents[a1.first].planFunc.begin());
+
+            //agent0.getAgentPos(setState);
+
+        }
     }
 }
 
@@ -828,7 +829,7 @@ void sInterface() {
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
 
 
-	ImGui::Begin("Info");
+        ImGui::Begin("Info");
         glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
         glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
         ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
@@ -877,62 +878,80 @@ void sInterface() {
 
     struct n1 : navigator
     {
-      static bool is_goal(location_t &pos, location_t &goal) {
-       //   return (pos==goal);
-	std::string id1 = selectBuilding(pos.x,pos.y);
-	//debug_log().AddLog(id1);
-	//string s1 = city[id1].type;
-	return 	( (city[id1].type.compare("shop")==0));
-	//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-	//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-      }
+        static bool is_goal(location_t &pos, location_t &goal) {
+            //   return (pos==goal);
+            std::string id1 = selectBuilding(pos.x,pos.y);
+            //debug_log().AddLog(id1);
+            //string s1 = city[id1].type;
+            return 	( (city[id1].type.compare("shop")==0));
+            //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+            //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+        }
+
+        static float get_distance_estimate(location_t &pos, location_t &goal) {
+            float d = 1.f;
+            return d;
+        }
+
 
     };
 
-    
 
-     if (ImGui::Button("Find"))
-      {
-	std::shared_ptr<navigation_path<location_t>> path;
 
-	location_t bpLoc(beginPos[0],beginPos[1]);
-
-	location_t epLoc(endPos[0],endPos[1]);
-
-          location_t tbegin (30,35);
-          location_t tend (31,35);
-	/*
-          if (n1::is_goal(bpLoc,epLoc)) {
-              debug_log().AddLog("goal");
-          }
-		  */
-	
-	path = find_path<location_t, n1>(bpLoc, epLoc);
-
-    if (path->success)
+    if (ImGui::Button("Find"))
     {
-        debug_log().AddLog("path found \n");
 
-	location_t curPos = dude_position;
-	
-        for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
-	  if (!(curPos==*p1))
-	    {
-	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+        for (auto a1:agents) {
 
-	    }
+            string id = a1.first;
+
+            std::shared_ptr<navigation_path<location_t>> path;
+
+            location_t bpLoc(beginPos[0], beginPos[1]);
+
+            location_t epLoc(endPos[0], endPos[1]);
+
+            location_t apLoc(a1.second.x,a1.second.y);
+
+
+            path = find_path<location_t, n1>(apLoc, epLoc);
+
+            if (path->success) {
+                debug_log().AddLog("path found \n");
+
+                location_t curPos = apLoc;
+
+                for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
+                    if (!(curPos == *p1)) {
+                        debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+
+                        int dx = p1->x;
+                        int dy = p1->y;
+                        agents[id].planFunc.push_back(
+                                [&, dx, dy, id]() {
+                                    if (path_map->walkable[path_map->at(dx, dy)]) {
+                                        agents[id].x = dx;
+                                        agents[id].y = dy;
+                                        return 0;
+                                    } else {
+                                        return 1;
+                                    };
+                                }
+                        );
+                        curPos = *p1;
+                    }
+                }
+
+            }
         }
 
-    }
-
-	
-      };
+    };
 
 
-    
+
     ImGui::End();
 
-    
+
 
     ImGui::Begin("State");
 
@@ -977,12 +996,12 @@ void sInterface() {
 
     if (ImGui::Button("Move"))
     {
-      doAction(actionName,actionParameters);
+        doAction(actionName,actionParameters);
     }
 
     if (ImGui::Button("End Turn"))
     {
-      endTurn();
+        endTurn();
     }
 
 
@@ -990,106 +1009,106 @@ void sInterface() {
 
 
     if (m_showOpenDialog) {
-      ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
-      
-      if (ImGui::Begin("Open level", &m_showOpenDialog)) {
-	
-	// left
-	static char selected[100] = "";
-	ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-	tinydir_dir dir;
-	if (tinydir_open(&dir, "./maps/") != -1) {
-	  tinydir_file file;
-	  int i = 0;
+        ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
 
-	  while (dir.has_next) {
-	    if (tinydir_readfile(&dir, &file) != -1) {
-	      //ImGui::TextWrapped(file.name);
-	      //coinsLog.AddLog(file.extension, "\n");
-	      if (!strcmp(file.extension, "txt")) {
-		if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
-		  strcpy(selected, file.name);
-	      }
-	    }
-	    tinydir_next(&dir);
-	    i++;
-	  }
-	  tinydir_close(&dir);
-	}
+        if (ImGui::Begin("Open level", &m_showOpenDialog)) {
 
-	ImGui::EndChild();
-	ImGui::SameLine();
+            // left
+            static char selected[100] = "";
+            ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+            tinydir_dir dir;
+            if (tinydir_open(&dir, "./maps/") != -1) {
+                tinydir_file file;
+                int i = 0;
 
-	// right
-	ImGui::BeginGroup();
-	ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
-	ImGui::Text("Selected level: %s", selected);
-	ImGui::Separator();
+                while (dir.has_next) {
+                    if (tinydir_readfile(&dir, &file) != -1) {
+                        //ImGui::TextWrapped(file.name);
+                        //coinsLog.AddLog(file.extension, "\n");
+                        if (!strcmp(file.extension, "txt")) {
+                            if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
+                                strcpy(selected, file.name);
+                        }
+                    }
+                    tinydir_next(&dir);
+                    i++;
+                }
+                tinydir_close(&dir);
+            }
 
-	char pathToFile[100] = "";
-	strcat(pathToFile, "./maps/");
-	strcat(pathToFile, selected);
+            ImGui::EndChild();
+            ImGui::SameLine();
 
-	std::ifstream t(pathToFile);
-	std::stringstream buffer;
-	buffer << t.rdbuf();
+            // right
+            ImGui::BeginGroup();
+            ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
+            ImGui::Text("Selected level: %s", selected);
+            ImGui::Separator();
 
-	static char bstr[5000];
+            char pathToFile[100] = "";
+            strcat(pathToFile, "./maps/");
+            strcat(pathToFile, selected);
 
+            std::ifstream t(pathToFile);
+            std::stringstream buffer;
+            buffer << t.rdbuf();
 
-
-	strcpy(bstr,buffer.str().c_str());
-
-	//coinsLog.AddLog(buffer.str().c_str());
-	ImGui::TextWrapped(bstr);
+            static char bstr[5000];
 
 
-	/*
-	  if (tinydir_open(&dir, "../") != -1) {
-	  tinydir_file file;
-	  while (dir.has_next)
-	  {
-	  if (tinydir_readfile(&dir, &file) != -1) {
-	  ImGui::TextWrapped(file.name);
-	  }
-	  tinydir_next(&dir);
-	  }
-	  }
-	*/
+
+            strcpy(bstr,buffer.str().c_str());
+
+            //coinsLog.AddLog(buffer.str().c_str());
+            ImGui::TextWrapped(bstr);
 
 
-	ImGui::EndChild();
-	ImGui::BeginChild("buttons");
-	if (ImGui::Button("Load"))
-	  {
-	    //city = loadLevel(selected, tess, boundingBox, singlePolygon);
-	  };
-	ImGui::SameLine();
-	ImGui::EndChild();
-	ImGui::EndGroup();
-      }
-      ImGui::End();
+            /*
+              if (tinydir_open(&dir, "../") != -1) {
+              tinydir_file file;
+              while (dir.has_next)
+              {
+              if (tinydir_readfile(&dir, &file) != -1) {
+              ImGui::TextWrapped(file.name);
+              }
+              tinydir_next(&dir);
+              }
+              }
+            */
+
+
+            ImGui::EndChild();
+            ImGui::BeginChild("buttons");
+            if (ImGui::Button("Load"))
+            {
+                //city = loadLevel(selected, tess, boundingBox, singlePolygon);
+            };
+            ImGui::SameLine();
+            ImGui::EndChild();
+            ImGui::EndGroup();
+        }
+        ImGui::End();
     }
 
 
-    
+
 
 };
 
 
 void moveAgent(string id, int dx, int dy)
 {
-  //ProfilerStart("nameOfProfile.log");
-  
-  string s1 = id+" ";
-  agent a0 = agents[id];
-  s1+= "loc_" + to_string(a0.x) +"_"+to_string(a0.y)+ " ";
-  s1+= "loc_" + to_string(a0.x+dx) +"_"+to_string(a0.y+dy);
-  doAction("move", s1);
+    //ProfilerStart("nameOfProfile.log");
 
-  agents[id].getAgentPos(setState);
+    string s1 = id+" ";
+    agent a0 = agents[id];
+    s1+= "loc_" + to_string(a0.x) +"_"+to_string(a0.y)+ " ";
+    s1+= "loc_" + to_string(a0.x+dx) +"_"+to_string(a0.y+dy);
+    doAction("move", s1);
 
-  //ProfilerStop();
+    agents[id].getAgentPos(setState);
+
+    //ProfilerStop();
 };
 
 
@@ -1153,17 +1172,9 @@ int main(int argc, char *argv[])
     //width = 600;
     //height = 600;
 
-    g_camera.m_width = width;
-    g_camera.m_height = height;
-
-    g_camera.m_span = (xmax-xmin)/2;
-    //g_camera.m_span = 0.5f;
-
-    g_camera.m_center.x = (xmax + xmin) / 2;
-    g_camera.m_center.y = (ymax + ymin) / 2;
 
 
-    
+
     window = glfwCreateWindow(width, height, "logistics", NULL, NULL);
     if (!window) {
         glfwTerminate();
@@ -1185,106 +1196,106 @@ int main(int argc, char *argv[])
 
     ImGui_ImplGlfwGL3_Init(window, false);
 
-    
+
     glfwSetTime(0);
 
-    
+
     rect boundingBox;
-    
+
     if (argc == 1)
-      {  
-      m_showOpenDialog = true;
-    
-    while (m_showOpenDialog)
-      {
-	
-        glfwPollEvents();
+    {
+        m_showOpenDialog = true;
 
-        ImGui_ImplGlfwGL3_NewFrame();
+        while (m_showOpenDialog)
+        {
 
+            glfwPollEvents();
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
+            ImGui_ImplGlfwGL3_NewFrame();
 
 
-	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_Always);
-      
-	if (ImGui::Begin("Open level", &m_showOpenDialog)) {
-	
-	  // left
-	  static char selected[100] = "";
-	  ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-	  tinydir_dir dir;
-	  if (tinydir_open(&dir, "./maps/") != -1) {
-	    tinydir_file file;
-	    int i = 0;
-
-	    while (dir.has_next) {
-	      if (tinydir_readfile(&dir, &file) != -1) {
-		//ImGui::TextWrapped(file.name);
-		//coinsLog.AddLog(file.extension, "\n");
-		if (!strcmp(file.extension, "txt")) {
-		  if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
-		    strcpy(selected, file.name);
-		}
-	      }
-	      tinydir_next(&dir);
-	      i++;
-	    }
-	    tinydir_close(&dir);
-	  }
-
-	  ImGui::EndChild();
-	  ImGui::SameLine();
-
-	  // right
-	  ImGui::BeginGroup();
-	  ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
-	  ImGui::Text("Selected level: %s", selected);
-	  ImGui::Separator();
-
-	  char pathToFile[100] = "";
-	  strcat(pathToFile, "./maps/");
-	  strcat(pathToFile, selected);
-
-	  std::ifstream t(pathToFile);
-	  std::stringstream buffer;
-	  buffer << t.rdbuf();
-
-	  static char bstr[5000];
+            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT);
 
 
+            ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_Always);
 
-	  strcpy(bstr,buffer.str().c_str());
+            if (ImGui::Begin("Open level", &m_showOpenDialog)) {
 
-	  //coinsLog.AddLog(buffer.str().c_str());
-	  ImGui::TextWrapped(bstr);
+                // left
+                static char selected[100] = "";
+                ImGui::BeginChild("left pane", ImVec2(150, 0), true);
+                tinydir_dir dir;
+                if (tinydir_open(&dir, "./maps/") != -1) {
+                    tinydir_file file;
+                    int i = 0;
+
+                    while (dir.has_next) {
+                        if (tinydir_readfile(&dir, &file) != -1) {
+                            //ImGui::TextWrapped(file.name);
+                            //coinsLog.AddLog(file.extension, "\n");
+                            if (!strcmp(file.extension, "txt")) {
+                                if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
+                                    strcpy(selected, file.name);
+                            }
+                        }
+                        tinydir_next(&dir);
+                        i++;
+                    }
+                    tinydir_close(&dir);
+                }
+
+                ImGui::EndChild();
+                ImGui::SameLine();
+
+                // right
+                ImGui::BeginGroup();
+                ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
+                ImGui::Text("Selected level: %s", selected);
+                ImGui::Separator();
+
+                char pathToFile[100] = "";
+                strcat(pathToFile, "./maps/");
+                strcat(pathToFile, selected);
+
+                std::ifstream t(pathToFile);
+                std::stringstream buffer;
+                buffer << t.rdbuf();
+
+                static char bstr[5000];
 
 
-	  ImGui::EndChild();
-	  ImGui::BeginChild("buttons");
-	  if (ImGui::Button("Load"))
-	    {
-	      printf(selected);
-	      city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
-	      m_showOpenDialog = false;
-	      
-	    };
-	  ImGui::SameLine();
-	  ImGui::EndChild();
-	  ImGui::EndGroup();
-	}
-	ImGui::End();
-	
-	ImGui::Render();
-	
-	glfwSwapBuffers(window);
-        glfwPollEvents();
-      }
-      }
+
+                strcpy(bstr,buffer.str().c_str());
+
+                //coinsLog.AddLog(buffer.str().c_str());
+                ImGui::TextWrapped(bstr);
+
+
+                ImGui::EndChild();
+                ImGui::BeginChild("buttons");
+                if (ImGui::Button("Load"))
+                {
+                    printf(selected);
+                    city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
+                    m_showOpenDialog = false;
+
+                };
+                ImGui::SameLine();
+                ImGui::EndChild();
+                ImGui::EndGroup();
+            }
+            ImGui::End();
+
+            ImGui::Render();
+
+            glfwSwapBuffers(window);
+            glfwPollEvents();
+        }
+    }
 
     else
-      city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
+        city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
 
     printf("go...\n");
 
@@ -1293,12 +1304,24 @@ int main(int argc, char *argv[])
     printf("Memory used: %.1f kB\n", allocated/1024.0f);
 
 
-   
+
     const float* verts = tessGetVertices(tess);
     const int* vinds = tessGetVertexIndices(tess);
     const int* elems = tessGetElements(tess);
     const int nverts = tessGetVertexCount(tess);
     const int nelems = tessGetElementCount(tess);
+
+
+
+
+    g_camera.m_width = width;
+    g_camera.m_height = height;
+
+    g_camera.m_span = (boundingBox.xmax-boundingBox.xmin)/2;
+    //g_camera.m_span = 0.5f;
+
+    g_camera.m_center.x = (boundingBox.xmax + boundingBox.xmin) / 2;
+    g_camera.m_center.y = (boundingBox.ymax + boundingBox.ymin) / 2;
 
 
     //GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
@@ -1318,14 +1341,14 @@ int main(int argc, char *argv[])
     ym = 0;
     yp = 0;
     */
-    /*
+
     for (float x=0; x < boundingBox.xmax; x=x+g_camera.gridSize)
     {
         gridVec.push_back(x + g_camera.gridSize/2);
         gridVec.push_back(boundingBox.ymin);
         gridVec.push_back(x + g_camera.gridSize / 2);
         gridVec.push_back(boundingBox.ymax);
-        xp++;
+        //xp++;
     }
 
     for (float x=0; x > boundingBox.xmin; x=x-g_camera.gridSize)
@@ -1334,7 +1357,7 @@ int main(int argc, char *argv[])
         gridVec.push_back(boundingBox.ymin);
         gridVec.push_back(x - g_camera.gridSize / 2);
         gridVec.push_back(boundingBox.ymax);
-        xm++;
+        //xm++;
     }
 
     for (float y=0; y < boundingBox.ymax; y=y+g_camera.gridSize)
@@ -1343,7 +1366,7 @@ int main(int argc, char *argv[])
         gridVec.push_back(y + g_camera.gridSize / 2);
         gridVec.push_back(boundingBox.xmax);
         gridVec.push_back(y + g_camera.gridSize / 2);
-        yp++;
+        //yp++;
     }
 
 
@@ -1353,10 +1376,10 @@ int main(int argc, char *argv[])
         gridVec.push_back(y - g_camera.gridSize / 2);
         gridVec.push_back(boundingBox.xmax);
         gridVec.push_back(y - g_camera.gridSize / 2);
-        ym++;
+        //ym++;
     }
 
-    */
+
     float* grid = gridVec.data();
 
 
@@ -1382,24 +1405,35 @@ int main(int argc, char *argv[])
 
     int x, y;
 
-	/*
+    /*
     for (string o1: objects["agents"])
       {
-	agents.insert(std::pair<string, agent>(o1,agent()));
+    agents.insert(std::pair<string, agent>(o1,agent()));
         agents[o1].id = o1;
       };
-	*/
-    
-	agents.insert(std::pair<string, agent>("agent0", agent()));
-	agents["agent0"].id = "agent0";
-	agents["agent0"].x = 4;
-	agents["agent0"].y = 27;
+    */
 
+
+
+    for (auto b1 : city)
+    {
+        if (b1.second.type=="dwelling") {
+            int x = b1.second.coords[0][0];
+            int y = b1.second.coords[0][1];
+
+            string id = "agent" + b1.second.id;
+
+            agents.insert(std::pair<string, agent>(id, agent()));
+            agents[id].id = id;
+            agents[id].x = x;
+            agents[id].y = y;
+        }
+    }
 
     std::shared_ptr<navigation_path<location_t>> path;
 
     //pathfinding_map = map_t(-xm, xp, -ym, yp);
-    
+
     path_map = &pathfinding_map;
 
 
@@ -1407,10 +1441,10 @@ int main(int argc, char *argv[])
     {
         for (int j = -ym; j < yp; j++)
         {
-	  if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0)
+            if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0)
             {
-	      //debug_log().AddLog("hit \n");
-	      //path_map->walkable[path_map->at(i, j)] = false;
+                //debug_log().AddLog("hit \n");
+                //path_map->walkable[path_map->at(i, j)] = false;
 
             }
         }
@@ -1431,42 +1465,42 @@ int main(int argc, char *argv[])
     location_t dude_position {1,1};
     location_t destination {4,5};
 
-    
+
     path = find_path<location_t, navigator>(dude_position, destination);
     if (path->success)
     {
         debug_log().AddLog("path found \n");
 
-	location_t curPos = dude_position;
-	
+        location_t curPos = dude_position;
+
         for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
-	  if (!(curPos==*p1))
-	    {
-	      debug_log().AddLog("%d,%d \n", p1->x,p1->y);
+            if (!(curPos==*p1))
+            {
+                debug_log().AddLog("%d,%d \n", p1->x,p1->y);
 
-	      /*
-	      string s1 = "agent0 ";
-	      s1+= "loc_" + to_string(curPos.x) +"_"+to_string(curPos.y)+ " ";
-	      s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
+                /*
+                string s1 = "agent0 ";
+                s1+= "loc_" + to_string(curPos.x) +"_"+to_string(curPos.y)+ " ";
+                s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
 
-	      curPos = *p1;
-	      agent0.plan.push_back({"move", s1});
-	      */
-	    }
+                curPos = *p1;
+                agent0.plan.push_back({"move", s1});
+                */
+            }
         }
     }
-    
-    
+
+
     //agent0.getAgentPos(setState);
 
-	/*
+    /*
     agent0.planFunc.push_back(
-			      [&](){
-				agent0.x++;
-				return 0;
-			      });
-				  */
-    
+                  [&](){
+                agent0.x++;
+                return 0;
+                  });
+                  */
+
     while (!glfwWindowShouldClose(window))
     {
         float ct = (float)glfwGetTime();
@@ -1503,19 +1537,19 @@ int main(int argc, char *argv[])
 
 
 
-	    for (auto a0: agents)
-	      {
-			texQuadDraw(texSh,a0.second.x,a0.second.y);
-	      };
-		/*
-              for (std::string s1 : agents){
+            for (auto a0: agents)
+            {
+                texQuadDraw(texSh,a0.second.x,a0.second.y);
+            };
+            /*
+                  for (std::string s1 : agents){
 
-                getAgentPos(state, s1, x, y);
+                    getAgentPos(state, s1, x, y);
 
 
-                texQuadDraw(texSh,x,y);
-              }
-              */
+                    texQuadDraw(texSh,x,y);
+                  }
+                  */
 
 
             if (drawBlockedCells)
