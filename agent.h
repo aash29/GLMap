@@ -43,6 +43,7 @@ public:
     int x = -1;
     int y = -1;
     std::string id;
+	std::string home;
 
     std::vector<action> plan;
 

@@ -802,12 +802,10 @@ void endTurn() {
     for (auto a1:agents) {
         if (agents[a1.first].planFunc.size() > 0) {
             agents[a1.first].planFunc.front()();
-            //doAction(a1.name, a1.params);
-
             agents[a1.first].planFunc.erase(agents[a1.first].planFunc.begin());
-
-            //agent0.getAgentPos(setState);
-
+        } else
+        {
+            //planDay()
         }
     }
 }
@@ -1427,6 +1425,8 @@ int main(int argc, char *argv[])
             agents[id].id = id;
             agents[id].x = x;
             agents[id].y = y;
+            agents[id].home = b1.second.id;
+
         }
     }
 
@@ -1477,15 +1477,6 @@ int main(int argc, char *argv[])
             if (!(curPos==*p1))
             {
                 debug_log().AddLog("%d,%d \n", p1->x,p1->y);
-
-                /*
-                string s1 = "agent0 ";
-                s1+= "loc_" + to_string(curPos.x) +"_"+to_string(curPos.y)+ " ";
-                s1+= "loc_" + to_string(p1->x) +"_"+to_string(p1->y);
-
-                curPos = *p1;
-                agent0.plan.push_back({"move", s1});
-                */
             }
         }
     }

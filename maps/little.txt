@@ -35,6 +35,43 @@
 		
             }
         },
+
+        {
+            "geometry": {
+                "coordinates": [
+                    [
+                        [
+                            20.0,
+                            9.0
+                        ],
+                        [
+                            20.0,
+                            10.0
+                        ],
+                        [
+                            21.0,
+                            10.0
+                        ],
+                        [
+                            21.0,
+                            9.0
+                        ],
+			[
+                            20.0,
+                            9.0
+                        ]
+                    ]
+                ],
+                "type": "Polygon"
+            },
+            "properties": {
+                "type": "dwelling",
+                "id": "6",
+		"building": "yes"
+
+            }
+        },
+
         {
             "geometry": {
                 "coordinates": [
@@ -66,6 +103,41 @@
             "properties": {
                 "type": "dwelling",
                 "id": "0",
+		"building": "yes"
+
+            }
+        },
+	{
+            "geometry": {
+                "coordinates": [
+                    [
+                        [
+                            20.0,
+                            5.0
+                        ],
+                        [
+                            20.0,
+                            6.0
+                        ],
+                        [
+                            21.0,
+                            6.0
+                        ],
+                        [
+                            21.0,
+                            5.0
+                        ],
+			[
+			    20.0,
+			    5.0
+			]
+                    ]
+                ],
+                "type": "Polygon"
+            },
+            "properties": {
+                "type": "shop",
+                "id": "5",
 		"building": "yes"
 
             }
