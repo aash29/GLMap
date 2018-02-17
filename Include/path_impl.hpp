@@ -96,7 +96,7 @@ struct map_t {
 
 // The A* library returns a navigation path with a template specialization to our location_t.
 // Store the path here. Normally, you'd use "auto" for this type, it is a lot less typing!
-std::shared_ptr<navigation_path<location_t>> path;
+//std::shared_ptr<navigation_path<location_t>> path;
 
 // We're using 1024x768, with 8 pixel wide chars. That gives a console grid of
 // 128 x 96. We'll go with that for the map, even though in reality the screen

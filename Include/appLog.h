@@ -39,9 +39,10 @@ struct AppLog
         ScrollToBottom = true;
     }
 
-    void    Draw(const char* title, bool* p_open = NULL)
+    void    Draw(const char* title, int screenWidth, int screenHeight,  bool* p_open = NULL)
     {
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowPos(ImVec2(0, screenHeight-400));
+        ImGui::SetNextWindowSize(ImVec2(screenWidth,360));
         ImGui::Begin(title, p_open);
         if (ImGui::Button("Clear")) Clear();
         ImGui::SameLine();

@@ -100,6 +100,9 @@ agent agent0;
 
 map_t pathfinding_map(xm,xp,ym,yp);
 
+
+int width, height;
+
 struct navigator {
 
     static float get_distance_estimate(location_t &pos, location_t &goal) {
@@ -139,6 +142,8 @@ struct navigator {
 
 
 void endTurn();
+void planDay(agent &a0);
+
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -797,7 +802,6 @@ std::string loadState(std::string fileName )
     return stateOut;
 };
 
-
 void endTurn() {
     for (auto a1:agents) {
         if (agents[a1.first].planFunc.size() > 0) {
@@ -825,7 +829,7 @@ void sInterface() {
         ImGuiStyle &style = ImGui::GetStyle();
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
 
         ImGui::Begin("Info");
         glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
@@ -856,7 +860,7 @@ void sInterface() {
 
         ImGui::ShowTestWindow();
 
-        debug_log().Draw("Log");
+        debug_log().Draw("Log",width,height);
 
 
         ImFontAtlas* atlas = ImGui::GetIO().Fonts;
@@ -864,6 +868,8 @@ void sInterface() {
         //font->Scale = 2.f;
     }
 
+
+	ImGui::SetNextWindowPos(ImVec2(width-300, 0));
 
     ImGui::Begin("Path");
 
@@ -894,8 +900,7 @@ void sInterface() {
 
     };
 
-
-
+	
     if (ImGui::Button("Find"))
     {
 
@@ -948,28 +953,26 @@ void sInterface() {
 
 
     ImGui::End();
-
-
+	
+	/*
 
     ImGui::Begin("State");
 
 
     //static char* text = &state[0];
-    /*
-    ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+    
+    //ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
 
 
-*/
+
     static char str0[128] = "city";
     ImGui::InputText("node", str0, IM_ARRAYSIZE(str0));
 
     static char str1[128] = ".*";
     ImGui::InputText("filter", str1, IM_ARRAYSIZE(str1));
 
-    /*
     if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
         ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-    */
 
     static std::vector<pddlTreeNode*> s_res;
 
@@ -981,10 +984,10 @@ void sInterface() {
         visitNodes(r1);
     }
     ImGui::End();
-
-
+	*/	
+	
     ImGui::Begin("Test actions");
-
+	/*
     static char actionName[128] = "move";
     ImGui::InputText("action", actionName, IM_ARRAYSIZE(actionName));
 
@@ -996,6 +999,15 @@ void sInterface() {
     {
         doAction(actionName,actionParameters);
     }
+	*/
+
+
+	if (ImGui::Button("Plan Day"))
+	{
+		planDay(agents["agent0"]);
+	}
+
+
 
     if (ImGui::Button("End Turn"))
     {
@@ -1004,7 +1016,7 @@ void sInterface() {
 
 
     ImGui::End();
-
+	
 
     if (m_showOpenDialog) {
         ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
@@ -1093,7 +1105,6 @@ void sInterface() {
 
 };
 
-
 void moveAgent(string id, int dx, int dy)
 {
     //ProfilerStart("nameOfProfile.log");
@@ -1109,13 +1120,60 @@ void moveAgent(string id, int dx, int dy)
     //ProfilerStop();
 };
 
+void planDay(agent &a0){
+
+	struct navShop : navigator
+	{
+		static bool is_goal(location_t &pos, location_t &goal) {
+			//   return (pos==goal);
+			std::string id1 = selectBuilding(pos.x, pos.y);
+			return 	((city[id1].type.compare("shop") == 0));
+		}
+		static float get_distance_estimate(location_t &pos, location_t &goal) {
+			float d = 1.f;
+			return d;
+		}
+	};
+
+	auto  shopPath = find_path<location_t,navShop>(location_t(a0.x, a0.y), location_t(0, 0));
+
+	if (shopPath->success) {
+		debug_log().AddLog("path found \n");
+
+		location_t curPos = location_t(a0.x, a0.y);
+
+		for (auto p1 = shopPath->steps.begin(); p1 != shopPath->steps.end(); p1++) {
+			if (!(curPos == *p1)) {
+				debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+
+				int dx = p1->x;
+				int dy = p1->y;
+				a0.planFunc.push_back(
+					[&, dx, dy]() {
+					if (path_map->walkable[path_map->at(dx, dy)]) {
+						a0.x = dx;
+						a0.y = dy;
+						return 0;
+					}
+					else {
+						return 1;
+					};
+				}
+				);
+				curPos = *p1;
+			}
+		}
+
+	}
+}
+
 
 
 int main(int argc, char *argv[])
 {
     //GLFWwindow* window;
     const GLFWvidmode* mode;
-    int width,height,i,j;
+
     float t = 0.0f, pt = 0.0f;
 
 
