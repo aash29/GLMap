@@ -1135,36 +1135,99 @@ void planDay(agent &a0){
 		}
 	};
 
-	auto  shopPath = find_path<location_t,navShop>(location_t(a0.x, a0.y), location_t(0, 0));
 
-	if (shopPath->success) {
-		debug_log().AddLog("path found \n");
 
-		location_t curPos = location_t(a0.x, a0.y);
+    a0.planFunc.reserve(300);
 
-		for (auto p1 = shopPath->steps.begin(); p1 != shopPath->steps.end(); p1++) {
-			if (!(curPos == *p1)) {
-				debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+    std::function<int()> goToAnyShop = [&, &a0]() {
+        auto shopPath = find_path<location_t, navShop>(location_t(a0.x, a0.y), location_t(0, 0));
 
-				int dx = p1->x;
-				int dy = p1->y;
-				a0.planFunc.push_back(
-					[&, dx, dy]() {
-					if (path_map->walkable[path_map->at(dx, dy)]) {
-						a0.x = dx;
-						a0.y = dy;
-						return 0;
-					}
-					else {
-						return 1;
-					};
-				}
-				);
-				curPos = *p1;
-			}
-		}
+        if (shopPath->success) {
+            debug_log().AddLog("path found \n");
 
-	}
+            location_t curPos = location_t(a0.x, a0.y);
+
+            auto it = a0.planFunc.begin();
+
+            for (auto p1 = shopPath->steps.begin(); p1 != shopPath->steps.end(); p1++) {
+                if (!(curPos == *p1)) {
+                    debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+                    int dx = p1->x;
+                    int dy = p1->y;
+
+                    it = a0.planFunc.insert(it+1,
+                                       [&, dx, dy, &a0]() {
+                                           if (path_map->walkable[path_map->at(dx, dy)]) {
+                                               a0.x = dx;
+                                               a0.y = dy;
+                                               return 0;
+                                           } else {
+                                               return 1;
+                                           };
+                                       }
+                    );
+                    /*
+                    a0.planFunc.push_back(
+                            [&, dx, dy]() {
+                                if (path_map->walkable[path_map->at(dx, dy)]) {
+                                    a0.x = dx;
+                                    a0.y = dy;
+                                    return 0;
+                                } else {
+                                    return 1;
+                                };
+                            }
+                    );
+                     */
+                    curPos = *p1;
+                }
+            }
+        }
+      return 1;
+    };
+
+    std::function<int()> goHome = [&, &a0]() {
+
+        location_t target = location_t(static_cast<int>(city[a0.home].coords[0][0]), static_cast<int>(city[a0.home].coords[0][1]));
+
+        auto homePath = find_path<location_t, navigator>(location_t(a0.x, a0.y), target);
+
+        if (homePath->success) {
+            debug_log().AddLog("path found \n");
+
+            location_t curPos = location_t(a0.x, a0.y);
+
+            auto it = a0.planFunc.begin();
+
+            for (auto p1 = homePath ->steps.begin(); p1 != homePath ->steps.end(); p1++) {
+                if (!(curPos == *p1)) {
+                    debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+                    int dx = p1->x;
+                    int dy = p1->y;
+
+                    it = a0.planFunc.insert(it+1,
+                                            [&, dx, dy, &a0]() {
+                                                if (path_map->walkable[path_map->at(dx, dy)]) {
+                                                    a0.x = dx;
+                                                    a0.y = dy;
+                                                    return 0;
+                                                } else {
+                                                    return 1;
+                                                };
+                                            }
+                    );
+
+
+                    curPos = *p1;
+                }
+            }
+        }
+        return 1;
+    };
+
+
+    a0.planFunc.push_back(goToAnyShop);
+    a0.planFunc.push_back(goHome);
 }
 
 
