@@ -177,6 +177,42 @@
 		"building": "yes"
 		
             }
+    },
+
+    {
+                "geometry": {
+                    "coordinates": [
+                        [
+                            [
+                                1.0,
+                                26.0
+                            ],
+                            [
+                                1.0,
+                                27.0
+                            ],
+                            [
+                                2.0,
+                                27.0
+                            ],
+                            [
+                                2.0,
+                                26.0
+                            ],
+    			[
+    			    1.0,
+    			    26.0
+    			]
+                        ]
+                    ],
+                    "type": "Polygon"
+                },
+                "properties": {
+                    "type": "office",
+                    "id": "7",
+    		"building": "yes"
+
+                }
         }
 
     ],

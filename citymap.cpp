@@ -1004,7 +1004,8 @@ void sInterface() {
 
 	if (ImGui::Button("Plan Day"))
 	{
-		planDay(agents["agent0"]);
+        for (auto a0: agents)
+		planDay(agents[a0.first]);
 	}
 
 
@@ -1134,8 +1135,6 @@ void planDay(agent &a0){
 			return d;
 		}
 	};
-
-
 
     a0.planFunc.reserve(300);
 

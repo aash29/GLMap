@@ -255,17 +255,6 @@ void drawMap( shaderData sh, Camera cam){
   
   glUseProgram(sh.shaderProgram);
 
-
-  /*
-    glm::mat4 Model = cam.BuildProjectionMatrix();
-
-    glm::mat4 rotN;
-
-    rotN = glm::rotate(rotN, glm::radians(angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
-
-    glm::mat4 trans = Model*rotN;
-  */
-
   glm::mat4 trans = setupCam();
   
   GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
@@ -273,7 +262,11 @@ void drawMap( shaderData sh, Camera cam){
   glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
 
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
-  
+    /*
+    glEnableVertexAttribArray(colAttrib);
+    glVertexAttribPointer(colAttrib, 3, GL_FLOAT, GL_FALSE,
+                          5*sizeof(float), (void*)(2*sizeof(float)));
+  */
   glUniform4f(uniColor, 0.2f, 0.4f, 0.2f, 1.0f);
 
   
