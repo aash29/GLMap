@@ -1138,7 +1138,7 @@ void planDay(agent &a0){
 
     a0.planFunc.reserve(300);
 
-    std::function<int()> goToAnyShop = [&, &a0]() {
+    std::function<int()> goToAnyShop = [&a0]() {
         auto shopPath = find_path<location_t, navShop>(location_t(a0.x, a0.y), location_t(0, 0));
 
         if (shopPath->success) {
@@ -1154,8 +1154,7 @@ void planDay(agent &a0){
                     int dx = p1->x;
                     int dy = p1->y;
 
-                    it = a0.planFunc.insert(it+1,
-                                       [&, dx, dy, &a0]() {
+                    it = a0.planFunc.insert(it+1,[dx, dy, &a0](){
                                            if (path_map->walkable[path_map->at(dx, dy)]) {
                                                a0.x = dx;
                                                a0.y = dy;
@@ -1165,19 +1164,6 @@ void planDay(agent &a0){
                                            };
                                        }
                     );
-                    /*
-                    a0.planFunc.push_back(
-                            [&, dx, dy]() {
-                                if (path_map->walkable[path_map->at(dx, dy)]) {
-                                    a0.x = dx;
-                                    a0.y = dy;
-                                    return 0;
-                                } else {
-                                    return 1;
-                                };
-                            }
-                    );
-                     */
                     curPos = *p1;
                 }
             }
@@ -1185,7 +1171,7 @@ void planDay(agent &a0){
       return 1;
     };
 
-    std::function<int()> goHome = [&, &a0]() {
+    std::function<int()> goHome = [&a0]() {
 
         location_t target = location_t(static_cast<int>(city[a0.home].coords[0][0]), static_cast<int>(city[a0.home].coords[0][1]));
 
@@ -1205,7 +1191,7 @@ void planDay(agent &a0){
                     int dy = p1->y;
 
                     it = a0.planFunc.insert(it+1,
-                                            [&, dx, dy, &a0]() {
+                                            [ dx, dy, &a0]() {
                                                 if (path_map->walkable[path_map->at(dx, dy)]) {
                                                     a0.x = dx;
                                                     a0.y = dy;
@@ -1639,13 +1625,50 @@ int main(int argc, char *argv[])
 
 
             if (drawGrid)
-                drawLine(gridSh,g_camera);
+                drawLine(gridSh,g_camera, 0.f, 0.f, 1.f);
 
             drawMap(mapSh, g_camera);
             drawBuildingOutlines( outlineSh, g_camera);
-            if (selected!=std::string("none"))
-                drawLine(lineSh, g_camera);
+            
+			if (selected!=std::string("none"))
+                drawLine(lineSh, g_camera,0.f,0.f,1.f);
 
+			
+			for (auto b1 : city) {
+				string id1 = b1.first;
+				
+				std::vector<float> unDraw = std::vector<float>();
+
+				for (auto it : city[id1].coords)
+				{
+					unDraw.push_back(it[0]);
+					unDraw.push_back(it[1]);
+					for (int i = 2; i < it.size() - 1; i = i + 2)
+					{
+						unDraw.push_back(it[i]);
+						unDraw.push_back(it[i + 1]);
+
+						unDraw.push_back(it[i]);
+						unDraw.push_back(it[i + 1]);
+					}
+					unDraw.push_back(it[0]);
+					unDraw.push_back(it[1]);
+				};
+
+				lineSh.vertexCount = round(unDraw.size() / 2);
+				lineSh.data = unDraw.data();
+				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+				glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
+
+				if (b1.second.type=="shop"){
+					drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
+				}
+
+				if (b1.second.type == "dwelling") {
+					drawLine(lineSh, g_camera, 0.f, 1.f, 0.f);
+				}
+
+			}
 
 
             for (auto a0: agents)

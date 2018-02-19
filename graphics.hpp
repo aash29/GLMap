@@ -23,7 +23,7 @@ struct shaderData {
 
 GLuint createShader(GLenum type, const GLchar* src);
 shaderData drawLineShaderInit( float* points, int numPoints );
-void drawLine(shaderData sh, Camera cam);
+void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b);
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelement );
 void drawMap( shaderData sh, Camera cam);
 shaderData drawBuildingOutlinesInit(float* verts, const int nverts);

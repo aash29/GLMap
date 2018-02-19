@@ -42,6 +42,9 @@ class agent {
 public:
     int x = -1;
     int y = -1;
+
+	int heat = 100;
+
     std::string id;
 	std::string home;
 

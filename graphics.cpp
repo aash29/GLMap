@@ -96,7 +96,7 @@ shaderData drawLineShaderInit( float* points, int numPoints) {
   
 }
 
-void drawLine(shaderData sh, Camera cam) {
+void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
 
 
   glBindVertexArray(sh.vao);
@@ -117,7 +117,7 @@ void drawLine(shaderData sh, Camera cam) {
 
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
   
-  glUniform4f(uniColor, 0.0f, 0.0f, 1.0f, 1.0f);
+  glUniform4f(uniColor, r,g,b,1.f);
    
   glDrawArrays(GL_LINES, 0, sh.vertexCount);
 
