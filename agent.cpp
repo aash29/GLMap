@@ -4,22 +4,23 @@
 
 #include "agent.h"
 #include "utils.hpp"
+#include "appLog.h"
 #include <sstream>
 
 
 using namespace std;
 
+
+void agent::update(){
+    for (auto act1: effects){
+        act1();
+    }
+    debug_log().AddLog("agent %s temp: %d \n", id.c_str(), heat);
+}
+
+
 void agent::getAgentPos(unordered_set<string> setState)
 {
-    
-	/*
-	pddlTreeNode* pos = traverseTree(r1,"at",id);
-
-    string loc = pos->children[1].data;
-
-    vector<string> coords = utils::tokenize(loc,'_');
-	*/
-
 	string agentName;
 	agentName = string("at") + " " + id;
 	string::size_type n = agentName.length();

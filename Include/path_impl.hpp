@@ -94,18 +94,32 @@ struct map_t {
     std::vector<bool> walkable;
 };
 
+struct heatmap_t {
+    heatmap_t(const int &x1, const int &x2, const int &y1, const int &y2) : xmin(x1), xmax(x2), ymin(y1), ymax(y2) {
+        // Resize the vector to hold the whole map; this way it won't reallocate
+        deltaHeat.resize((x2-x1+1)*(y2-y1+1));
+
+        // Set the entire map to walkable
+        std::fill(deltaHeat.begin(), deltaHeat.end(), -1);
+
+    }
+
+    // Calculate the vector offset of a grid location
+    inline int at(const int &x, const int &y)
+    { return ((xmax-xmin+1)*(y-ymin))+(x-xmin); }
+
+    // The width and height of the map
+    const int xmin,xmax, ymin, ymax;
+
+    // The actual walkable storage vector
+    std::vector<int> deltaHeat;
+};
+
+
 // The A* library returns a navigation path with a template specialization to our location_t.
 // Store the path here. Normally, you'd use "auto" for this type, it is a lot less typing!
 //std::shared_ptr<navigation_path<location_t>> path;
 
-// We're using 1024x768, with 8 pixel wide chars. That gives a console grid of
-// 128 x 96. We'll go with that for the map, even though in reality the screen
-// might change. Worrying about that is for a future example!
-// map_t map(-1,5, -2,10);
-
-
-
-// The A* library also requires a helper class to understand your map format.
 
 
 

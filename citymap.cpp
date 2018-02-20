@@ -100,6 +100,10 @@ agent agent0;
 
 map_t pathfinding_map(xm,xp,ym,yp);
 
+heatmap_t heatmap(xm,xp,ym,yp);
+
+
+
 
 int width, height;
 
@@ -512,142 +516,6 @@ void charCallback(GLFWwindow*, unsigned int c)
 
 
 
-
-std::unordered_set<string> hashState(string nodeName )
-{
-
-    std::unordered_set<string> result;
-
-    pddlTreeNode* init = root.findFirstName(nodeName);
-    for (pddlTreeNode p1: init->children)
-    {
-        result.insert(p1.data +" "+ p1.flattenChildren());
-    }
-    return result;
-
-}
-
-
-
-bool doConcreteAction (vector<string> precond, vector<string> peff, vector<string> neff, vector<string> qeff)
-{
-
-    for (string p1 : precond)
-    {
-        auto n3 = setState.find(p1);
-
-        if (n3==setState.end())
-        {
-            debug_log().AddLog("preconditions not satisfied");
-            return false;
-        }
-    }
-
-    for (auto e1 : peff)
-    {
-
-        setState.insert(e1);
-        vector<string> s1 = utils::tokenize(e1,' ');
-        init->insert_back(pddlTreeNode(s1[0]));
-
-
-
-        for (int i = 1; i<s1.size();i++) {
-            init->children.back().insert_back(pddlTreeNode(s1[i]));
-        }
-
-    }
-
-
-
-}
-
-bool doAction(std::string name, std::string parameters)
-{
-
-    using micro = std::chrono::microseconds;
-    auto start = std::chrono::high_resolution_clock::now();
-
-    //std::vector<std::string> parValues = utils::tokenize(parameters, ' ');
-    //pddlTreeNode* action = root.findFirst(":action",name+".*");
-    //pddlTreeNode* action = root.findFirstName(":action");
-    //pddlTreeNode* r2 = action->findFirstName(":parameters");
-
-    actionPrefab a1 = actionPrefabs[name];
-
-    vector<string> groundedPreconditions = a1.getPreconditions(parameters);
-
-
-    for (string p1: groundedPreconditions)
-    {
-        auto n3 = setState.find(p1);
-        auto n4 = constants.find(p1);
-
-        if ((n3==setState.end()) && (n4 == constants.end()))
-        {
-            debug_log().AddLog("preconditions not satisfied");
-            return false;
-        }
-
-    }
-    //all preconditions met
-
-    vector<string> grndPosEffect = a1.getPosEffects(parameters);
-    vector<string> grndNegEffect = a1.getNegEffects(parameters);
-
-    for (string e1: grndNegEffect)
-    {
-
-        auto n3 = setState.find(e1);
-
-        if (n3!=setState.end())
-        {
-            setState.erase(e1);
-
-            /*
-            for (auto it = init->children.begin(); it != init->children.end(); it++)
-            {
-                std::string s1 = it->flattenChildren();
-                if ((it->data == effectName) && (s1 == effectParameters))
-                {
-                    init->children.erase(it);
-                    break;
-                }
-                //pddlTreeNode* n3 = it->findFirstExact(effectName, effectParameters);
-            }
-            */
-        }
-    }
-
-    for (string e1 : grndPosEffect)
-    {
-        /*
-               init->insert_back(pddlTreeNode(n1.data));
-
-            string s2;
-            for (pddlTreeNode n2 : n1.children) {
-                string s1 = n2.data;
-                for (int i = 0; i < parNames.size(); i++) {
-                    utils::replaceSubstrs(s1, parNames[i], parValues[i]);
-                };
-                init->children.back().insert_back(pddlTreeNode(s1));
-                s2.append(" ");
-                s2.append(s1);
-                debug_log().AddLog(s1);
-            }
-            */
-
-        setState.insert(e1);
-    }
-
-    auto finish = std::chrono::high_resolution_clock::now();
-
-    debug_log().AddLog("time taken:%d",std::chrono::duration_cast<micro>(finish - start).count());
-
-    return true;
-
-}
-
 std::string loadState(std::string fileName )
 {
 
@@ -804,17 +672,18 @@ std::string loadState(std::string fileName )
 
 void endTurn() {
     for (auto a1:agents) {
-        if (agents[a1.first].planFunc.size() > 0) {
-            agents[a1.first].planFunc.front()();
-            agents[a1.first].planFunc.erase(agents[a1.first].planFunc.begin());
+        string id = a1.first;
+
+        agents[id].update();
+
+        if (agents[id].planFunc.size() > 0) {
+            agents[id].planFunc.front()();
+            agents[id].planFunc.erase(agents[id].planFunc.begin());
         } else
         {
-            //planDay()
         }
     }
 }
-
-
 
 void sInterface() {
 
@@ -1104,21 +973,6 @@ void sInterface() {
 
 
 
-};
-
-void moveAgent(string id, int dx, int dy)
-{
-    //ProfilerStart("nameOfProfile.log");
-
-    string s1 = id+" ";
-    agent a0 = agents[id];
-    s1+= "loc_" + to_string(a0.x) +"_"+to_string(a0.y)+ " ";
-    s1+= "loc_" + to_string(a0.x+dx) +"_"+to_string(a0.y+dy);
-    doAction("move", s1);
-
-    agents[id].getAgentPos(setState);
-
-    //ProfilerStop();
 };
 
 void planDay(agent &a0){
@@ -1551,41 +1405,24 @@ int main(int argc, char *argv[])
             {
                 //debug_log().AddLog("hit \n");
                 //path_map->walkable[path_map->at(i, j)] = false;
+                heatmap.deltaHeat[heatmap.at(i,j)] = 1;
+
 
             }
         }
     }
-    /*
-    state = loadState("city.problem");
-    setState = hashState(":init");
-    constants = hashState(":constants");
-
-	
-    static actionPrefab a1;
-    a1.init(root.findFirst(":action", "move.*"));
-    actionPrefabs.insert(pair<string, actionPrefab>("move", a1));
-    */
-
-    debug_log().AddLog("xm:%d,xp:%d,ym:%d,yp:%d \n", xm,xp,ym,yp);
-
-    location_t dude_position {1,1};
-    location_t destination {4,5};
 
 
-    path = find_path<location_t, navigator>(dude_position, destination);
-    if (path->success)
-    {
-        debug_log().AddLog("path found \n");
-
-        location_t curPos = dude_position;
-
-        for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++){
-            if (!(curPos==*p1))
-            {
-                debug_log().AddLog("%d,%d \n", p1->x,p1->y);
-            }
-        }
+    for (auto a0:agents){
+        string id = a0.first;
+        agents[id].effects.push_back([&heatmap,id]{
+            agents[id].heat=agents[id].heat+heatmap.deltaHeat[heatmap.at(agents[id].x,agents[id].y)];
+            agents[id].heat = std::max(0,agents[id].heat);
+            agents[id].heat = std::min(100,agents[id].heat);
+            return 0;
+        });
     }
+
 
 
     //agent0.getAgentPos(setState);

@@ -48,9 +48,8 @@ public:
     std::string id;
 	std::string home;
 
-    std::vector<action> plan;
-
     std::vector<std::function<int()> > planFunc;
+    std::vector<std::function<int()> > effects;
 
     
     void update();
