@@ -10,6 +10,7 @@
 #include "pddltree.hpp"
 #include <unordered_set>
 #include <functional>
+#include <set>
 
 
 using namespace std;
@@ -44,6 +45,10 @@ public:
     int y = -1;
 
 	int heat = 100;
+	int energy = 100;
+	int fed = 100;
+
+	std::multiset<string> inventory = {"food","food","food","food","food"};
 
     std::string id;
 	std::string home;

@@ -50,9 +50,6 @@
 using namespace std;
 
 
-pddlTreeNode root("city");
-pddlTreeNode* init;
-
 //Camera g_camera;
 
 GLint uniTrans;
@@ -67,22 +64,22 @@ std::map<std::string, building> city;
 std::string selected;
 shaderData lineSh;
 
-
-std::string state;
-std::unordered_set<string> setState;
-std::unordered_set<string> constants;
-
-map<string, actionPrefab> actionPrefabs;
 map <string, strVec> objects;
 map<string, agent> agents;
 
 
 polygon singlePolygon;
 
+
+//нумерация клеток
+
 int xm = 0;
-int xp = 30;
+int xp = 80;
 int ym = 0;
 int yp = 40;
+
+rect boundingBox = {0, 80, 0, 40};
+
 
 
 map_t* path_map;
@@ -398,7 +395,6 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 //#define USE_POOL 1
 
 
-void moveAgent(string id, int dx, int dy);
 int run = 1;
 
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -516,160 +512,6 @@ void charCallback(GLFWwindow*, unsigned int c)
 
 
 
-std::string loadState(std::string fileName )
-{
-
-    std::ifstream file;
-    file.open(std::string(fileName), std::ios::in);
-
-    std::string stateString((std::istreambuf_iterator<char>(file)),
-                            std::istreambuf_iterator<char>());
-
-
-    std::string stateOut(stateString);
-
-    std::string curStr;
-    std::vector<std::string> tokens = std::vector<std::string>();
-
-    utils::removeSubstrs(stateString,std::string("\t"));
-    utils::removeSubstrs(stateString,std::string("\n"));
-    utils::removeSubstrs(stateString,std::string("\r"));
-
-
-    for (int i = 0; i < stateString.length(); i++) {
-        char c = stateString[i];
-        /*
-        if ((c == '(') or (c == ')'))
-        {
-            //tokens.push_back(std::string(1, c));
-        };
-        */
-
-        if ((c != '(') and (c != ')') and (c != ' '))
-        {
-            curStr += c;
-        }
-        else
-        {
-            if (curStr!="")
-                tokens.push_back(curStr);
-
-            curStr = "";
-            if (c != ' ') {
-                tokens.push_back(std::string(1, c));
-                curStr = "";
-            }
-        }
-    }
-
-
-    debug_log().AddLog("\n ***** tokens: \n");
-    for (auto s1 : tokens) {
-        debug_log().AddLog(s1.c_str());
-        debug_log().AddLog("\n");
-    }
-    file.close();
-
-
-    pddlTreeNode* curNode = &root;
-    std::vector<pddlTreeNode* > stack;
-
-    for (auto t1 = tokens.begin(); t1 != tokens.end(); t1++)
-    {
-
-        if ((*t1 == "("))
-        {
-            curNode->insert_back(pddlTreeNode(*(t1+1)));
-            t1++;
-            stack.push_back(curNode);
-            curNode = &(curNode->children.back());
-            continue;
-        }
-        else
-        if (*t1 == ")")
-        {
-            curNode = stack.back();
-            stack.pop_back();
-        }
-        else
-        {
-            curNode->insert_back(pddlTreeNode(*(t1)));
-        }
-    }
-
-
-    pddlTreeNode* obj = root.findFirstName(":objects");
-
-
-    strVec currentType;
-    for (int i = 0; i< obj->children.size(); i++)
-    {
-
-        if (obj->children[i].data=="-")
-        {
-            objects[obj->children[i+1].data].insert(objects[obj->children[i+1].data].begin(),currentType.begin(),currentType.end());
-            currentType.clear();
-            i++;
-        }
-        else
-        {
-            currentType.push_back(obj->children[i].data);
-        }
-    }
-
-    debug_log().AddLog("agents: \n");
-
-    for (string o1: objects["agent"])
-    {
-        debug_log().AddLog(o1);
-    }
-
-    std::vector<pddlTreeNode*> r1 =  root.search(":objects",".*");
-
-    for (int i=-xm;i<xp;i++)
-        for (int j=-ym;j<yp;j++)
-        {
-            char ss1[50];
-            sprintf ( ss1, "loc_%d_%d", i,j );
-            r1.front()->insert_back(pddlTreeNode(ss1));
-        }
-
-    init = root.findFirstName(":init");
-
-    pddlTreeNode* constNode = root.insert_back(pddlTreeNode(":constants"));
-
-
-
-    pddlTreeNode* cn = constNode;
-
-    for (int i=-xm+1;i<xp-1;i++)
-        for (int j=-ym+1;j<yp-1;j++)
-        {
-            if (path_map->walkable[path_map->at(i, j)])
-            {
-                for (int k=-1; k<2; k++)
-                    for (int l=-1;l<2;l++)
-                        if (not ((k==0)&&(l==0)))
-                            if (path_map->walkable[path_map->at(i+k, j+l)])
-                            {
-                                pddlTreeNode tn = pddlTreeNode("con");
-
-                                char ss1[50];
-                                sprintf ( ss1, "loc_%d_%d", i,j );
-                                tn.insert_back(pddlTreeNode(ss1));
-
-                                sprintf ( ss1, "loc_%d_%d", i+k,j+l );
-                                tn.insert_back(pddlTreeNode(ss1));
-
-                                cn->insert_back(tn);
-                            }
-
-            }
-
-        }
-    return stateOut;
-};
-
 void endTurn() {
     for (auto a1:agents) {
         string id = a1.first;
@@ -710,17 +552,14 @@ void sInterface() {
 
         if (selected!=std::string("none"))
         {
-
             ImGui::Text((std::string("id:") + city[selected].id).c_str());
         }
 
         ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
-
         ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
         ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
         ImGui::Checkbox("Draw Grid", &drawGrid);
-
 
         ImGui::End();
 
@@ -770,8 +609,7 @@ void sInterface() {
     };
 
 	
-    if (ImGui::Button("Find"))
-    {
+    if (ImGui::Button("Find")) {
 
         for (auto a1:agents) {
 
@@ -784,7 +622,6 @@ void sInterface() {
             location_t epLoc(endPos[0], endPos[1]);
 
             location_t apLoc(a1.second.x,a1.second.y);
-
 
             path = find_path<location_t, n1>(apLoc, epLoc);
 
@@ -886,6 +723,34 @@ void sInterface() {
 
 
     ImGui::End();
+
+    ImGui::Begin("Agent");
+    {
+        static string curAgent = "agent0";
+
+        ImGui::InputInt("heat", &agents[curAgent].heat);
+
+        ImGui::InputInt("energy", &agents[curAgent].energy);
+
+        ImGui::InputInt("fed", &agents[curAgent].fed);
+
+        const char* listbox_items[20];
+
+        static int listbox_item_current = 1;
+
+        int i = 0;
+        for (string s1: agents[curAgent].inventory){
+            listbox_items[i]=s1.c_str();
+            i++;
+        }
+
+        ImGui::ListBox("inventory", &listbox_item_current, listbox_items, i, 4);
+
+
+
+    }
+    ImGui::End();
+
 	
 
     if (m_showOpenDialog) {
@@ -988,6 +853,7 @@ void planDay(agent &a0){
 			float d = 1.f;
 			return d;
 		}
+
 	};
 
     a0.planFunc.reserve(300);
@@ -1012,6 +878,7 @@ void planDay(agent &a0){
                                            if (path_map->walkable[path_map->at(dx, dy)]) {
                                                a0.x = dx;
                                                a0.y = dy;
+                                               a0.energy--;
                                                return 0;
                                            } else {
                                                return 1;
@@ -1023,6 +890,22 @@ void planDay(agent &a0){
             }
         }
       return 1;
+    };
+
+
+    std::function<int()> eat = [&a0]() {
+
+        auto it = a0.inventory.find("food");
+
+        if (it!=a0.inventory.end()) {
+            a0.fed = a0.fed + 20;
+            a0.inventory.erase(it);
+            return 0;
+        } else {
+            return 1;
+        }
+
+
     };
 
     std::function<int()> goHome = [&a0]() {
@@ -1049,14 +932,13 @@ void planDay(agent &a0){
                                                 if (path_map->walkable[path_map->at(dx, dy)]) {
                                                     a0.x = dx;
                                                     a0.y = dy;
+                                                    a0.energy--;
                                                     return 0;
                                                 } else {
                                                     return 1;
                                                 };
                                             }
                     );
-
-
                     curPos = *p1;
                 }
             }
@@ -1067,6 +949,8 @@ void planDay(agent &a0){
 
     a0.planFunc.push_back(goToAnyShop);
     a0.planFunc.push_back(goHome);
+    a0.planFunc.push_back(eat);
+
 }
 
 
@@ -1158,7 +1042,6 @@ int main(int argc, char *argv[])
     glfwSetTime(0);
 
 
-    rect boundingBox;
 
     if (argc == 1)
     {
@@ -1381,6 +1264,9 @@ int main(int argc, char *argv[])
 
             string id = "agent" + b1.second.id;
 
+
+            debug_log().AddLog("agent % created \n", id.c_str());
+
             agents.insert(std::pair<string, agent>(id, agent()));
             agents[id].id = id;
             agents[id].x = x;
@@ -1419,6 +1305,9 @@ int main(int argc, char *argv[])
             agents[id].heat=agents[id].heat+heatmap.deltaHeat[heatmap.at(agents[id].x,agents[id].y)];
             agents[id].heat = std::max(0,agents[id].heat);
             agents[id].heat = std::min(100,agents[id].heat);
+
+            agents[id].fed--;
+
             return 0;
         });
     }

@@ -52,6 +52,16 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
     file.close();
   }
 
+
+    auto f0 = jsonObj.find("mapBounds");
+    std::vector<float> c1 =  (*f0);
+
+    xmin = c1[0];
+    xmax = c1[1];
+    ymin = c1[2];
+    ymax = c1[3];
+
+
   auto f1 = jsonObj.find("features");
 
 
@@ -75,11 +85,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	ymax = 59.9379525f;
 	*/
 
-	xmin = 0.f;
-	xmax = 30.f;
-	ymin = 0.f;
-	ymax = 40.f;
-	
 
 	singlePolygon.nvert = 0;
 	
@@ -132,7 +137,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 			//xmin=std::min(xmin, c1[j][i][0]);
 			//xmax=std::max(xmax, c1[j][i][0]);
-	    
+
 			//ymin=std::min(ymin, c1[j][i][1]);
 			//ymax=std::max(ymax, c1[j][i][1]);
 		  };
@@ -166,18 +171,18 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   upperx = 1.f * (xmax-xmin)/(ymax-ymin);
   */
 
-  lowery = ymin;
-  lowerx = xmin;
+  lowery = boundingBox.ymin;
+  lowerx = boundingBox.xmin;
 
-  upperx = xmax;
-  uppery = ymax;
+  upperx = boundingBox.xmax;
+  uppery = boundingBox.ymax;
 
-  
+  /*
   boundingBox.xmin = xmin;
   boundingBox.xmax = xmax;
   boundingBox.ymin = ymin;
   boundingBox.ymax = ymax;
-
+*/
 
   //float aN = 30.f*glm::pi<float>()/180;
   float aN = 0.f;
@@ -213,13 +218,13 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	    
 	    it.second.coords[j][i] = v2[0];
 	    it.second.coords[j][i+1] = v2[1];
-
+/*
 	    boundingBox.xmin = std::min(boundingBox.xmin,v2[0]);
 	    boundingBox.xmax = std::max(boundingBox.xmax,v2[0]);
 
 	    boundingBox.ymin = std::min(boundingBox.ymin,v2[1]);
 	    boundingBox.ymax = std::max(boundingBox.ymax,v2[1]);
-	    
+*/
 	    
 	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));

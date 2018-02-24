@@ -1,4 +1,10 @@
 {
+"mapBounds": [
+0,
+30,
+0,
+40
+],
     "features": [
         {
             "geometry": {
