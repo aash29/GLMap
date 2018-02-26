@@ -53,13 +53,26 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   }
 
 
-    auto f0 = jsonObj.find("mapBounds");
+
+	float aN = 0.f;
+
+	auto f0 = jsonObj.find("mapBounds");
     std::vector<float> c1 =  (*f0);
 
     xmin = c1[0];
     xmax = c1[1];
     ymin = c1[2];
     ymax = c1[3];
+
+
+
+
+	if (jsonObj.find("northAngle") != jsonObj.end()) {
+		auto northAngle = jsonObj.find("northAngle");
+		aN = *northAngle;
+		aN =aN * glm::pi<float>()/180;;
+	};
+
 
 
   auto f1 = jsonObj.find("features");
@@ -185,7 +198,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 */
 
   //float aN = 30.f*glm::pi<float>()/180;
-  float aN = 0.f;
+  //float aN = 0.f;
   
   glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
 

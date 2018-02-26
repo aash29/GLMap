@@ -74,11 +74,11 @@ polygon singlePolygon;
 //нумерация клеток
 
 int xm = 0;
-int xp = 80;
+int xp = 120;
 int ym = 0;
-int yp = 40;
+int yp = 160;
 
-rect boundingBox = {0, 80, 0, 40};
+rect boundingBox = {xm, xp, ym, yp};
 
 
 
@@ -93,14 +93,15 @@ bool m_showOpenDialog = true;
 char* text;
 int stateSize;
 
-agent agent0;
+//agent agent0;
+
+string controlledAgent;
 
 map_t pathfinding_map(xm,xp,ym,yp);
 
 heatmap_t heatmap(xm,xp,ym,yp);
 
-
-
+heatmap_t buildingTypes(xm,xp,ym,yp); //0 - ничего, 1 - жилье, 2 - магазин, 3 - контора
 
 int width, height;
 
@@ -140,7 +141,6 @@ struct navigator {
         return lhs == rhs;
     }
 };
-
 
 void endTurn();
 void planDay(agent &a0);
@@ -409,8 +409,10 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         TESS_NOTUSED(mods);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GL_TRUE);
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-            run = !run;
+        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+            endTurn();
+        }
+
         if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
         {
             dx = 1, dy = 0;
@@ -845,9 +847,9 @@ void planDay(agent &a0){
 	struct navShop : navigator
 	{
 		static bool is_goal(location_t &pos, location_t &goal) {
-			//   return (pos==goal);
-			std::string id1 = selectBuilding(pos.x, pos.y);
-			return 	((city[id1].type.compare("shop") == 0));
+			// return (pos==goal);
+			// std::string id1 = selectBuilding(pos.x, pos.y);
+			return 	(buildingTypes.deltaHeat[buildingTypes.at(pos.x,pos.y)] == 2);
 		}
 		static float get_distance_estimate(location_t &pos, location_t &goal) {
 			float d = 1.f;
@@ -1276,6 +1278,17 @@ int main(int argc, char *argv[])
         }
     }
 
+
+    agents.insert(std::pair<string, agent>("agent0", agent()));
+
+    agents["agent0"].id = "agent0";
+    agents["agent0"].x = 2;
+    agents["agent0"].y = 2;
+    agents["agent0"].home = city.begin()->first;
+
+
+
+
     std::shared_ptr<navigation_path<location_t>> path;
 
     //pathfinding_map = map_t(-xm, xp, -ym, yp);
@@ -1283,17 +1296,25 @@ int main(int argc, char *argv[])
     path_map = &pathfinding_map;
 
 
-    for (int i = -xm; i < xp; i++)
-    {
-        for (int j = -ym; j < yp; j++)
-        {
-            if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0)
-            {
+    for (int i = -xm; i < xp; i++) {
+        for (int j = -ym; j < yp; j++) {
+
+            buildingTypes.deltaHeat[buildingTypes.at(i,j)] = 0;
+
+            if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0) {
                 //debug_log().AddLog("hit \n");
                 //path_map->walkable[path_map->at(i, j)] = false;
                 heatmap.deltaHeat[heatmap.at(i,j)] = 1;
-
-
+                string id = selectBuilding((i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize);
+                if (city[id].type=="dwelling") {
+                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 1;
+                }
+                if (city[id].type == "shop") {
+                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 2;
+                }
+                if (city[id].type == "office") {
+                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 3;
+                }
             }
         }
     }
