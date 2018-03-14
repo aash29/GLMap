@@ -4,6 +4,11 @@
 #include "tesselator.h"
 
 
+struct rect
+{
+    float xmin,xmax,ymin,ymax;
+};
+
 struct building
 {
   std::string id;
@@ -13,14 +18,13 @@ struct building
   std::string type;
   
   std::vector<std::vector<float> > coords;
-};
 
-struct rect
-{
-  float xmin;
-  float xmax;
-  float ymin;
-  float ymax;
+  double *vertx;
+	double *verty;
+	int numVert;
+
+  rect bounds;
+
 };
 
 
@@ -126,47 +130,48 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 		  m3[id].addrNumber = (*it)["properties"]["addr:housenumber"];
 		if (((*it)["properties"]).find("type") != ((*it)["properties"]).end())
 		  m3[id].type = (*it)["properties"]["type"];
-		
-		
+
+		m3[id].bounds = {std::numeric_limits<float>::lowest(),std::numeric_limits<float>::max(),
+							   std::numeric_limits<float>::lowest(),std::numeric_limits<float>::max()};
+
 
 		for (int j = 0; j<c1.size();j++){
 
-		  a2[j] = new float[c1[j].size()*2];
 		  m3[id].coords.push_back(std::vector<float>());
 		  
 		  std::cout << "contour size:" << c1[j].size() << "\n";
 
 		  // zero vert
 		  singlePolygon.nvert++;
-	  
-		  for (int i = 0; i<c1[j].size();i++){
-		    //a2[j][2*i]=c1[j][i][0];
-		    //	a2[j][2*i+1]=c1[j][i][1];
 
-			m3[id].coords[j].push_back(c1[j][i][0]);
+
+		  for (int i = 0; i<c1[j].size();i++){
+
+			  //unCol.insert(unCol.end(),c1[j].begin(),c1[j].end());
+
+
+			  m3[id].coords[j].push_back(c1[j][i][0]);
 			m3[id].coords[j].push_back(c1[j][i][1]);
 			
 			singlePolygon.nvert++;
 
-			//xmin=std::min(xmin, c1[j][i][0]);
-			//xmax=std::max(xmax, c1[j][i][0]);
+			  m3[id].bounds.xmin=std::min(m3[id].bounds.xmin, c1[j][i][0]);
+			  m3[id].bounds.xmax=std::max(m3[id].bounds.xmax, c1[j][i][0]);
 
-			//ymin=std::min(ymin, c1[j][i][1]);
-			//ymax=std::max(ymax, c1[j][i][1]);
+			  m3[id].bounds.ymin=std::min(m3[id].bounds.ymin, c1[j][i][1]);
+			  m3[id].bounds.ymax=std::max(m3[id].bounds.ymax, c1[j][i][1]);
 		  };
-		  //std::cout << "adding contour" << "\n";
-		  singlePolygon.nvert++;  // zero vert
+
+
+
+			singlePolygon.nvert++;  // zero vert
 
 		}
+
 
 	
 		};
       }
-      /*
-      if ((*it)["properties"]["type"]=="route"){
-	std::cout << *it << '\n';
-      }
-      */
     }
   }
 
@@ -174,15 +179,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
   float lowerx,lowery,upperx,uppery;
 
-  /*
-  lowery = 0.f;
-  uppery = 1.f;
-
-  lowerx = 0.f * (xmax-xmin)/(ymax-ymin); 
-  //upperx = 1.f * (xmax-xmin)/(ymax-ymin)* 0.5f;
-
-  upperx = 1.f * (xmax-xmin)/(ymax-ymin);
-  */
 
   lowery = boundingBox.ymin;
   lowerx = boundingBox.xmin;
@@ -190,16 +186,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   upperx = boundingBox.xmax;
   uppery = boundingBox.ymax;
 
-  /*
-  boundingBox.xmin = xmin;
-  boundingBox.xmax = xmax;
-  boundingBox.ymin = ymin;
-  boundingBox.ymax = ymax;
-*/
 
-  //float aN = 30.f*glm::pi<float>()/180;
-  //float aN = 0.f;
-  
   glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
 
 
@@ -213,7 +200,12 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   debug_log().AddLog("upperx: %f \n", upperx);
 
     for (auto &it : m3) {
+
+	std::vector<float> unCol = std::vector<float>();
+
 	for (int j = 0; j < it.second.coords.size(); j++) {
+
+
 	singlePolygon.vertx[spCounter] = 0.f;
 	singlePolygon.verty[spCounter] = 0.f;
 	spCounter++;
@@ -225,34 +217,53 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	    glm::vec2 v1(x,y);
 	    glm::vec2 v2 = r1 * v1;
 
+
+		  unCol.push_back(v2[0]);
+		  unCol.push_back(v2[1]);
+
+
 	    singlePolygon.vertx[spCounter] = v2[0];
 	    singlePolygon.verty[spCounter] = v2[1];
 	    spCounter++;
 	    
 	    it.second.coords[j][i] = v2[0];
 	    it.second.coords[j][i+1] = v2[1];
-/*
-	    boundingBox.xmin = std::min(boundingBox.xmin,v2[0]);
-	    boundingBox.xmax = std::max(boundingBox.xmax,v2[0]);
+	  }
 
-	    boundingBox.ymin = std::min(boundingBox.ymin,v2[1]);
-	    boundingBox.ymax = std::max(boundingBox.ymax,v2[1]);
-*/
-	    
-	  }		  
 	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
+
+		unCol.push_back(0.f);
+		unCol.push_back(0.f);
 
 	  singlePolygon.vertx[spCounter] = 0.f;
 	  singlePolygon.verty[spCounter] = 0.f;
 	  spCounter++;
-
-	  
 	}
 
+		float* cont1 = unCol.data();
+		int numVert = round(unCol.size()/2);
+
+		it.second.vertx = new double[numVert];
+		it.second.verty = new double[numVert];
+
+		for (int i = 0; i<numVert; i++){
+			it.second.vertx[i]=cont1[2*i];
+			it.second.verty[i]=cont1[2*i+1];
+		}
+
+		it.second.numVert = numVert;
+
 	
-      }
-      
-      return m3;
+	}
+
+
+    //float frame[8] =  {lowerx,lowery,lowerx,uppery, upperx, uppery, upperx, lowerx};
+
+
+    //tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
+
+
+    return m3;
 };
 
 
