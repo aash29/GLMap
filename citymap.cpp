@@ -74,9 +74,9 @@ polygon singlePolygon;
 //нумерация клеток
 
 int xm = 0;
-int xp = 120;
+int xp = 30;
 int ym = 0;
-int yp = 160;
+int yp = 40;
 
 rect boundingBox = {xm, xp, ym, yp};
 
@@ -728,9 +728,9 @@ void sInterface() {
 
     ImGui::Begin("Agent");
     {
-        static string curAgent = "agent0";
+        string curAgent = "agent0";
 
-        ImGui::InputInt("heat", &agents[curAgent].heat);
+        ImGui::InputInt("heat", &(agents[curAgent].heat));
 
         ImGui::InputInt("energy", &agents[curAgent].energy);
 
@@ -1077,10 +1077,10 @@ int main(int argc, char *argv[])
                         if (tinydir_readfile(&dir, &file) != -1) {
                             //ImGui::TextWrapped(file.name);
                             //coinsLog.AddLog(file.extension, "\n");
-                            if (!strcmp(file.extension, "txt")) {
+                            //if (!strcmp(file.extension, "txt")) {
                                 if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
                                     strcpy(selected, file.name);
-                            }
+                            //}
                         }
                         tinydir_next(&dir);
                         i++;
@@ -1101,19 +1101,35 @@ int main(int argc, char *argv[])
                 strcat(pathToFile, "./maps/");
                 strcat(pathToFile, selected);
 
-                std::ifstream t(pathToFile);
+                std::ifstream t;
+				t.open(pathToFile);
+
                 std::stringstream buffer;
-                buffer << t.rdbuf();
-
-                static char bstr[5000];
+				buffer << t.rdbuf();
 
 
 
-                strcpy(bstr,buffer.str().c_str());
+				static char bstr[15000];
+				
+				//int n = buffer.str().size();
+				if (buffer.str().size()< 15000) {
+
+                
+					strcpy(bstr, buffer.str().c_str());
+
+				}
+				else {
+
+					strcpy(bstr, "Too large");
+				}
 
                 //coinsLog.AddLog(buffer.str().c_str());
                 ImGui::TextWrapped(bstr);
 
+				t.clear();
+				t.seekg(0, ios::beg);
+				buffer.clear();
+				buffer.seekg(0, ios::beg);
 
                 ImGui::EndChild();
                 ImGui::BeginChild("buttons");
@@ -1322,10 +1338,10 @@ int main(int argc, char *argv[])
 
     for (auto a0:agents){
         string id = a0.first;
-        agents[id].effects.push_back([&heatmap,id]{
+        agents[id].effects.push_back([&, id]{
             agents[id].heat=agents[id].heat+heatmap.deltaHeat[heatmap.at(agents[id].x,agents[id].y)];
-            agents[id].heat = std::max(0,agents[id].heat);
-            agents[id].heat = std::min(100,agents[id].heat);
+            agents[id].heat = max(0,agents[id].heat);
+            agents[id].heat = min(100,agents[id].heat);
 
             agents[id].fed--;
 
