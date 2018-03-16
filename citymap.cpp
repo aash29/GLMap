@@ -52,8 +52,11 @@ using namespace std;
 
 //Camera g_camera;
 
-GLint uniTrans;
 
+string curAgent = "";
+
+
+GLint uniTrans;
 
 GLFWwindow *window = NULL;
 bool rightMouseDown;
@@ -74,9 +77,10 @@ polygon singlePolygon;
 //нумерация клеток
 
 int xm = 0;
-int xp = 30;
+int xp = 160;
 int ym = 0;
-int yp = 40;
+int yp = 80;
+
 
 rect boundingBox = {xm, xp, ym, yp};
 
@@ -226,8 +230,8 @@ static int pnpoly(int nvert, double *vertx, double *verty, double testx, double 
 
 std::string selectBuilding(float testx, float testy)
 {
-    glm::mat4 rotN;
-    rotN = glm::rotate(rotN, glm::radians(-angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+    //glm::mat4 rotN;
+    //rotN = glm::rotate(rotN, glm::radians(-angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
     std::vector<float> unCol = std::vector<float>();
     std::vector<float> unDraw = std::vector<float>();
@@ -235,9 +239,9 @@ std::string selectBuilding(float testx, float testy)
     unCol.push_back(0.f);
     unCol.push_back(0.f);
 
-    for (auto b1: city)
-    {
+    for (auto b1: city) {
         std::string id1 = b1.first;
+        /*
         for (auto it: city[id1].coords)
         {
             //numVert+=round(it.size()/2);
@@ -258,32 +262,13 @@ std::string selectBuilding(float testx, float testy)
             unCol.push_back(0.f);
             //numVert++;
         };
-
-
-        float* cont1 = unCol.data();
-        int numVert = round(unCol.size()/2);
-
-        double* vertx = new double[numVert];
-        double* verty = new double[numVert];
-
-        for (int i = 0; i<numVert; i++){
-            vertx[i]=cont1[2*i];
-            verty[i]=cont1[2*i+1];
-        }
-        /*
-         debug_log().AddLog("vertx one building:");
-        for (int i=0; i< numVert; i++){
-
-      debug_log().AddLog("%g,",vertx[i] );
-        };
-        debug_log().AddLog("\n");
-        */
-        if (pnpoly(numVert, vertx, verty, testx, testy)>0)
+*/
+        rect r1 = b1.second.bounds;
+        if ((testx>r1.xmin) && (testx<r1.xmax) && (testy>r1.ymin) && (testy<r1.ymax))
+        if (pnpoly(b1.second.numVert, b1.second.vertx, b1.second.verty, testx, testy)>0)
         {
             return id1;
         }
-        delete vertx;
-        delete verty;
 
 
     }
@@ -349,6 +334,9 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
                     unDraw.push_back(it[1]);
                 };
 
+
+                debug_log().AddLog("name: %s \n",city[id1].name.c_str());
+
                 lineSh.vertexCount = round(unDraw.size()/2);
                 lineSh.data = unDraw.data();
                 glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
@@ -397,22 +385,23 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 
 int run = 1;
 
+
+
 static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     ImGuiIO &io = ImGui::GetIO();
 
     int dx, dy;
 
-    if (!io.WantCaptureKeyboard)
-    {
+    if (!io.WantCaptureKeyboard) {
         TESS_NOTUSED(scancode);
         TESS_NOTUSED(mods);
         if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
             glfwSetWindowShouldClose(window, GL_TRUE);
-        if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS)||(action == GLFW_REPEAT)) ) {
             endTurn();
         }
-
+/*
         if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
         {
             dx = 1, dy = 0;
@@ -494,7 +483,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
             endTurn();
 
         }
-
+*/
     }
     else
     {
@@ -590,25 +579,6 @@ void sInterface() {
     static int endPos[2];
     ImGui::InputInt2("end", endPos);
 
-    struct n1 : navigator
-    {
-        static bool is_goal(location_t &pos, location_t &goal) {
-            //   return (pos==goal);
-            std::string id1 = selectBuilding(pos.x,pos.y);
-            //debug_log().AddLog(id1);
-            //string s1 = city[id1].type;
-            return 	( (city[id1].type.compare("shop")==0));
-            //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-            //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-        }
-
-        static float get_distance_estimate(location_t &pos, location_t &goal) {
-            float d = 1.f;
-            return d;
-        }
-
-
-    };
 
 	
     if (ImGui::Button("Find")) {
@@ -625,7 +595,7 @@ void sInterface() {
 
             location_t apLoc(a1.second.x,a1.second.y);
 
-            path = find_path<location_t, n1>(apLoc, epLoc);
+            path = find_path<location_t, navigator>(bpLoc, epLoc);
 
             if (path->success) {
                 debug_log().AddLog("path found \n");
@@ -726,29 +696,36 @@ void sInterface() {
 
     ImGui::End();
 
+
+
     ImGui::Begin("Agent");
     {
-        string curAgent = "agent0";
 
-        ImGui::InputInt("heat", &(agents[curAgent].heat));
+        if (curAgent!="") {
 
-        ImGui::InputInt("energy", &agents[curAgent].energy);
+			ImGui::InputInt("heat", &(agents[curAgent].heat));
 
-        ImGui::InputInt("fed", &agents[curAgent].fed);
+            ImGui::LabelText( "id", "%s", agents[curAgent].id.c_str() );
 
-        const char* listbox_items[20];
+            ImGui::InputInt("heat", &agents[curAgent].heat);
 
-        static int listbox_item_current = 1;
+            ImGui::InputInt("energy", &agents[curAgent].energy);
 
-        int i = 0;
-        for (string s1: agents[curAgent].inventory){
-            listbox_items[i]=s1.c_str();
-            i++;
+            ImGui::InputInt("fed", &agents[curAgent].fed);
+
+            const char *listbox_items[20];
+
+            static int listbox_item_current = 1;
+
+            int i = 0;
+            for (string s1: agents[curAgent].inventory) {
+                listbox_items[i] = s1.c_str();
+                i++;
+            }
+
+            ImGui::ListBox("inventory", &listbox_item_current, listbox_items, i, 4);
+
         }
-
-        ImGui::ListBox("inventory", &listbox_item_current, listbox_items, i, 4);
-
-
 
     }
     ImGui::End();
@@ -1274,16 +1251,17 @@ int main(int argc, char *argv[])
 
 
 
-    for (auto b1 : city)
-    {
+    agents.clear();
+    for (auto b1 : city) {
         if (b1.second.type=="dwelling") {
             int x = b1.second.coords[0][0];
             int y = b1.second.coords[0][1];
 
             string id = "agent" + b1.second.id;
 
+            debug_log().AddLog("\n");
 
-            debug_log().AddLog("agent % created \n", id.c_str());
+            debug_log().AddLog("agent %s created \n", id.c_str());
 
             agents.insert(std::pair<string, agent>(id, agent()));
             agents[id].id = id;
@@ -1294,14 +1272,24 @@ int main(int argc, char *argv[])
         }
     }
 
+    curAgent = agents.begin()->first;
 
+    debug_log().AddLog("\n");
+    debug_log().AddLog("agents count: %d", agents.size());
+    debug_log().AddLog("\n");
+    debug_log().AddLog(curAgent.c_str());
+    debug_log().AddLog("\n");
+
+
+
+/*
     agents.insert(std::pair<string, agent>("agent0", agent()));
 
     agents["agent0"].id = "agent0";
     agents["agent0"].x = 2;
     agents["agent0"].y = 2;
-    agents["agent0"].home = city.begin()->first;
-
+    agents["agent0"].home = "relation/3084726";
+*/
 
 
 
@@ -1317,16 +1305,18 @@ int main(int argc, char *argv[])
 
             buildingTypes.deltaHeat[buildingTypes.at(i,j)] = 0;
 
-            if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, (i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize)>0) {
-                //debug_log().AddLog("hit \n");
-                //path_map->walkable[path_map->at(i, j)] = false;
+            string id = selectBuilding((i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize);
+
+            if (id!="none"){
+                path_map->walkable[path_map->at(i,j)] = false;
                 heatmap.deltaHeat[heatmap.at(i,j)] = 1;
-                string id = selectBuilding((i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize);
                 if (city[id].type=="dwelling") {
                     buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 1;
+                    path_map->walkable[path_map->at(i,j)] = true;
                 }
                 if (city[id].type == "shop") {
                     buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 2;
+                    path_map->walkable[path_map->at(i,j)] = true;
                 }
                 if (city[id].type == "office") {
                     buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 3;
