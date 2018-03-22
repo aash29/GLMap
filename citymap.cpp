@@ -1163,10 +1163,10 @@ int main(int argc, char *argv[])
 
 
 
+	int nvp2 = 5;
 
 
-
-    if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp, 2, 0))
+    if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
         return -1;
 
 
@@ -1179,38 +1179,126 @@ int main(int argc, char *argv[])
 
 
     map<int, pathNode> pathGraph;
-    std::vector<float> pathGraphLines = std::vector<float>();
+	int pathIndex = nvertsOuter;
 
-    int seedPoly = 10000;
+
+    int seedPoly = 3000;
     unsigned char* visited = (unsigned char*)calloc(nelemsOuter, sizeof(unsigned char));
-    TESSindex stack[50];
+    TESSindex stack[1000];
     int nstack = 0;
     stack[nstack++] = seedPoly;
     visited[seedPoly] = 1;
 
     while (nstack > 0) {
         TESSindex idx = stack[--nstack];
-        const TESSindex* poly = &elemsOuter[idx * nvp * 2];
-        const TESSindex* nei = &poly[nvp];
-        pathGraph.insert(pair<int,pathNode>(idx,pathNode()));
-        pathGraph[idx].id = idx;
+        const TESSindex* poly = &elemsOuter[idx * nvp2 * 2];
+        const TESSindex* nei = &poly[nvp2];
+        //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
+        //pathGraph[pathIndex].id = pathIndex;
 
         float cmx = 0;
         float cmy = 0;
-        for (int i = 0; i < nvp; i++) {
-            //if (nei[i] == TESS_UNDEF) break;
+		int cpv = 0;
+        for (int i = 0; i < nvp2; i++) {
+            if (poly[i] == TESS_UNDEF) break;
+			pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
+			pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
+			pathGraph[poly[i]].id = poly[i];
+
+			//pathIndex++;
+			cpv++;
             cmx = cmx + vertsOuter[poly[i]*2];
-            cmy = cmy + vertsOuter[poly[i]*2+1];
+            cmy = cmy + vertsOuter[poly[i]*2 + 1];
         }
-        cmx = cmx/3;
-        cmy = cmy/3;
+        cmx = cmx/cpv;
+        cmy = cmy/cpv;
+		
+		/*
+        pathGraph[pathIndex].x = cmx;
+        pathGraph[pathIndex].y = cmy;
+		pathGraph[pathIndex].id = pathIndex;
+		pathGraph[pathIndex].neigh.push_back(poly[0]);
+		pathGraph[pathIndex].neigh.push_back(poly[1]);
+		pathGraph[pathIndex].neigh.push_back(poly[2]);
+		
+		*/
 
-        pathGraph[idx].x = cmx;
-        pathGraph[idx].y = cmy;
+		
+		pathGraph[poly[0]].neigh.push_back(poly[cpv - 1]);
+		pathGraph[poly[0]].neigh.push_back(poly[1]);
 
-        for (int i = 0; i < nvp; i++) {
+		for (int i = 1; i < cpv-1; i++) {
+			pathGraph[poly[i]].neigh.push_back(poly[i - 1]);
+			pathGraph[poly[i]].neigh.push_back(poly[i + 1]);
+		}
+
+		pathGraph[poly[cpv - 1]].neigh.push_back(poly[cpv - 2]);
+		pathGraph[poly[cpv - 1]].neigh.push_back(poly[0]);
+
+		
+		/*
+		pathGraph[poly[0]].neigh.push_back(poly[1]);
+		pathGraph[poly[0]].neigh.push_back(poly[3]);
+
+		//pathGraph[poly[0]].neigh.push_back(pathIndex);
+
+		pathGraph[poly[1]].neigh.push_back(poly[0]);
+		pathGraph[poly[1]].neigh.push_back(poly[2]);
+		//pathGraph[poly[1]].neigh.push_back(pathIndex);
+
+		pathGraph[poly[2]].neigh.push_back(poly[3]);
+		pathGraph[poly[2]].neigh.push_back(poly[1]);
+
+		//pathGraph[poly[2]].neigh.push_back(pathIndex);
+
+		pathGraph[poly[3]].neigh.push_back(poly[2]);
+		pathGraph[poly[3]].neigh.push_back(poly[0]);
+		*/
+		/*
+
+		pathGraph[poly[0]].neigh.push_back(poly[1]);
+		pathGraph[poly[0]].neigh.push_back(poly[2]);
+
+		//pathGraph[poly[0]].neigh.push_back(pathIndex);
+
+		pathGraph[poly[1]].neigh.push_back(poly[0]);
+		pathGraph[poly[1]].neigh.push_back(poly[2]);
+		//pathGraph[poly[1]].neigh.push_back(pathIndex);
+
+		pathGraph[poly[2]].neigh.push_back(poly[0]);
+		pathGraph[poly[2]].neigh.push_back(poly[1]);
+
+		//pathGraph[poly[2]].neigh.push_back(pathIndex);
+
+		*/
+		pathIndex++;
+
+/*
+
+		pathGraph[pathIndex-3].neigh.push_back(pathIndex);
+		pathGraph[pathIndex].neigh.push_back(pathIndex - 2);
+		pathGraph[pathIndex-2].neigh.push_back(pathIndex);
+		pathGraph[pathIndex].neigh.push_back(pathIndex - 1);
+		pathGraph[pathIndex-1].neigh.push_back(pathIndex);
+
+		pathGraph[pathIndex - 3].neigh.push_back(pathIndex - 2);
+		pathGraph[pathIndex - 3].neigh.push_back(pathIndex - 1);
+
+		pathGraph[pathIndex - 2].neigh.push_back(pathIndex - 3);
+		pathGraph[pathIndex - 2].neigh.push_back(pathIndex - 1);
+
+		pathGraph[pathIndex - 1].neigh.push_back(pathIndex - 3);
+		pathGraph[pathIndex - 1].neigh.push_back(pathIndex - 2);
+
+
+
+		pathIndex++;
+
+		*/
+
+        for (int i = 0; i < nvp2; i++) {
             if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
-                pathGraph[idx].neigh.push_back(nei[i]);
+                //pathGraph[idx].neigh.push_back(nei[i]);
                 stack[nstack++] = nei[i];
                 visited[nei[i]] = 1;
             }
@@ -1219,6 +1307,9 @@ int main(int argc, char *argv[])
 
     set<int> visitedNodes;
     vector<int> stackPath;
+
+	std::vector<float> pathGraphLines = std::vector<float>();
+	pathGraphLines.reserve(500);
 
     stackPath.push_back(seedPoly);
     visitedNodes.insert(seedPoly);
@@ -1237,6 +1328,7 @@ int main(int argc, char *argv[])
 
             if (visitedNodes.find(n1) == visitedNodes.end()){
                 stackPath.push_back(n1);
+				visitedNodes.insert(n1);
             }
 
         }
@@ -1582,6 +1674,8 @@ int main(int argc, char *argv[])
         glfwPollEvents();
     }
     if (tess) tessDeleteTess(tess);
+	if (tess2) tessDeleteTess(tess2);
+
 
 //    if (vflags)
 //        free(vflags);
