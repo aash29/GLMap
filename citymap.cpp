@@ -32,6 +32,8 @@
 
 #include "tesselator.h"
 #include "path_impl.hpp"
+#include "pathnode.hpp"
+
 
 //#include "st_tree.h"
 
@@ -43,6 +45,9 @@
 
 #include <unordered_set>
 //#include <gperftools/profiler.h>
+
+
+
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
@@ -77,9 +82,9 @@ polygon singlePolygon;
 //нумерация клеток
 
 int xm = 0;
-int xp = 160;
+int xp = 40;
 int ym = 0;
-int yp = 80;
+int yp = 30;
 
 rect boundingBox = {xm, xp, ym, yp};
 
@@ -941,15 +946,18 @@ int main(int argc, char *argv[])
 
 
     TESSalloc ma;
+    TESSalloc ma2;
     TESStesselator* tess = 0;
+    TESStesselator* tess2 = 0;
     const int nvp = 3;
-    unsigned char* vflags = 0;
+    //unsigned char* vflags = 0;
     int nvflags = 0;
 #ifdef USE_POOL
     struct MemPool pool;
 	unsigned char mem[1024*1024];
 #else
     int allocated = 0;
+    int allocated2 = 0;
 #endif
     TESS_NOTUSED(argc);
     TESS_NOTUSED(argv);
@@ -963,9 +971,20 @@ int main(int argc, char *argv[])
     ma.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
 
 
+    memset(&ma2, 0, sizeof(ma2));
+    ma2.memalloc = stdAlloc;
+    ma2.memfree = stdFree;
+    ma2.userData = (void*)&allocated2;
+    ma2.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
+
+
     tess = tessNewTess(&ma);
+    tess2 = tessNewTess(&ma);
 
     if (!tess)
+        return -1;
+
+    if (!tess2)
         return -1;
 
 
@@ -1080,9 +1099,7 @@ int main(int argc, char *argv[])
                 std::stringstream buffer;
                 buffer << t.rdbuf();
 
-                static char bstr[5000];
-
-
+                static char bstr[50000];
 
                 strcpy(bstr,buffer.str().c_str());
 
@@ -1096,6 +1113,8 @@ int main(int argc, char *argv[])
                 {
                     printf(selected);
                     city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
+                    city = loadLevel(pathToFile, tess2, boundingBox, singlePolygon);
+
                     m_showOpenDialog = false;
 
                 };
@@ -1112,14 +1131,109 @@ int main(int argc, char *argv[])
         }
     }
 
-    else
+    else {
         city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
+        city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
+
+    }
 
     printf("go...\n");
+
+
+
+
+
+
+
+
+    if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp, 2, 0))
+        return -1;
+
+
+
+    const float* vertsOuter = tessGetVertices(tess2);
+    const int* vindsOuter = tessGetVertexIndices(tess2);
+    const int* elemsOuter = tessGetElements(tess2);
+    const int nvertsOuter = tessGetVertexCount(tess2);
+    const int nelemsOuter = tessGetElementCount(tess2);
+
+
+    map<int, pathNode> pathGraph;
+    std::vector<float> pathGraphLines = std::vector<float>();
+
+    int seedPoly = 10000;
+    unsigned char* visited = (unsigned char*)calloc(nelemsOuter, sizeof(unsigned char));
+    TESSindex stack[50];
+    int nstack = 0;
+    stack[nstack++] = seedPoly;
+    visited[seedPoly] = 1;
+
+    while (nstack > 0) {
+        TESSindex idx = stack[--nstack];
+        const TESSindex* poly = &elemsOuter[idx * nvp * 2];
+        const TESSindex* nei = &poly[nvp];
+        pathGraph.insert(pair<int,pathNode>(idx,pathNode()));
+        pathGraph[idx].id = idx;
+
+        float cmx = 0;
+        float cmy = 0;
+        for (int i = 0; i < nvp; i++) {
+            //if (nei[i] == TESS_UNDEF) break;
+            cmx = cmx + vertsOuter[poly[i]*2];
+            cmy = cmy + vertsOuter[poly[i]*2+1];
+        }
+        cmx = cmx/3;
+        cmy = cmy/3;
+
+        pathGraph[idx].x = cmx;
+        pathGraph[idx].y = cmy;
+
+        for (int i = 0; i < nvp; i++) {
+            if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
+                pathGraph[idx].neigh.push_back(nei[i]);
+                stack[nstack++] = nei[i];
+                visited[nei[i]] = 1;
+            }
+        }
+    }
+
+    set<int> visitedNodes;
+    vector<int> stackPath;
+
+    stackPath.push_back(seedPoly);
+    visitedNodes.insert(seedPoly);
+    while (stackPath.size() > 0) {
+        int cn = stackPath.back();
+        stackPath.pop_back();
+
+        debug_log().AddLog("%d,",cn);
+
+        for (int n1: pathGraph[cn].neigh) {
+            pathGraphLines.push_back(pathGraph[cn].x);
+            pathGraphLines.push_back(pathGraph[cn].y);
+
+            pathGraphLines.push_back(pathGraph[n1].x);
+            pathGraphLines.push_back(pathGraph[n1].y);
+
+            if (visitedNodes.find(n1) == visitedNodes.end()){
+                stackPath.push_back(n1);
+            }
+
+        }
+
+    }
+
+
+
+
+
+
+
 
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
         return -1;
     printf("Memory used: %.1f kB\n", allocated/1024.0f);
+
 
 
 
@@ -1128,9 +1242,6 @@ int main(int argc, char *argv[])
     const int* elems = tessGetElements(tess);
     const int nverts = tessGetVertexCount(tess);
     const int nelems = tessGetElementCount(tess);
-
-
-
 
     g_camera.m_width = width;
     g_camera.m_height = height;
@@ -1362,7 +1473,11 @@ int main(int argc, char *argv[])
             if (drawGrid)
                 drawLine(gridSh,g_camera, 0.f, 0.f, 1.f);
 
+
+            glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
             drawMap(mapSh, g_camera);
+            glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+
             drawBuildingOutlines( outlineSh, g_camera);
             
 			if (selected!=std::string("none"))
@@ -1405,6 +1520,14 @@ int main(int argc, char *argv[])
 
 			}
 
+            lineSh.vertexCount = round(pathGraphLines.size() / 2);
+            lineSh.data = pathGraphLines.data();
+            glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+            glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
+            drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
+
+
+
 
             for (auto a0: agents)
             {
@@ -1433,17 +1556,15 @@ int main(int argc, char *argv[])
                     }
                 };
             };
-
             ImGui::Render();
         }
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
     if (tess) tessDeleteTess(tess);
 
-    if (vflags)
-        free(vflags);
+//    if (vflags)
+//        free(vflags);
 
     glfwTerminate();
     return 0;
