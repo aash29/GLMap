@@ -257,10 +257,10 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	}
 
 
-    //float frame[8] =  {lowerx,lowery,lowerx,uppery, upperx, uppery, upperx, lowerx};
+    float frame[8] =  {lowerx,lowery,lowerx,uppery, upperx, uppery, upperx, lowerx};
 
 
-    //tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
+    tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
 
 
     return m3;

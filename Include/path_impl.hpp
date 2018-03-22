@@ -1,3 +1,6 @@
+#ifndef PATH_IMPL_HPP
+#define PATH_IMPL_HPP
+
 #include <iostream>
 /* RLTK (RogueLike Tool Kit) 1.00
  * Copyright (c) 2016-Present, Bracket Productions.
@@ -151,3 +154,4 @@ int path_test()
 	*/
     return 0;
 }
+#endif
