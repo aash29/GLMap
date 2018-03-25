@@ -114,6 +114,15 @@ heatmap_t buildingTypes(xm,xp,ym,yp); //0 - ничего, 1 - жилье, 2 - м
 
 int width, height;
 
+
+
+double* vertx;
+double* verty;
+int* vertNumber;
+int nElemsTriangSelect;
+
+
+
 struct navigator {
 
     static float get_distance_estimate(location_t &pos, location_t &goal) {
@@ -296,19 +305,28 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     {
 
         // Use the mouse to move things around.
-        if (button == GLFW_MOUSE_BUTTON_1) {
-            std::string id1 = selectBuilding(selp.x,selp.y);
+		if (button == GLFW_MOUSE_BUTTON_1) {
+
+			for (int i = 0; i < nElemsTriangSelect; i++) {
+
+				if (pnpoly(3, &vertx[i * 3], &verty[i * 3], selp.x, selp.y) > 0)
+				{
+
+					debug_log().AddLog("hit %d \n", vertNumber[i]);
+				}
+
+
+			}
+
+
+
+			/*
+			
+			std::string id1 = selectBuilding(selp.x,selp.y);
             debug_log().AddLog(id1.c_str());
             debug_log().AddLog(city[id1].type);
             debug_log().AddLog("\n");
-            /*
-	      debug_log().AddLog("vertx single polygon:");
-            for (int i=0; i< singlePolygon.nvert; i++){
 
-          debug_log().AddLog("%g,",singlePolygon.vertx[i] );
-            };
-            debug_log().AddLog("\n");
-            */
 
             if (pnpoly(singlePolygon.nvert, singlePolygon.vertx, singlePolygon.verty, selp.x, selp.y)>0)
             {
@@ -353,6 +371,9 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
                 selected=std::string("none");
             };
             std::cout << id1 <<"\n";
+			*/
+
+
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -1163,7 +1184,7 @@ int main(int argc, char *argv[])
 
 
 
-	int nvp2 = 5;
+	const int nvp2 = 3;
 
 
     if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
@@ -1176,6 +1197,36 @@ int main(int argc, char *argv[])
     const int* elemsOuter = tessGetElements(tess2);
     const int nvertsOuter = tessGetVertexCount(tess2);
     const int nelemsOuter = tessGetElementCount(tess2);
+	/*
+	veO = (float*)malloc(nvertsOuter*2*sizeof(float));
+	memcpy(veO, vertsOuter, nvertsOuter * 2 * sizeof(float));
+
+	nelemsO = nelemsOuter;
+	*/
+
+	
+
+
+
+	vertx = new double[nelemsOuter*nvp2];
+	verty = new double[nelemsOuter*nvp2];
+	vertNumber = new int[nelemsOuter*nvp2];
+
+	nElemsTriangSelect = nelemsOuter;
+
+	long int idv = 0;
+
+	for (int i = 0; i < nelemsOuter; i++) {
+		const TESSindex* poly = &elemsOuter[i * nvp2 * 2];
+		for (int j = 0; j < nvp2; j++) {
+			if (poly[j] == TESS_UNDEF) break;
+			vertx[idv] = vertsOuter[poly[j] * 2];
+			verty[idv] = vertsOuter[poly[j] * 2 + 1];
+			vertNumber[idv] = poly[j];
+			idv++;
+		}
+	}
+
 
 
     map<int, pathNode> pathGraph;
@@ -1207,8 +1258,8 @@ int main(int argc, char *argv[])
 
 			//pathIndex++;
 			cpv++;
-            cmx = cmx + vertsOuter[poly[i]*2];
-            cmy = cmy + vertsOuter[poly[i]*2 + 1];
+            cmx = cmx + vertsOuter[poly[i] * 2];
+            cmy = cmy + vertsOuter[poly[i] * 2 + 1];
         }
         cmx = cmx/cpv;
         cmy = cmy/cpv;
