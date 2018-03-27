@@ -301,6 +301,38 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 
     //std::cout<<"pressed" << "\n";
 
+
+	struct navigator_graph {
+
+		static float get_distance_estimate(pathNode &pos, pathNode &goal) {
+			float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
+			return d;
+		}
+
+		static bool is_goal(location_t &pos, location_t &goal) {
+			return pos == goal;
+			//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
+			//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
+		}
+
+		static bool get_successors(location_t pos, std::vector<location_t> &successors) {
+			//std::cout << pos.x << "/" << pos.y << "\n";
+
+			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+
+			return true;
+		}
+
+		static float get_cost(location_t &position, location_t &successor) {
+			return 1.0f;
+		}
+		static bool is_same_state(location_t &lhs, location_t &rhs) {
+			return lhs == rhs;
+		}
+	};
+
+
+
     if (!io.WantCaptureMouse)
     {
 
@@ -1233,7 +1265,7 @@ int main(int argc, char *argv[])
 	int pathIndex = nvertsOuter;
 
 
-    int seedPoly = 3000;
+    int seedPoly = 1;
     unsigned char* visited = (unsigned char*)calloc(nelemsOuter, sizeof(unsigned char));
     TESSindex stack[1000];
     int nstack = 0;
@@ -1636,7 +1668,7 @@ int main(int argc, char *argv[])
             if (drawGrid)
                 drawLine(gridSh,g_camera, 0.f, 0.f, 1.f);
 
-
+			
             glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
             drawMap(mapSh, g_camera);
             glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
@@ -1682,13 +1714,13 @@ int main(int argc, char *argv[])
 				}
 
 			}
-
+			/*
             lineSh.vertexCount = round(pathGraphLines.size() / 2);
             lineSh.data = pathGraphLines.data();
             glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
             glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
             drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-
+			*/
 
 
 
