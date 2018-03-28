@@ -1092,7 +1092,7 @@ int main(int argc, char *argv[])
 
     glfwSetTime(0);
 
-
+    char* levelPath;
 
     if (argc == 1)
     {
@@ -1185,8 +1185,9 @@ int main(int argc, char *argv[])
                 if (ImGui::Button("Load"))
                 {
                     printf(selected);
-                    city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
-                    city = loadLevel(pathToFile, tess2, boundingBox, singlePolygon);
+                    //city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
+                    //city = loadLevel(pathToFile, tess2, boundingBox, singlePolygon);
+                    levelPath = pathToFile;
 
                     m_showOpenDialog = false;
 
@@ -1205,13 +1206,19 @@ int main(int argc, char *argv[])
     }
 
     else {
-        city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
-        city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
+
+        levelPath = argv[1];
+        //city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
+        //city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
 
     }
 
     printf("go...\n");
 
+    city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
+    city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
+
+    loadGrid(levelPath, xp,yp);
 
 
 
@@ -1466,40 +1473,43 @@ int main(int argc, char *argv[])
     yp = 0;
     */
 
-    for (float x=0; x < boundingBox.xmax; x=x+g_camera.gridSize)
+    float xgridSize = (boundingBox.xmax-boundingBox.xmin)/(xp-xm);
+    float ygridSize = (boundingBox.ymax-boundingBox.ymin)/(yp-ym);
+
+    for (float x=0; x < xp; x=x+xgridSize)
     {
-        gridVec.push_back(x + g_camera.gridSize/2);
+        gridVec.push_back(x);
         gridVec.push_back(boundingBox.ymin);
-        gridVec.push_back(x + g_camera.gridSize / 2);
+        gridVec.push_back(x);
         gridVec.push_back(boundingBox.ymax);
         //xp++;
     }
 
-    for (float x=0; x > boundingBox.xmin; x=x-g_camera.gridSize)
+    for (float x=0; x >xm; x=x-xgridSize)
     {
-        gridVec.push_back(x - g_camera.gridSize / 2);
+        gridVec.push_back(x);
         gridVec.push_back(boundingBox.ymin);
-        gridVec.push_back(x - g_camera.gridSize / 2);
+        gridVec.push_back(x);
         gridVec.push_back(boundingBox.ymax);
         //xm++;
     }
 
-    for (float y=0; y < boundingBox.ymax; y=y+g_camera.gridSize)
+    for (float y=0; y < yp; y=y+ygridSize)
     {
         gridVec.push_back(boundingBox.xmin);
-        gridVec.push_back(y + g_camera.gridSize / 2);
+        gridVec.push_back(y);
         gridVec.push_back(boundingBox.xmax);
-        gridVec.push_back(y + g_camera.gridSize / 2);
+        gridVec.push_back(y);
         //yp++;
     }
 
 
-    for (float y=0; y > boundingBox.ymin; y=y-g_camera.gridSize)
+    for (float y=0; y > ym; y=y-ygridSize)
     {
         gridVec.push_back(boundingBox.xmin);
-        gridVec.push_back(y - g_camera.gridSize / 2);
+        gridVec.push_back(y);
         gridVec.push_back(boundingBox.xmax);
-        gridVec.push_back(y - g_camera.gridSize / 2);
+        gridVec.push_back(y);
         //ym++;
     }
 

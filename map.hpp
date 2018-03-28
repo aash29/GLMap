@@ -39,6 +39,33 @@ typedef std::map<std::string, building> cityMap;
 
 float xmin,xmax,ymin,ymax;
 
+
+void loadGrid(const char *name, int& xgrid, int& ygrid)
+{
+    std::string m_currentLevel = std::string(name);
+
+
+    nlohmann::json jsonObj;
+
+    std::ifstream file;
+    file.open(std::string(name), std::ios::in);
+    if (file) {
+        printf("file open \n");
+        jsonObj << file;
+        file.close();
+    }
+
+
+
+    auto fg = jsonObj.find("grid");
+    std::vector<int> c1 =  (*fg);
+
+    xgrid = c1[0];
+    ygrid = c1[1];
+
+
+}
+
 cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon)
 {
   
@@ -67,7 +94,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
     xmax = c1[1];
     ymin = c1[2];
     ymax = c1[3];
-
 
 
 
