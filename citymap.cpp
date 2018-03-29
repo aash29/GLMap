@@ -81,14 +81,12 @@ polygon singlePolygon;
 
 //нумерация клеток
 
-int xm = 0;
-int xp = 40;
-int ym = 0;
-int yp = 30;
+int xm;
+int xp;
+int ym;
+int yp;
 
-
-rect boundingBox = {xm, xp, ym, yp};
-
+rect boundingBox;
 
 
 map_t* path_map;
@@ -106,11 +104,11 @@ int stateSize;
 
 string controlledAgent;
 
-map_t pathfinding_map(xm,xp,ym,yp);
+map_t* pathfinding_map;
 
-heatmap_t heatmap(xm,xp,ym,yp);
+heatmap_t* heatmap;
 
-heatmap_t buildingTypes(xm,xp,ym,yp); //0 - ничего, 1 - жилье, 2 - магазин, 3 - контора
+heatmap_t* buildingTypes; //0 - ничего, 1 - жилье, 2 - магазин, 3 - контора
 
 int width, height;
 
@@ -139,16 +137,16 @@ struct navigator {
     static bool get_successors(location_t pos, std::vector<location_t> &successors) {
         //std::cout << pos.x << "/" << pos.y << "\n";
 
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
 
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
 
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
-        if (pathfinding_map.walkable[pathfinding_map.at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
+        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
         return true;
     }
 
@@ -318,7 +316,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 		static bool get_successors(location_t pos, std::vector<location_t> &successors) {
 			//std::cout << pos.x << "/" << pos.y << "\n";
 
-			if (pathfinding_map.walkable[pathfinding_map.at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
+			if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
 
 			return true;
 		}
@@ -884,7 +882,7 @@ void planDay(agent &a0){
 		static bool is_goal(location_t &pos, location_t &goal) {
 			// return (pos==goal);
 			// std::string id1 = selectBuilding(pos.x, pos.y);
-			return 	(buildingTypes.deltaHeat[buildingTypes.at(pos.x,pos.y)] == 2);
+			return 	(buildingTypes->deltaHeat[buildingTypes->at(pos.x,pos.y)] == 2);
 		}
 		static float get_distance_estimate(location_t &pos, location_t &goal) {
 			float d = 1.f;
@@ -1215,10 +1213,20 @@ int main(int argc, char *argv[])
 
     printf("go...\n");
 
+    xm = 0;
+    ym = 0;
+
+    loadGrid(levelPath, xp,yp);
+
+    boundingBox.xmin=xm;
+    boundingBox.xmax=xp;
+    boundingBox.ymin=ym;
+    boundingBox.ymax=yp;
+
+
     city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
     city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
 
-    loadGrid(levelPath, xp,yp);
 
 
 
@@ -1588,36 +1596,38 @@ int main(int argc, char *argv[])
     agents["agent0"].y = 2;
     agents["agent0"].home = "relation/3084726";
 */
-
+    pathfinding_map = new map_t(xm,xp,ym,yp);
+    heatmap = new heatmap_t(xm,xp,ym,yp);
+    buildingTypes = new heatmap_t(xm,xp,ym,yp);
 
 
     std::shared_ptr<navigation_path<location_t>> path;
 
     //pathfinding_map = map_t(-xm, xp, -ym, yp);
 
-    path_map = &pathfinding_map;
+    path_map = pathfinding_map;
 
 
     for (int i = -xm; i < xp; i++) {
         for (int j = -ym; j < yp; j++) {
 
-            buildingTypes.deltaHeat[buildingTypes.at(i,j)] = 0;
+            buildingTypes->deltaHeat[buildingTypes->at(i,j)] = 0;
 
             string id = selectBuilding((i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize);
 
             if (id!="none"){
                 path_map->walkable[path_map->at(i,j)] = false;
-                heatmap.deltaHeat[heatmap.at(i,j)] = 1;
+                heatmap->deltaHeat[heatmap->at(i,j)] = 1;
                 if (city[id].type=="dwelling") {
-                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 1;
+                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 1;
                     path_map->walkable[path_map->at(i,j)] = true;
                 }
                 if (city[id].type == "shop") {
-                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 2;
+                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 2;
                     path_map->walkable[path_map->at(i,j)] = true;
                 }
                 if (city[id].type == "office") {
-                    buildingTypes.deltaHeat[buildingTypes.at(i, j)] = 3;
+                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 3;
                 }
             }
         }
@@ -1627,7 +1637,7 @@ int main(int argc, char *argv[])
     for (auto a0:agents){
         string id = a0.first;
         agents[id].effects.push_back([&, id]{
-            agents[id].heat=agents[id].heat+heatmap.deltaHeat[heatmap.at(agents[id].x,agents[id].y)];
+            agents[id].heat=agents[id].heat+heatmap->deltaHeat[heatmap->at(agents[id].x,agents[id].y)];
             agents[id].heat = max(0,agents[id].heat);
             agents[id].heat = min(100,agents[id].heat);
 

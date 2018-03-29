@@ -106,7 +106,7 @@
         {
             "properties": {
                 "id": "rect15",
-                "type": "store",
+                "type": "shop",
                 "building": "yes"
             },
             "geometry": {
@@ -179,7 +179,7 @@
         100
     ],
     "grid": [
-        100,
-        100
+        40,
+        40
     ]
 }
