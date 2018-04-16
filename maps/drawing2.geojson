@@ -1,0 +1,83 @@
+{
+    "type": "FeatureCollection",
+    "features": [
+        {
+            "properties": {
+                "id": "rect14",
+                "type": "dwelling",
+                "building": "yes"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            5.0,
+                            5.0
+                        ],
+                        [
+                            5.0,
+                            15.0
+                        ],
+                        [
+                            15.0,
+                            15.0
+                        ],
+                        [
+                            15.0,
+                            5.0
+                        ],
+                        [
+                            5.0,
+                            5.0
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "properties": {
+                "id": "rect15",
+                "type": "shop",
+                "building": "yes"
+            },
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [
+                            85.0,
+                            85.0
+                        ],
+                        [
+                            85.0,
+                            95.0
+                        ],
+                        [
+                            95.0,
+                            95.0
+                        ],
+                        [
+                            95.0,
+                            85.0
+                        ],
+                        [
+                            85.0,
+                            85.0
+                        ]
+                    ]
+                ]
+            }
+        }
+    ],
+    "mapBounds": [
+        -10,
+        100,
+        -10,
+        100
+    ],
+    "grid": [
+        15,
+        15
+    ]
+}
