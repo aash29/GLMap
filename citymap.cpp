@@ -572,7 +572,7 @@ void endTurn() {
 
     for (auto a1:agents) {
         string id = a1.first;
-
+        agents[id].update();
         if (agents[id].planFunc.size() > 0) {
             agents[id].planFunc.front()();
             agents[id].planFunc.erase(agents[id].planFunc.begin());
