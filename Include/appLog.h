@@ -41,8 +41,8 @@ struct AppLog
 
     void    Draw(const char* title, int screenWidth, int screenHeight,  bool* p_open = NULL)
     {
-		ImGui::SetNextWindowPos(ImVec2(0, screenHeight-400));
-        ImGui::SetNextWindowSize(ImVec2(screenWidth,360));
+		//ImGui::SetNextWindowPos(ImVec2(0, screenHeight-400));
+        //ImGui::SetNextWindowSize(ImVec2(screenWidth,360));
         ImGui::Begin(title, p_open);
         if (ImGui::Button("Clear")) Clear();
         ImGui::SameLine();

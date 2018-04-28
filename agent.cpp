@@ -11,12 +11,6 @@
 using namespace std;
 
 
-void agent::update(){
-    for (auto act1: effects){
-        act1();
-    }
-    debug_log().AddLog("agent %s temp: %d \n", id.c_str(), heat);
-}
 
 
 void agent::getAgentPos(unordered_set<string> setState)

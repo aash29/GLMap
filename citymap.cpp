@@ -75,7 +75,6 @@ shaderData lineSh;
 map <string, strVec> objects;
 map<string, agent> agents;
 
-
 polygon singlePolygon;
 
 
@@ -112,7 +111,7 @@ heatmap_t* buildingTypes; //0 - ничего, 1 - жилье, 2 - магазин
 
 int width, height;
 
-
+int absoluteTurn = 0;
 
 double* vertx;
 double* verty;
@@ -457,17 +456,21 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS)||(action == GLFW_REPEAT)) ) {
             endTurn();
         }
-/*
+
+
+        agent* agent0 = &agents.begin()->second;
+
+
         if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
         {
             dx = 1, dy = 0;
 
-            agents["agent0"].planFunc.push_back(
+            agent0->planFunc.push_back(
                     [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
                         {
-                            agents["agent0"].x = agents["agent0"].x + dx;
-                            agents["agent0"].y = agents["agent0"].y + dy;
+                            agent0->x = agent0->x + dx;
+                            agent0->y = agent0->y + dy;
                             return 0;
                         }
                         else {
@@ -479,23 +482,26 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
             endTurn();
         }
+
+
         if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
         {
             dx = -1, dy = 0;
 
-            agents["agent0"].planFunc.push_back(
+            agent0->planFunc.push_back(
                     [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
                         {
-                            agents["agent0"].x = agents["agent0"].x + dx;
-                            agents["agent0"].y = agents["agent0"].y + dy;
+                            agent0->x = agent0->x + dx;
+                            agent0->y = agent0->y + dy;
                             return 0;
                         }
                         else {
                             return 1;
                         };
-                    }
-            );
+
+
+                    });
 
             endTurn();
         }
@@ -503,19 +509,21 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         {
             dx = 0, dy = 1;
 
-            agents["agent0"].planFunc.push_back(
+            agent0->planFunc.push_back(
                     [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
                         {
-                            agents["agent0"].x = agents["agent0"].x + dx;
-                            agents["agent0"].y = agents["agent0"].y + dy;
+                            agent0->x = agent0->x + dx;
+                            agent0->y = agent0->y + dy;
                             return 0;
                         }
                         else {
                             return 1;
                         };
-                    }
-            );
+
+
+                    });
+
             endTurn();
 
         }
@@ -523,23 +531,23 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         {
             dx = 0, dy = -1;
 
-            agents["agent0"].planFunc.push_back(
+            agent0->planFunc.push_back(
                     [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agents["agent0"].x + dx,agents["agent0"].y + dy)])
+                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
                         {
-                            agents["agent0"].x = agents["agent0"].x + dx;
-                            agents["agent0"].y = agents["agent0"].y + dy;
+                            agent0->x = agent0->x + dx;
+                            agent0->y = agent0->y + dy;
                             return 0;
                         }
                         else {
                             return 1;
                         };
-                    }
-            );
+
+
+                    });
             endTurn();
 
         }
-*/
     }
     else
     {
@@ -560,10 +568,10 @@ void charCallback(GLFWwindow*, unsigned int c)
 
 
 void endTurn() {
+
+
     for (auto a1:agents) {
         string id = a1.first;
-
-        agents[id].update();
 
         if (agents[id].planFunc.size() > 0) {
             agents[id].planFunc.front()();
@@ -571,7 +579,12 @@ void endTurn() {
         } else
         {
         }
+        if (absoluteTurn%24 ==0){
+            if (id != agents.begin()->first)
+                planDay(agents[id]);
+        }
     }
+    absoluteTurn++;
 }
 
 void sInterface() {
@@ -588,10 +601,19 @@ void sInterface() {
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
+        ImGui::SetNextWindowSize(ImVec2(0.f, 0.f));
 
         ImGui::Begin("Info");
+
+        //static int absoluteTurn;
+        int currentTurn = absoluteTurn % 24;
+
+        ImGui::Text("Current turn: %d", currentTurn);
+        ImGui::Text("Absolute turn: %d", absoluteTurn);
+
         glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
         glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
         ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
         ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
 
@@ -613,7 +635,7 @@ void sInterface() {
         ImGui::PopStyleColor();
 
 
-        ImGui::ShowTestWindow();
+        //ImGui::ShowTestWindow();
 
         debug_log().Draw("Log",width,height);
 
@@ -624,7 +646,13 @@ void sInterface() {
     }
 
 
-	ImGui::SetNextWindowPos(ImVec2(width-300, 0));
+
+
+
+
+    /*
+
+    ImGui::SetNextWindowPos(ImVec2(width-300, 0));
 
     ImGui::Begin("Path");
 
@@ -687,7 +715,7 @@ void sInterface() {
 
 
     ImGui::End();
-	
+	*/
 	/*
 
     ImGui::Begin("State");
@@ -738,8 +766,10 @@ void sInterface() {
 
 	if (ImGui::Button("Plan Day"))
 	{
-        for (auto a0: agents)
-		planDay(agents[a0.first]);
+        for (map<string, agent>::iterator a0 = std::next(agents.begin()); a0!=agents.end(); a0++ )
+        {        //for (auto a0: agents){
+            planDay(agents[a0->first]);
+        }
 	}
 
 
