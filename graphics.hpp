@@ -33,6 +33,9 @@ void texQuadDraw(shaderData sh, int posx, int posy);
 shaderData drawQuadInit();
 void drawQuad(shaderData sh, float posx, float posy);
 
+shaderData drawPathGraphShaderInit( float* points, int numPoints);
+void drawPathGraph(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b);
+
 extern float angleNorth;
 
 

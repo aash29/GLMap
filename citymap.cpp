@@ -1320,84 +1320,100 @@ int main(int argc, char *argv[])
     map<int, pathNode> pathGraph;
 	int pathIndex = nvertsOuter;
 
+    unsigned char *visited = (unsigned char *) calloc(nelemsOuter, sizeof(unsigned char));
+
+    std::vector<float> pathGraphLines = std::vector<float>();
+    pathGraphLines.reserve(500);
 
 
-    int seedPoly = 3000;
-    unsigned char* visited = (unsigned char*)calloc(nelemsOuter, sizeof(unsigned char));
-    TESSindex stack[1000];
-    int nstack = 0;
-    stack[nstack++] = seedPoly;
-    visited[seedPoly] = 1;
+    TESSindex stack[nelemsOuter];
+    for (int seedPoly  = 0; seedPoly < nelemsOuter; seedPoly ++)
+        if (!visited[seedPoly]){
 
-    while (nstack > 0) {
-        int idx = stack[--nstack];
-        const TESSindex* poly = &elemsOuter[idx * nvp2 * 2];
-        const TESSindex* nei = &poly[nvp2];
-        //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
-        //pathGraph[pathIndex].id = pathIndex;
-
-        float cmx = 0;
-        float cmy = 0;
-		int cpv = 0;
-        for (int i = 0; i < nvp2; i++) {
-            if (poly[i] == TESS_UNDEF) break;
-			//pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
-			//pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
-			//pathGraph[poly[i]].id = poly[i];
-
-			//pathIndex++;
-			cpv++;
-            cmx = cmx + vertsOuter[poly[i] * 2];
-            cmy = cmy + vertsOuter[poly[i] * 2 + 1];
-        }
-        cmx = cmx/cpv;
-        cmy = cmy/cpv;
-
-        pathGraph[idx].x = cmx;
-        pathGraph[idx].y = cmy;
-        pathGraph[idx].id = idx;
+        //int seedPoly = 3000;
 
 
-        float x0 = vertsOuter[poly[0] * 2];
-        float y0 = vertsOuter[poly[0] * 2 + 1];
+        int nstack = 0;
+        stack[nstack++] = seedPoly;
+        visited[seedPoly] = 1;
 
-        float x1 = vertsOuter[poly[1] * 2];
-        float y1 = vertsOuter[poly[1] * 2 + 1];
+        while (nstack > 0) {
+            int idx = stack[--nstack];
+            const TESSindex *poly = &elemsOuter[idx * nvp2 * 2];
+            const TESSindex *nei = &poly[nvp2];
+            //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
+            //pathGraph[pathIndex].id = pathIndex;
 
-        float x2 = vertsOuter[poly[2] * 2];
-        float y2 = vertsOuter[poly[2] * 2 + 1];
+            float cmx = 0;
+            float cmy = 0;
+            int cpv = 0;
+            for (int i = 0; i < nvp2; i++) {
+                if (poly[i] == TESS_UNDEF) break;
+                //pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
+                //pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
+                //pathGraph[poly[i]].id = poly[i];
 
-        float mx[3];
-        float my[3];
-        mx[0] = x0 + (x1-x0)/2;
-        my[0] = y0 + (y1-y0)/2;
-
-        mx[1] = x1 + (x2-x1)/2;
-        my[1] = y1 + (y2-y1)/2;
-
-        mx[2] = x2 + (x0-x2)/2;
-        my[2] = y2 + (y0-y2)/2;
-
-
-        pathGraph[idx].x = cmx;
-        pathGraph[idx].y = cmy;
-        pathGraph[idx].id = idx;
-
-
-        for (int i = 0; i < nvp2; i++) {
-            if (nei[i] != TESS_UNDEF){
-                int idn = pairingNum(idx,nei[i]);
-
-                pathGraph[idn].x = cmx;
-                pathGraph[idn].y = cmy;
-                pathGraph[idn].id = idn;
-
-                pathGraph[idx].neigh.push_back(idn);
-                pathGraph[idn].neigh.push_back(idx);
-
-
+                //pathIndex++;
+                cpv++;
+                cmx = cmx + vertsOuter[poly[i] * 2];
+                cmy = cmy + vertsOuter[poly[i] * 2 + 1];
             }
-        }
+            cmx = cmx / cpv;
+            cmy = cmy / cpv;
+
+            pathGraph[idx].x = cmx;
+            pathGraph[idx].y = cmy;
+            pathGraph[idx].id = idx;
+
+
+            float x0 = vertsOuter[poly[0] * 2];
+            float y0 = vertsOuter[poly[0] * 2 + 1];
+
+            float x1 = vertsOuter[poly[1] * 2];
+            float y1 = vertsOuter[poly[1] * 2 + 1];
+
+            float x2 = vertsOuter[poly[2] * 2];
+            float y2 = vertsOuter[poly[2] * 2 + 1];
+
+            float mx[3];
+            float my[3];
+            mx[0] = x0 + (x1 - x0) / 2;
+            my[0] = y0 + (y1 - y0) / 2;
+
+            mx[1] = x1 + (x2 - x1) / 2;
+            my[1] = y1 + (y2 - y1) / 2;
+
+            mx[2] = x2 + (x0 - x2) / 2;
+            my[2] = y2 + (y0 - y2) / 2;
+
+
+            pathGraph[idx].x = cmx;
+            pathGraph[idx].y = cmy;
+            pathGraph[idx].id = idx;
+
+
+            for (int i = 0; i < nvp2; i++) {
+                if (nei[i] != TESS_UNDEF) {
+                    int idn = pairingNum(idx, nei[i]);
+
+                    pathGraph[idn].x = mx[i];
+                    pathGraph[idn].y = my[i];
+                    pathGraph[idn].id = idn;
+
+                    pathGraph[idx].neigh.push_back(idn);
+                    pathGraph[idn].neigh.push_back(idx);
+
+                    pathGraphLines.push_back(pathGraph[idx].x);
+                    pathGraphLines.push_back(pathGraph[idx].y);
+
+                    pathGraphLines.push_back(pathGraph[idn].x);
+                    pathGraphLines.push_back(pathGraph[idn].y);
+
+
+
+
+                }
+            }
 
 
 
@@ -1415,24 +1431,25 @@ int main(int argc, char *argv[])
 		pathGraph[poly[cpv - 1]].neigh.push_back(poly[0]);
 */
 
+/*
+            for (int i = 0; i < nvp2; i++) {
+                if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
+                    //pathGraph[idx].neigh.push_back(nei[i]);
+                    stack[nstack++] = nei[i];
+                    visited[nei[i]] = 1;
 
-        for (int i = 0; i < nvp2; i++) {
-            if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
-                //pathGraph[idx].neigh.push_back(nei[i]);
-                stack[nstack++] = nei[i];
-                visited[nei[i]] = 1;
+                }
             }
+            */
         }
     }
-
-    set<int> visitedNodes;
+/*
+    //set<int> visitedNodes;
     vector<int> stackPath;
 
-	std::vector<float> pathGraphLines = std::vector<float>();
-	pathGraphLines.reserve(500);
 
     stackPath.push_back(seedPoly);
-    visitedNodes.insert(seedPoly);
+    //visitedNodes.insert(seedPoly);
     while (stackPath.size() > 0) {
         int cn = stackPath.back();
         stackPath.pop_back();
@@ -1454,6 +1471,7 @@ int main(int argc, char *argv[])
         }
 
     }
+    */
 
 
 
@@ -1566,6 +1584,8 @@ int main(int argc, char *argv[])
 
     shaderData quadSh = drawQuadInit();
 
+
+    shaderData graphSh = drawPathGraphShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
 
 
 
@@ -1723,6 +1743,8 @@ int main(int argc, char *argv[])
 					unDraw.push_back(it[1]);
 				};
 
+
+
 				lineSh.vertexCount = round(unDraw.size() / 2);
 				lineSh.data = unDraw.data();
 				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
@@ -1738,11 +1760,19 @@ int main(int argc, char *argv[])
 
 			}
 
+
+            drawPathGraph(graphSh,g_camera,1.f,0.f,0.f);
+
+/*
             lineSh.vertexCount = round(pathGraphLines.size() / 2);
             lineSh.data = pathGraphLines.data();
             glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
             glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
             drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
+*/
+
+            //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
+            //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);
 
 
 

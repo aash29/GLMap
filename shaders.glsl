@@ -8,7 +8,6 @@ const GLchar* texQuadVertex = R"glsl(
     out vec2 Texcoord;
     uniform mat4 Model;
 
-
     void main()
     {
         Color = color;
@@ -17,6 +16,7 @@ const GLchar* texQuadVertex = R"glsl(
 	gl_Position = Model * vec4(position, -1.0, 1.0);
     }
 )glsl";
+
 const GLchar* texQuadFragment = R"glsl(
     #version 150 core
     in vec3 Color;
@@ -28,6 +28,32 @@ const GLchar* texQuadFragment = R"glsl(
         outColor = texture(texKitten, Texcoord);
     }
 )glsl";
+
+
+
+const char* pathGraphVertexShaderSrc = R"glsl(
+    #version 150 core
+    in vec2 pos;
+    uniform mat4 Model;
+
+    void main()
+    {
+       gl_Position = Model * vec4(pos, -1.0, 1.0);
+    }
+)glsl";
+
+// Fragment shader
+const char* pathGraphFragmentShaderSrc = R"glsl(
+    #version 150 core
+    out vec4 outColor;
+    uniform vec4 lineColor;
+    void main()
+    {
+        //outColor = vec4(1.0, 0.0, 0.0, 1.0);
+	outColor = lineColor;
+    }
+)glsl";
+
 
 
 const char* lineVertexShaderSrc = R"glsl(
