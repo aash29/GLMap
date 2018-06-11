@@ -2,7 +2,15 @@
 #define MAP_HPP
 
 #include "tesselator.h"
+#include <map>
+#include "json.hpp"
+#include <fstream>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include "camera.hpp"
+using namespace std;
 
 struct rect
 {
@@ -292,8 +300,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
     return m3;
 };
 
-
-
 std::vector<float> getOutlines(cityMap city1)
 {
   std::vector<float> unDraw = std::vector<float>();
@@ -318,6 +324,83 @@ std::vector<float> getOutlines(cityMap city1)
 	};
     };
   return unDraw;  
+
+};
+
+static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
+{
+	int i, j, c = 0;
+	for (i = 0, j = nvert - 1; i < nvert; j = i++) {
+		if (((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j] - vertx[i]) * (testy - verty[i]) / (verty[j] - verty[i]) + vertx[i]))
+			c = !c;
+	}
+	return c;
+};
+
+std::string selectBuilding( map<string, building> city, float testx, float testy)
+{
+	glm::mat4 rotN;
+	rotN = glm::rotate(rotN, glm::radians(-g_camera.angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+
+	std::vector<float> unCol = std::vector<float>();
+	std::vector<float> unDraw = std::vector<float>();
+
+	unCol.push_back(0.f);
+	unCol.push_back(0.f);
+
+	for (auto b1 : city)
+	{
+		std::string id1 = b1.first;
+		for (auto it : city[id1].coords)
+		{
+			//numVert+=round(it.size()/2);
+			unCol.insert(unCol.end(), it.begin(), it.end());
+			unDraw.push_back(it[0]);
+			unDraw.push_back(it[1]);
+			for (int i = 2;i<it.size();i = i + 2)
+			{
+				unDraw.push_back(it[i]);
+				unDraw.push_back(it[i + 1]);
+				unDraw.push_back(it[i]);
+				unDraw.push_back(it[i + 1]);
+			}
+			unDraw.push_back(it[0]);
+			unDraw.push_back(it[1]);
+			//unDraw.insert(unDraw.end(),it.begin(),it.end());
+			unCol.push_back(0.f);
+			unCol.push_back(0.f);
+			//numVert++;
+		};
+
+
+		float* cont1 = unCol.data();
+		int numVert = round(unCol.size() / 2);
+
+		double* vertx = new double[numVert];
+		double* verty = new double[numVert];
+
+		for (int i = 0; i<numVert; i++) {
+			vertx[i] = cont1[2 * i];
+			verty[i] = cont1[2 * i + 1];
+		}
+		/*
+		debug_log().AddLog("vertx one building:");
+		for (int i=0; i< numVert; i++){
+
+		debug_log().AddLog("%g,",vertx[i] );
+		};
+		debug_log().AddLog("\n");
+		*/
+		if (pnpoly(numVert, vertx, verty, testx, testy)>0)
+		{
+			return id1;
+		}
+		delete vertx;
+		delete verty;
+
+
+	}
+	return std::string("none");
 
 };
 

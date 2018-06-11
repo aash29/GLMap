@@ -69,8 +69,8 @@ bool rightMouseDown;
 glm::vec2 lastp;
 glm::vec2 selp;
 
-std::map<std::string, building> city;
-std::string selected;
+map<string, building> city;
+string selected;
 shaderData lineSh;
 
 map <string, strVec> objects;
@@ -172,47 +172,7 @@ int pairingNum(int a, int b) {
 }
 
 
-void* stdAlloc(void* userData, unsigned int size)
-{
-    int* allocated = ( int*)userData;
-    TESS_NOTUSED(userData);
-    *allocated += (int)size;
-    return malloc(size);
-}
 
-void stdFree(void* userData, void* ptr)
-{
-    TESS_NOTUSED(userData);
-    free(ptr);
-}
-
-struct MemPool
-{
-    unsigned char* buf;
-    unsigned int cap;
-    unsigned int size;
-};
-
-void* poolAlloc( void* userData, unsigned int size )
-{
-    struct MemPool* pool = (struct MemPool*)userData;
-    size = (size+0x7) & ~0x7;
-    if (pool->size + size < pool->cap)
-    {
-        unsigned char* ptr = pool->buf + pool->size;
-        pool->size += size;
-        return ptr;
-    }
-    printf("out of mem: %d < %d!\n", pool->size + size, pool->cap);
-    return 0;
-}
-
-void poolFree( void* userData, void* ptr )
-{
-    // empty
-    TESS_NOTUSED(userData);
-    TESS_NOTUSED(ptr);
-}
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
@@ -374,12 +334,12 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             }
 
 
-            std::vector<float> unDraw = std::vector<float>();
+            vector<float> unDraw = vector<float>();
 
-            if (id1!=std::string("none"))
+            if (id1!=string("none"))
             {
                 selected = id1;
-                std::vector<float> unDraw = std::vector<float>();
+                vector<float> unDraw = vector<float>();
 
                 for (auto it: city[id1].coords)
                 {
@@ -408,12 +368,16 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
                 //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
             }
             else {
-                selected=std::string("none");
+                selected=string("none");
             };
+<<<<<<< HEAD
             std::cout << id1 <<"\n";
 			*/
 
 
+=======
+            cout << id1 <<"\n";
+>>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -784,11 +748,33 @@ void sInterface() {
 	}
 
 
+<<<<<<< HEAD
 
     if (ImGui::Button("End Turn"))
     {
         endTurn();
     }
+=======
+void endTurn() {
+
+
+	for (auto a0 = agents.begin(); a0 != agents.end();a0++)
+	{
+
+		if (a0->second.plan.size() > 0)
+		{
+			action a1 = a0->second.plan.front();
+			doAction(a1.name, a1.params);
+
+			a0->second.plan.erase(a0->second.plan.begin());
+
+			a0->second.getAgentPos(setState);
+
+		}
+		a0->second.getAgentPos(setState);
+	}
+}
+>>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
 
 
     ImGui::End();
@@ -1510,7 +1496,7 @@ int main(int argc, char *argv[])
     float stub[4] = {0.f,0.f,0.f,0.f};
     lineSh = drawLineShaderInit(stub, 2);
 
-    std::vector<float> gridVec = std::vector<float>();
+    vector<float> gridVec = vector<float>();
 
 
     debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
@@ -1569,7 +1555,7 @@ int main(int argc, char *argv[])
 
 
 
-    std::vector<float> outlines = getOutlines(city);
+    vector<float> outlines = getOutlines(city);
     debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
 
     float* outlinesData = outlines.data();

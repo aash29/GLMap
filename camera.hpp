@@ -14,6 +14,7 @@ struct Camera {
     m_zoom = 1.0f;
     m_width = 1280;
     m_height = 800;
+	angleNorth = 0.0f;
   }
 
   glm::vec2 ConvertScreenToWorld(const glm::vec2 &screenPoint);
