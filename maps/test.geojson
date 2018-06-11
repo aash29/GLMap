@@ -1,4 +1,16 @@
+
 {
+"grid": [
+        20,
+        20
+    ],
+
+"mapBounds": [
+30.2882633,
+30.2915077,
+59.9369886,
+59.9386449],
+
 "type": "FeatureCollection",
 "features": [
 {
@@ -24,7 +36,8 @@
     "website": "http://rah.ru/",
     "wikidata": "Q628254",
     "wikipedia": "ru:Императорская Академия художеств",
-    "id": "relation/165182"
+    "id": "relation/165182",
+    "type": "dwelling"
   },
   "geometry": {
     "type": "Polygon",

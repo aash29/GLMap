@@ -59,7 +59,7 @@ shaderData drawPathGraphShaderInit( float* points, int numPoints) {
 
   outSh.vertexShader = createShader(GL_VERTEX_SHADER, pathGraphVertexShaderSrc);
   outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, pathGraphFragmentShaderSrc);
-  //outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, lineGeometryShaderSrc);
+  outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, pathGraphGeometryShaderSrc);
 
   outSh.shaderProgram = glCreateProgram();
 
@@ -67,7 +67,7 @@ shaderData drawPathGraphShaderInit( float* points, int numPoints) {
 
   glAttachShader(outSh.shaderProgram, outSh.vertexShader);
   glAttachShader(outSh.shaderProgram, outSh.fragmentShader);
-  //glAttachShader(outSh.shaderProgram, outSh.geometryShader);
+  glAttachShader(outSh.shaderProgram, outSh.geometryShader);
 
   glLinkProgram(outSh.shaderProgram);
   glUseProgram(outSh.shaderProgram);
@@ -104,11 +104,19 @@ void drawPathGraph(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
 
     glUseProgram(sh.shaderProgram);
 
-    glm::mat4 trans = setupCam();
+    const glm::mat4 trans = setupCam();
 
     GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
 
-    glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+  glm::mat4 transInv = glm::inverse(trans);
+
+  GLuint uniTransInv = glGetUniformLocation(sh.shaderProgram, "ModelInv");
+
+  glUniformMatrix4fv(uniTransInv, 1, GL_FALSE, glm::value_ptr(transInv));
+
+
 
     GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
 
