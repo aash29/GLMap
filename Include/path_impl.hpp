@@ -119,39 +119,6 @@ struct heatmap_t {
 };
 
 
-// The A* library returns a navigation path with a template specialization to our location_t.
-// Store the path here. Normally, you'd use "auto" for this type, it is a lot less typing!
-//std::shared_ptr<navigation_path<location_t>> path;
 
 
-
-
-// Lets go really fast!
-constexpr double tick_duration = 1.0;
-double tick_time = 0.0;
-
-// Instead of raw ints, we'll use the location structure to represent where our
-// dude is. Using C++14 initialization, it's nice and clean.
-location_t dude_position {2,3};
-
-// We'll also use a location_t to represent the intended destination.
-location_t destination {5,5};
-
-// Your main function
-int path_test()
-{
-    // Initialize with defaults
-    //init(config_simple_px("../assets"));
-	/*
-
-    path = find_path<location_t, navigator>(dude_position, destination);
-    if (path->success)
-    {
-      debug_log().AddLog("path found \n");
-      debug_log().AddLog("%d,%d", path->steps.front().x,path->steps.front().y);
-
-    }
-	*/
-    return 0;
-}
 #endif

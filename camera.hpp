@@ -30,6 +30,8 @@ struct Camera {
   int m_height;
 
   static constexpr float gridSize = 1.f;
+
+    float angleNorth;
   
 };
 extern Camera g_camera;

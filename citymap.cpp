@@ -199,15 +199,6 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 }
 
 
-static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
-{
-    int i, j, c = 0;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-        if ( ((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-            c = !c;
-    }
-    return c;
-}
 
 
 std::string selectBuilding(float testx, float testy)
@@ -375,9 +366,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 			*/
 
 
-=======
-            cout << id1 <<"\n";
->>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
+            //cout << id1 <<"\n";
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -599,8 +588,8 @@ void sInterface() {
             ImGui::Text((std::string("id:") + city[selected].id).c_str());
         }
 
-        ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
-        ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+        //ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+        //ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
         ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
         ImGui::Checkbox("Draw Grid", &drawGrid);
@@ -748,33 +737,11 @@ void sInterface() {
 	}
 
 
-<<<<<<< HEAD
 
     if (ImGui::Button("End Turn"))
     {
         endTurn();
     }
-=======
-void endTurn() {
-
-
-	for (auto a0 = agents.begin(); a0 != agents.end();a0++)
-	{
-
-		if (a0->second.plan.size() > 0)
-		{
-			action a1 = a0->second.plan.front();
-			doAction(a1.name, a1.params);
-
-			a0->second.plan.erase(a0->second.plan.begin());
-
-			a0->second.getAgentPos(setState);
-
-		}
-		a0->second.getAgentPos(setState);
-	}
-}
->>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
 
 
     ImGui::End();
@@ -1013,6 +980,21 @@ void planDay(agent &a0){
     a0.planFunc.push_back(goHome);
     a0.planFunc.push_back(eat);
 
+}
+
+
+void* stdAlloc(void* userData, unsigned int size)
+{
+    int* allocated = ( int*)userData;
+    TESS_NOTUSED(userData);
+    *allocated += (int)size;
+    return malloc(size);
+}
+
+void stdFree(void* userData, void* ptr)
+{
+    TESS_NOTUSED(userData);
+    free(ptr);
 }
 
 
