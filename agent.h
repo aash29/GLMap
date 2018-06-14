@@ -10,7 +10,8 @@
 #include "pddltree.hpp"
 #include "path_impl.hpp"
 #include <unordered_set>
-#include "map.hpp"
+#include <functional>
+#include <set>
 
 
 using namespace std;

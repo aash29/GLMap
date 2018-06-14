@@ -102,6 +102,8 @@ struct heatmap_t {
         // Resize the vector to hold the whole map; this way it won't reallocate
         deltaHeat.resize((x2-x1+1)*(y2-y1+1));
 
+        // Set the entire map to walkable
+        std::fill(deltaHeat.begin(), deltaHeat.end(), -1);
 
     }
 
@@ -109,3 +111,14 @@ struct heatmap_t {
     inline int at(const int &x, const int &y)
     { return ((xmax-xmin+1)*(y-ymin))+(x-xmin); }
 
+    // The width and height of the map
+    const int xmin,xmax, ymin, ymax;
+
+    // The actual walkable storage vector
+    std::vector<int> deltaHeat;
+};
+
+
+
+
+#endif

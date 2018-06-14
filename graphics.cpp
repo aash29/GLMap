@@ -54,6 +54,79 @@ GLuint createShader(GLenum type, const GLchar* src) {
 }
 
 
+shaderData drawPathGraphShaderInit( float* points, int numPoints) {
+  shaderData outSh;
+
+  outSh.vertexShader = createShader(GL_VERTEX_SHADER, pathGraphVertexShaderSrc);
+  outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, pathGraphFragmentShaderSrc);
+  outSh.geometryShader = createShader(GL_GEOMETRY_SHADER, pathGraphGeometryShaderSrc);
+
+  outSh.shaderProgram = glCreateProgram();
+
+
+
+  glAttachShader(outSh.shaderProgram, outSh.vertexShader);
+  glAttachShader(outSh.shaderProgram, outSh.fragmentShader);
+  glAttachShader(outSh.shaderProgram, outSh.geometryShader);
+
+  glLinkProgram(outSh.shaderProgram);
+  glUseProgram(outSh.shaderProgram);
+
+
+  glGenBuffers(1, &outSh.vbo);
+
+  outSh.data = points;
+  outSh.vertexCount = numPoints;
+
+
+  glBindBuffer(GL_ARRAY_BUFFER, outSh.vbo);
+  glBufferData(GL_ARRAY_BUFFER, outSh.vertexCount*2*sizeof(float), outSh.data, GL_STATIC_DRAW);
+
+  // Create VAO
+  glGenVertexArrays(1, &outSh.vao);
+  glBindVertexArray(outSh.vao);
+
+  // Specify layout of point data
+  GLint posAttrib = glGetAttribLocation(outSh.shaderProgram, "pos");
+  glEnableVertexAttribArray(posAttrib);
+  glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  return outSh;
+
+
+}
+
+
+void drawPathGraph(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
+
+
+    glBindVertexArray(sh.vao);
+
+    glUseProgram(sh.shaderProgram);
+
+    const glm::mat4 trans = setupCam();
+
+    GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+
+  glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+  glm::mat4 transInv = glm::inverse(trans);
+
+  GLuint uniTransInv = glGetUniformLocation(sh.shaderProgram, "ModelInv");
+
+  glUniformMatrix4fv(uniTransInv, 1, GL_FALSE, glm::value_ptr(transInv));
+
+
+
+    GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
+
+    glUniform4f(uniColor, r,g,b,1.f);
+
+    glDrawArrays(GL_LINES, 0, sh.vertexCount);
+
+}
+
+
 shaderData drawLineShaderInit( float* points, int numPoints) {
 
   shaderData outSh;

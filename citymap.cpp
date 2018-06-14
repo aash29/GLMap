@@ -44,6 +44,7 @@
 #include "tinydir.h"
 
 #include <unordered_set>
+//#include <gklib_defs.h>
 //#include <gperftools/profiler.h>
 
 
@@ -160,6 +161,16 @@ struct navigator {
 void endTurn();
 void planDay(agent &a0);
 
+int pairingNum(int a, int b) {
+    if (a>b){
+        int a1 = a;
+        a = b;
+        b = a1;
+    }
+
+    return (a+b)*(a+b+1)/2 + b;
+}
+
 
 
 
@@ -188,15 +199,6 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
 }
 
 
-static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
-{
-    int i, j, c = 0;
-    for (i = 0, j = nvert-1; i < nvert; j = i++) {
-        if ( ((verty[i]>testy) != (verty[j]>testy)) && (testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) )
-            c = !c;
-    }
-    return c;
-}
 
 
 std::string selectBuilding(float testx, float testy)
@@ -364,9 +366,10 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 			*/
 
 
-=======
             cout << id1 <<"\n";
->>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
+=======
+            //cout << id1 <<"\n";
+>>>>>>> 943ed75cd2798bbe5c1918b94607f1149b20b45e
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -588,8 +591,8 @@ void sInterface() {
             ImGui::Text((std::string("id:") + city[selected].id).c_str());
         }
 
-        ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
-        ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+        //ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+        //ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
         ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
         ImGui::Checkbox("Draw Grid", &drawGrid);
@@ -608,6 +611,87 @@ void sInterface() {
         ImFont* font = atlas->Fonts[0];
         //font->Scale = 2.f;
     }
+
+
+
+
+
+
+    /*
+
+    ImGui::SetNextWindowPos(ImVec2(width-300, 0));
+
+    ImGui::Begin("Path");
+
+
+    static int beginPos[2] = {2,2};
+    ImGui::InputInt2("start", beginPos);
+
+    static int endPos[2];
+    ImGui::InputInt2("end", endPos);
+
+
+	
+    if (ImGui::Button("Find")) {
+
+        for (auto a1:agents) {
+
+            string id = a1.first;
+
+            std::shared_ptr<navigation_path<location_t>> path;
+
+            location_t bpLoc(beginPos[0], beginPos[1]);
+
+            location_t epLoc(endPos[0], endPos[1]);
+
+            location_t apLoc(a1.second.x,a1.second.y);
+
+            path = find_path<location_t, navigator>(bpLoc, epLoc);
+
+            if (path->success) {
+                debug_log().AddLog("path found \n");
+
+                location_t curPos = apLoc;
+
+                for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
+                    if (!(curPos == *p1)) {
+                        debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+
+                        int dx = p1->x;
+                        int dy = p1->y;
+                        agents[id].planFunc.push_back(
+                                [&, dx, dy, id]() {
+                                    if (path_map->walkable[path_map->at(dx, dy)]) {
+                                        agents[id].x = dx;
+                                        agents[id].y = dy;
+                                        return 0;
+                                    } else {
+                                        return 1;
+                                    };
+                                }
+                        );
+                        curPos = *p1;
+                    }
+                }
+
+            }
+        }
+
+    };
+
+
+
+    ImGui::End();
+	*/
+	/*
+
+    ImGui::Begin("State");
+
+
+    //static char* text = &state[0];
+    
+    //ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
 
 
 
@@ -881,6 +965,21 @@ void planDay(agent &a0){
     a0.planFunc.push_back(goHome);
     a0.planFunc.push_back(eat);
 
+}
+
+
+void* stdAlloc(void* userData, unsigned int size)
+{
+    int* allocated = ( int*)userData;
+    TESS_NOTUSED(userData);
+    *allocated += (int)size;
+    return malloc(size);
+}
+
+void stdFree(void* userData, void* ptr)
+{
+    TESS_NOTUSED(userData);
+    free(ptr);
 }
 
 
@@ -1174,48 +1273,104 @@ int main(int argc, char *argv[])
     map<int, pathNode> pathGraph;
 	int pathIndex = nvertsOuter;
 
+    unsigned char *visited = (unsigned char *) calloc(nelemsOuter, sizeof(unsigned char));
 
-    int seedPoly = 1;
-    unsigned char* visited = (unsigned char*)calloc(nelemsOuter, sizeof(unsigned char));
-    TESSindex stack[1000];
-    int nstack = 0;
-    stack[nstack++] = seedPoly;
-    visited[seedPoly] = 1;
+    std::vector<float> pathGraphLines = std::vector<float>();
+    pathGraphLines.reserve(500);
 
-    while (nstack > 0) {
-        TESSindex idx = stack[--nstack];
-        const TESSindex* poly = &elemsOuter[idx * nvp2 * 2];
-        const TESSindex* nei = &poly[nvp2];
-        //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
-        //pathGraph[pathIndex].id = pathIndex;
 
-        float cmx = 0;
-        float cmy = 0;
-		int cpv = 0;
-        for (int i = 0; i < nvp2; i++) {
-            if (poly[i] == TESS_UNDEF) break;
-			pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
-			pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
-			pathGraph[poly[i]].id = poly[i];
+    TESSindex stack[nelemsOuter];
+    for (int seedPoly  = 0; seedPoly < nelemsOuter; seedPoly ++)
+        if (!visited[seedPoly]){
 
-			//pathIndex++;
-			cpv++;
-            cmx = cmx + vertsOuter[poly[i] * 2];
-            cmy = cmy + vertsOuter[poly[i] * 2 + 1];
-        }
-        cmx = cmx/cpv;
-        cmy = cmy/cpv;
-		
-		/*
-        pathGraph[pathIndex].x = cmx;
-        pathGraph[pathIndex].y = cmy;
-		pathGraph[pathIndex].id = pathIndex;
-		pathGraph[pathIndex].neigh.push_back(poly[0]);
-		pathGraph[pathIndex].neigh.push_back(poly[1]);
-		pathGraph[pathIndex].neigh.push_back(poly[2]);
-		
-		*/
+        //int seedPoly = 3000;
 
+
+        int nstack = 0;
+        stack[nstack++] = seedPoly;
+        visited[seedPoly] = 1;
+
+        while (nstack > 0) {
+            int idx = stack[--nstack];
+            const TESSindex *poly = &elemsOuter[idx * nvp2 * 2];
+            const TESSindex *nei = &poly[nvp2];
+            //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
+            //pathGraph[pathIndex].id = pathIndex;
+
+            float cmx = 0;
+            float cmy = 0;
+            int cpv = 0;
+            for (int i = 0; i < nvp2; i++) {
+                if (poly[i] == TESS_UNDEF) break;
+                //pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
+                //pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
+                //pathGraph[poly[i]].id = poly[i];
+
+                //pathIndex++;
+                cpv++;
+                cmx = cmx + vertsOuter[poly[i] * 2];
+                cmy = cmy + vertsOuter[poly[i] * 2 + 1];
+            }
+            cmx = cmx / cpv;
+            cmy = cmy / cpv;
+
+            pathGraph[idx].x = cmx;
+            pathGraph[idx].y = cmy;
+            pathGraph[idx].id = idx;
+
+
+            float x0 = vertsOuter[poly[0] * 2];
+            float y0 = vertsOuter[poly[0] * 2 + 1];
+
+            float x1 = vertsOuter[poly[1] * 2];
+            float y1 = vertsOuter[poly[1] * 2 + 1];
+
+            float x2 = vertsOuter[poly[2] * 2];
+            float y2 = vertsOuter[poly[2] * 2 + 1];
+
+            float mx[3];
+            float my[3];
+            mx[0] = x0 + (x1 - x0) / 2;
+            my[0] = y0 + (y1 - y0) / 2;
+
+            mx[1] = x1 + (x2 - x1) / 2;
+            my[1] = y1 + (y2 - y1) / 2;
+
+            mx[2] = x2 + (x0 - x2) / 2;
+            my[2] = y2 + (y0 - y2) / 2;
+
+
+            pathGraph[idx].x = cmx;
+            pathGraph[idx].y = cmy;
+            pathGraph[idx].id = idx;
+
+
+            for (int i = 0; i < nvp2; i++) {
+                if (nei[i] != TESS_UNDEF) {
+                    int idn = pairingNum(idx, nei[i]);
+
+                    pathGraph[idn].x = mx[i];
+                    pathGraph[idn].y = my[i];
+                    pathGraph[idn].id = idn;
+
+                    pathGraph[idx].neigh.push_back(idn);
+                    pathGraph[idn].neigh.push_back(idx);
+
+                    pathGraphLines.push_back(pathGraph[idx].x);
+                    pathGraphLines.push_back(pathGraph[idx].y);
+
+                    pathGraphLines.push_back(pathGraph[idn].x);
+                    pathGraphLines.push_back(pathGraph[idn].y);
+
+
+
+
+                }
+            }
+
+
+
+/*
 		
 		pathGraph[poly[0]].neigh.push_back(poly[cpv - 1]);
 		pathGraph[poly[0]].neigh.push_back(poly[1]);
@@ -1227,85 +1382,27 @@ int main(int argc, char *argv[])
 
 		pathGraph[poly[cpv - 1]].neigh.push_back(poly[cpv - 2]);
 		pathGraph[poly[cpv - 1]].neigh.push_back(poly[0]);
-
-		
-		/*
-		pathGraph[poly[0]].neigh.push_back(poly[1]);
-		pathGraph[poly[0]].neigh.push_back(poly[3]);
-
-		//pathGraph[poly[0]].neigh.push_back(pathIndex);
-
-		pathGraph[poly[1]].neigh.push_back(poly[0]);
-		pathGraph[poly[1]].neigh.push_back(poly[2]);
-		//pathGraph[poly[1]].neigh.push_back(pathIndex);
-
-		pathGraph[poly[2]].neigh.push_back(poly[3]);
-		pathGraph[poly[2]].neigh.push_back(poly[1]);
-
-		//pathGraph[poly[2]].neigh.push_back(pathIndex);
-
-		pathGraph[poly[3]].neigh.push_back(poly[2]);
-		pathGraph[poly[3]].neigh.push_back(poly[0]);
-		*/
-		/*
-
-		pathGraph[poly[0]].neigh.push_back(poly[1]);
-		pathGraph[poly[0]].neigh.push_back(poly[2]);
-
-		//pathGraph[poly[0]].neigh.push_back(pathIndex);
-
-		pathGraph[poly[1]].neigh.push_back(poly[0]);
-		pathGraph[poly[1]].neigh.push_back(poly[2]);
-		//pathGraph[poly[1]].neigh.push_back(pathIndex);
-
-		pathGraph[poly[2]].neigh.push_back(poly[0]);
-		pathGraph[poly[2]].neigh.push_back(poly[1]);
-
-		//pathGraph[poly[2]].neigh.push_back(pathIndex);
-
-		*/
-		pathIndex++;
+*/
 
 /*
+            for (int i = 0; i < nvp2; i++) {
+                if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
+                    //pathGraph[idx].neigh.push_back(nei[i]);
+                    stack[nstack++] = nei[i];
+                    visited[nei[i]] = 1;
 
-		pathGraph[pathIndex-3].neigh.push_back(pathIndex);
-		pathGraph[pathIndex].neigh.push_back(pathIndex - 2);
-		pathGraph[pathIndex-2].neigh.push_back(pathIndex);
-		pathGraph[pathIndex].neigh.push_back(pathIndex - 1);
-		pathGraph[pathIndex-1].neigh.push_back(pathIndex);
-
-		pathGraph[pathIndex - 3].neigh.push_back(pathIndex - 2);
-		pathGraph[pathIndex - 3].neigh.push_back(pathIndex - 1);
-
-		pathGraph[pathIndex - 2].neigh.push_back(pathIndex - 3);
-		pathGraph[pathIndex - 2].neigh.push_back(pathIndex - 1);
-
-		pathGraph[pathIndex - 1].neigh.push_back(pathIndex - 3);
-		pathGraph[pathIndex - 1].neigh.push_back(pathIndex - 2);
-
-
-
-		pathIndex++;
-
-		*/
-
-        for (int i = 0; i < nvp2; i++) {
-            if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
-                //pathGraph[idx].neigh.push_back(nei[i]);
-                stack[nstack++] = nei[i];
-                visited[nei[i]] = 1;
+                }
             }
+            */
         }
     }
-
-    set<int> visitedNodes;
+/*
+    //set<int> visitedNodes;
     vector<int> stackPath;
 
-	std::vector<float> pathGraphLines = std::vector<float>();
-	pathGraphLines.reserve(500);
 
     stackPath.push_back(seedPoly);
-    visitedNodes.insert(seedPoly);
+    //visitedNodes.insert(seedPoly);
     while (stackPath.size() > 0) {
         int cn = stackPath.back();
         stackPath.pop_back();
@@ -1327,10 +1424,11 @@ int main(int argc, char *argv[])
         }
 
     }
+    */
 
 
 
-
+    debug_log().AddLog("\n graph nodes: %d \n", pathGraph.size());
 
 
 
@@ -1442,19 +1540,10 @@ int main(int argc, char *argv[])
 
     int x, y;
 
-<<<<<<< HEAD
-    /*
-    for (string o1: objects["agents"])
-      {
-    agents.insert(std::pair<string, agent>(o1,agent()));
-        agents[o1].id = o1;
-      };
-    */
-
-=======
 
     shared_ptr<navigation_path<location_t>> path;
->>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
+    shaderData graphSh = drawPathGraphShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
+
 
 
     agents.clear();
@@ -1487,15 +1576,6 @@ int main(int argc, char *argv[])
     debug_log().AddLog("\n");
 
 
-
-/*
-    agents.insert(std::pair<string, agent>("agent0", agent()));
-
-    agents["agent0"].id = "agent0";
-    agents["agent0"].x = 2;
-    agents["agent0"].y = 2;
-    agents["agent0"].home = "relation/3084726";
-*/
     pathfinding_map = new map_t(xm,xp,ym,yp);
     heatmap = new heatmap_t(xm,xp,ym,yp);
     buildingTypes = new heatmap_t(xm,xp,ym,yp);
@@ -1620,6 +1700,8 @@ int main(int argc, char *argv[])
 					unDraw.push_back(it[1]);
 				};
 
+
+
 				lineSh.vertexCount = round(unDraw.size() / 2);
 				lineSh.data = unDraw.data();
 				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
@@ -1634,13 +1716,21 @@ int main(int argc, char *argv[])
 				}
 
 			}
-			/*
+
+
+            drawPathGraph(graphSh,g_camera,1.f,0.f,0.f);
+
+/*
             lineSh.vertexCount = round(pathGraphLines.size() / 2);
             lineSh.data = pathGraphLines.data();
             glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
             glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
             drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-			*/
+*/
+
+            //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
+            //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);
+
 
 
 

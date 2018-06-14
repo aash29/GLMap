@@ -47,7 +47,6 @@ typedef std::map<std::string, building> cityMap;
 
 float xmin,xmax,ymin,ymax;
 
-<<<<<<< HEAD
 
 void loadGrid(const char *name, int& xgrid, int& ygrid)
 {
@@ -75,51 +74,6 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-=======
-void* stdAlloc(void* userData, unsigned int size)
-{
-	int* allocated = (int*)userData;
-	TESS_NOTUSED(userData);
-	*allocated += (int)size;
-	return malloc(size);
-}
-
-void stdFree(void* userData, void* ptr)
-{
-	TESS_NOTUSED(userData);
-	free(ptr);
-}
-
-struct MemPool
-{
-	unsigned char* buf;
-	unsigned int cap;
-	unsigned int size;
-};
-
-void* poolAlloc(void* userData, unsigned int size)
-{
-	struct MemPool* pool = (struct MemPool*)userData;
-	size = (size + 0x7) & ~0x7;
-	if (pool->size + size < pool->cap)
-	{
-		unsigned char* ptr = pool->buf + pool->size;
-		pool->size += size;
-		return ptr;
-	}
-	printf("out of mem: %d < %d!\n", pool->size + size, pool->cap);
-	return 0;
-}
-
-void poolFree(void* userData, void* ptr)
-{
-	// empty
-	TESS_NOTUSED(userData);
-	TESS_NOTUSED(ptr);
-}
-
-
->>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
 cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon)
 {
   
