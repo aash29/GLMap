@@ -366,10 +366,8 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 			*/
 
 
-            cout << id1 <<"\n";
-=======
-            //cout << id1 <<"\n";
->>>>>>> 943ed75cd2798bbe5c1918b94607f1149b20b45e
+           //cout << id1 <<"\n";
+
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -712,6 +710,8 @@ void sInterface() {
     }
 	*/
 
+
+    ImGui::Begin("Actions");
 
 	if (ImGui::Button("Plan Day"))
 	{
@@ -1581,7 +1581,7 @@ int main(int argc, char *argv[])
     buildingTypes = new heatmap_t(xm,xp,ym,yp);
 
 
-    std::shared_ptr<navigation_path<location_t>> path;
+    //std::shared_ptr<navigation_path<location_t>> path;
 
     //pathfinding_map = map_t(-xm, xp, -ym, yp);
 
