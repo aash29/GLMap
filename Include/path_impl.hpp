@@ -102,8 +102,6 @@ struct heatmap_t {
         // Resize the vector to hold the whole map; this way it won't reallocate
         deltaHeat.resize((x2-x1+1)*(y2-y1+1));
 
-        // Set the entire map to walkable
-        std::fill(deltaHeat.begin(), deltaHeat.end(), -1);
 
     }
 
@@ -111,47 +109,3 @@ struct heatmap_t {
     inline int at(const int &x, const int &y)
     { return ((xmax-xmin+1)*(y-ymin))+(x-xmin); }
 
-    // The width and height of the map
-    const int xmin,xmax, ymin, ymax;
-
-    // The actual walkable storage vector
-    std::vector<int> deltaHeat;
-};
-
-
-// The A* library returns a navigation path with a template specialization to our location_t.
-// Store the path here. Normally, you'd use "auto" for this type, it is a lot less typing!
-//std::shared_ptr<navigation_path<location_t>> path;
-
-
-
-
-// Lets go really fast!
-constexpr double tick_duration = 1.0;
-double tick_time = 0.0;
-
-// Instead of raw ints, we'll use the location structure to represent where our
-// dude is. Using C++14 initialization, it's nice and clean.
-location_t dude_position {2,3};
-
-// We'll also use a location_t to represent the intended destination.
-location_t destination {5,5};
-
-// Your main function
-int path_test()
-{
-    // Initialize with defaults
-    //init(config_simple_px("../assets"));
-	/*
-
-    path = find_path<location_t, navigator>(dude_position, destination);
-    if (path->success)
-    {
-      debug_log().AddLog("path found \n");
-      debug_log().AddLog("%d,%d", path->steps.front().x,path->steps.front().y);
-
-    }
-	*/
-    return 0;
-}
-#endif

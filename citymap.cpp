@@ -68,8 +68,8 @@ bool rightMouseDown;
 glm::vec2 lastp;
 glm::vec2 selp;
 
-std::map<std::string, building> city;
-std::string selected;
+map<string, building> city;
+string selected;
 shaderData lineSh;
 
 map <string, strVec> objects;
@@ -161,47 +161,7 @@ void endTurn();
 void planDay(agent &a0);
 
 
-void* stdAlloc(void* userData, unsigned int size)
-{
-    int* allocated = ( int*)userData;
-    TESS_NOTUSED(userData);
-    *allocated += (int)size;
-    return malloc(size);
-}
 
-void stdFree(void* userData, void* ptr)
-{
-    TESS_NOTUSED(userData);
-    free(ptr);
-}
-
-struct MemPool
-{
-    unsigned char* buf;
-    unsigned int cap;
-    unsigned int size;
-};
-
-void* poolAlloc( void* userData, unsigned int size )
-{
-    struct MemPool* pool = (struct MemPool*)userData;
-    size = (size+0x7) & ~0x7;
-    if (pool->size + size < pool->cap)
-    {
-        unsigned char* ptr = pool->buf + pool->size;
-        pool->size += size;
-        return ptr;
-    }
-    printf("out of mem: %d < %d!\n", pool->size + size, pool->cap);
-    return 0;
-}
-
-void poolFree( void* userData, void* ptr )
-{
-    // empty
-    TESS_NOTUSED(userData);
-    TESS_NOTUSED(ptr);
-}
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
@@ -363,12 +323,12 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             }
 
 
-            std::vector<float> unDraw = std::vector<float>();
+            vector<float> unDraw = vector<float>();
 
-            if (id1!=std::string("none"))
+            if (id1!=string("none"))
             {
                 selected = id1;
-                std::vector<float> unDraw = std::vector<float>();
+                vector<float> unDraw = vector<float>();
 
                 for (auto it: city[id1].coords)
                 {
@@ -397,12 +357,16 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
                 //lineSh = drawLineShaderInit(unDraw.data(), round(unDraw.size()/2));
             }
             else {
-                selected=std::string("none");
+                selected=string("none");
             };
+<<<<<<< HEAD
             std::cout << id1 <<"\n";
 			*/
 
 
+=======
+            cout << id1 <<"\n";
+>>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
         }
         else if (button == GLFW_MOUSE_BUTTON_2) {
             if (action == GLFW_PRESS) {
@@ -648,105 +612,6 @@ void sInterface() {
 
 
 
-
-
-    /*
-
-    ImGui::SetNextWindowPos(ImVec2(width-300, 0));
-
-    ImGui::Begin("Path");
-
-
-    static int beginPos[2] = {2,2};
-    ImGui::InputInt2("start", beginPos);
-
-    static int endPos[2];
-    ImGui::InputInt2("end", endPos);
-
-
-	
-    if (ImGui::Button("Find")) {
-
-        for (auto a1:agents) {
-
-            string id = a1.first;
-
-            std::shared_ptr<navigation_path<location_t>> path;
-
-            location_t bpLoc(beginPos[0], beginPos[1]);
-
-            location_t epLoc(endPos[0], endPos[1]);
-
-            location_t apLoc(a1.second.x,a1.second.y);
-
-            path = find_path<location_t, navigator>(bpLoc, epLoc);
-
-            if (path->success) {
-                debug_log().AddLog("path found \n");
-
-                location_t curPos = apLoc;
-
-                for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
-                    if (!(curPos == *p1)) {
-                        debug_log().AddLog("%d,%d \n", p1->x, p1->y);
-
-                        int dx = p1->x;
-                        int dy = p1->y;
-                        agents[id].planFunc.push_back(
-                                [&, dx, dy, id]() {
-                                    if (path_map->walkable[path_map->at(dx, dy)]) {
-                                        agents[id].x = dx;
-                                        agents[id].y = dy;
-                                        return 0;
-                                    } else {
-                                        return 1;
-                                    };
-                                }
-                        );
-                        curPos = *p1;
-                    }
-                }
-
-            }
-        }
-
-    };
-
-
-
-    ImGui::End();
-	*/
-	/*
-
-    ImGui::Begin("State");
-
-
-    //static char* text = &state[0];
-    
-    //ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
-
-
-
-    static char str0[128] = "city";
-    ImGui::InputText("node", str0, IM_ARRAYSIZE(str0));
-
-    static char str1[128] = ".*";
-    ImGui::InputText("filter", str1, IM_ARRAYSIZE(str1));
-
-    if (ImGui::IsItemHovered() || (ImGui::IsRootWindowOrAnyChildFocused() && !ImGui::IsAnyItemActive() && !ImGui::IsMouseClicked(0)))
-        ImGui::SetKeyboardFocusHere(-1); // Auto focus previous widget
-
-    static std::vector<pddlTreeNode*> s_res;
-
-    if (ImGui::Button("Load"))
-    {
-        s_res  = root.search(std::string(str0),std::string(str1));
-    };
-    for (auto r1 : s_res){
-        visitNodes(r1);
-    }
-    ImGui::End();
-	*/	
 	
     ImGui::Begin("Test actions");
 	/*
@@ -1500,7 +1365,7 @@ int main(int argc, char *argv[])
     float stub[4] = {0.f,0.f,0.f,0.f};
     lineSh = drawLineShaderInit(stub, 2);
 
-    std::vector<float> gridVec = std::vector<float>();
+    vector<float> gridVec = vector<float>();
 
 
     debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
@@ -1559,7 +1424,7 @@ int main(int argc, char *argv[])
 
 
 
-    std::vector<float> outlines = getOutlines(city);
+    vector<float> outlines = getOutlines(city);
     debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
 
     float* outlinesData = outlines.data();
@@ -1577,6 +1442,7 @@ int main(int argc, char *argv[])
 
     int x, y;
 
+<<<<<<< HEAD
     /*
     for (string o1: objects["agents"])
       {
@@ -1585,6 +1451,10 @@ int main(int argc, char *argv[])
       };
     */
 
+=======
+
+    shared_ptr<navigation_path<location_t>> path;
+>>>>>>> f5cd3c816e5f274f66459f992e91919c1a9af655
 
 
     agents.clear();
