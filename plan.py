@@ -2,6 +2,7 @@
 
 import random
 import copy
+from pprint import pprint
 
 distToWork=1;
 distToShop=1;
@@ -58,11 +59,16 @@ class eat():
     def eff(state):
         #global utime
         #super(eat,eat).eff();
+        
         s1 = copy.deepcopy(state);
+
         s1.utime += eat.duration;
         s1.sat=32;
         s1.energy -= eat.duration;
         s1.invHome.remove('food')
+
+        
+        
         #print ('eating');
         return s1;
         
@@ -79,6 +85,7 @@ class gotoShop():
         s1 = copy.deepcopy(state);
         #super(gotoShop,gotoShop).eff();
         s1.inv.remove('foodStamp')
+        s1.invHome.append('food')
         #print ('going to Shop');
         s1.energy -= gotoShop.duration;
         return s1;
@@ -86,14 +93,16 @@ class gotoShop():
 class wait():
     name = 'wait'
     duration = 1;
-    #def __str__():
-    #    return 'wait'
+    def __str__(self):
+        return 'wait'
     def pre(state):
         return (state.energy>0)&(state.sat>0);
     def eff(state):
         s1 = copy.deepcopy(state);
         s1.utime += wait.duration;
         s1.energy -= wait.duration;
+        s1.sat -= wait.duration;
+        
         #print('Waiting');
         return s1;
 
@@ -115,7 +124,8 @@ visited = set([start]);
 def planDay():
     while stack:
         s0, path = stack.pop()
-        print(s0)
+        pprint(vars(s0))
+        #print(s0)
         #print(path)
         
         for a1 in actions:
@@ -128,15 +138,14 @@ def planDay():
                 
             #print(s1 in visited)
         # and (not s1 in visited):
-        stack.append((s1,path + [a1]));
-        visited.add(s1);
+                stack.append((s1,path + [a1]));
+                visited.add(s1);
 
 s1, plan = planDay();
 
-
     
-print(plan)
-print(s1)
+pprint(plan)
+pprint(vars(s1))
     #print(stack)
 
             
