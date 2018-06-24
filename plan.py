@@ -83,6 +83,24 @@ class gotoShop():
         s1.energy -= gotoShop.duration;
         return s1;
 
+class gotoWork():
+    name = 'go to work'
+    duration = 2*distToWork+1
+    def pre(state):
+        return (state.energy>0)&(state.sat>0)&(state.loc=="atHome")
+    def eff(state):
+        s1 = copy.deepcopy(state);
+        s1.loc=="atWork"
+        s1.energy -= gotoShop.duration;
+        return s1;
+    
+class work():
+    name = 'work'
+    duration = 20
+    def pre(state):
+    
+
+    
 class wait():
     name = 'wait'
     duration = 1;
@@ -128,8 +146,8 @@ def planDay():
                 
             #print(s1 in visited)
         # and (not s1 in visited):
-        stack.append((s1,path + [a1]));
-        visited.add(s1);
+                stack.append((s1,path + [a1]));
+                visited.add(s1);
 
 s1, plan = planDay();
 
