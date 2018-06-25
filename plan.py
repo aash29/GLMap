@@ -3,14 +3,18 @@
 import random
 import copy
 from pprint import pprint
+import os
 
-distToWork=1;
-distToShop=1;
-workDifficulty=1;
-workTemperature=1;
-workStart=0;
-workDuration=24;
+distToWork = 1;
+distToShop = 1;
+workDifficulty = 1;
+workTemperature = 1;
+workStart = 0;
+workDuration = 24;
+timeLimit = 90;
 
+
+os.system('clear')
 
 class stateClass:
     def __hash__(self):
@@ -22,7 +26,7 @@ class stateClass:
 state0 = stateClass();
 
 
-state0.sat=32;
+state0.sat=200;
 state0.heatHome=0;
 state0.inv=['foodStamp','foodStamp'];
 state0.invHome=['wood','food'];
@@ -33,6 +37,9 @@ state0.isHomeHeated=0;
 state0.loc="atHome"; #atWork, atHome, underway
 state0.utime=0;  #universal time
 state0.dayTime=lambda: state.utime%96;
+
+
+
 
 #def dayTime():
 #    return (utime%96);
@@ -53,7 +60,7 @@ class eat():
     #@staticmethod
     def pre(state):
         #result = super(eat,eat).pre();
-        result = (state.energy>0)&(state.sat>0)&(state.loc == "atHome")&('food' in state.invHome);
+        result = (state.utime<timeLimit)&(state.energy>0)&(state.sat>0)&(state.loc == "atHome")&('food' in state.invHome);
         return result;
     #@staticmethod
     def eff(state):
@@ -79,7 +86,7 @@ class gotoShop():
     #@staticmethod
     def pre(state):
         #result = super(gotoShop,gotoShop).pre();
-        return (state.energy>0)&(state.sat>0)&(state.loc=="atHome")&('foodStamp' in state.inv)
+        return (state.utime<timeLimit)&(state.energy>0)&(state.sat>0)&(state.loc=="atHome")&('foodStamp' in state.inv)
     #@staticmethod
     def eff(state):
         s1 = copy.deepcopy(state);
@@ -88,25 +95,48 @@ class gotoShop():
         s1.invHome.append('food')
         #print ('going to Shop');
         s1.energy -= gotoShop.duration;
+        s1.sat -= 1;
+        s1.utime += gotoShop.duration;
         return s1;
 
 class gotoWork():
     name = 'go to work'
     duration = 2*distToWork+1
     def pre(state):
-        return (state.energy>0)&(state.sat>0)&(state.loc=="atHome")
+        return (state.utime<timeLimit)&(state.energy>0)&(state.sat>0)&(state.loc=="atHome")
     def eff(state):
         s1 = copy.deepcopy(state);
-        s1.loc=="atWork"
-        s1.energy -= gotoShop.duration;
+        s1.loc = "atWork"
+        s1.energy -= gotoWork.duration;
+        s1.sat -= 1;
+        s1.utime += gotoWork.duration;
         return s1;
     
 class work():
     name = 'work'
     duration = 20
     def pre(state):
+        return (state.utime<timeLimit)&(state.energy>0)&(state.sat>0)&(state.loc=="atWork")
+    def eff(state):
+        s1 = copy.deepcopy(state);
+        s1.energy -= work.duration;
+        s1.sat -=1;
+        s1.workDays += 1;
+        s1.utime += work.duration;
+        return s1;      
     
-
+class goHome():
+    name = 'go home';
+    duration = 2*distToWork+1;
+    def pre(state):
+        return (state.utime<timeLimit)&(state.energy>0)&(state.sat>0)&(state.loc=="atWork")
+    def eff(state):
+        s1 = copy.deepcopy(state);
+        s1.energy -= goHome.duration;
+        s1.sat -= 1;
+        s1.loc = "atHome";
+        s1.utime += goHome.duration;
+        return s1;      
     
 class wait():
     name = 'wait'
@@ -114,7 +144,7 @@ class wait():
     def __str__(self):
         return 'wait'
     def pre(state):
-        return (state.energy>0)&(state.sat>0);
+        return (state.utime<timeLimit)&(state.energy>0)&(state.sat>0);
     def eff(state):
         s1 = copy.deepcopy(state);
         s1.utime += wait.duration;
@@ -127,39 +157,51 @@ class wait():
     
 
 def goal(state):
-    return (state.utime>90)&(state.energy>0)&(state.sat>0)
+    return (state.utime<90)&(state.energy>0)&(state.sat>0)&(state.workDays>1)
 
 
-actions = [eat, gotoShop, wait];
 
-start = state0
+def calcPathDuration(stackEntry):
+    path = stackEntry[1]
+    c = 0;
+    for ap in path:
+        c += ap.duration;
+    return c;
 
+def planDay(start, goal, actions):
 
-stack=[(start,[])];
-visited = set([start]);
+    stack=[(start,[])];
+    #visited = set([start]);
 
-
-def planDay():
     while stack:
+        #ap.append[a1];
+        #np.append((a1,c + a1.duration));
+        #stack = sorted(stack, key=calcPathDuration,reverse=True);
+
+        #pprint(stack)
+        
         s0, path = stack.pop()
-        pprint(vars(s0))
-        #print(s0)
-        #print(path)
+        #pprint(vars(s0))
+        print(s0.utime)
         
         for a1 in actions:
             if (a1.pre(s0)):
                 s1 = a1.eff(s0);
+        
                 if goal(s1):
                     plan = path + [a1]
                     #state = s1;
                     return s1, plan
-                
-            #print(s1 in visited)
-        # and (not s1 in visited):
                 stack.append((s1,path + [a1]));
                 visited.add(s1);
+        print(len(stack))
 
-s1, plan = planDay();
+
+actions = [eat, gotoShop,gotoWork,work,goHome,wait];
+
+start = state0
+
+s1, plan = planDay(start, goal, actions);
 
     
 pprint(plan)
