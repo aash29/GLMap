@@ -70,12 +70,10 @@ class eat():
         s1 = copy.deepcopy(state);
 
         s1.utime += eat.duration;
-        s1.sat=32;
+        s1.sat = 32;
         s1.energy -= eat.duration;
         s1.invHome.remove('food')
 
-        
-        
         #print ('eating');
         return s1;
         
@@ -157,7 +155,7 @@ class wait():
     
 
 def goal(state):
-    return (state.utime<90)&(state.energy>0)&(state.sat>0)&(state.workDays>1)
+    return  (state.utime>60)&(state.utime<100)&(state.energy>0)&(state.sat>0)&(state.workDays>0)
 
 
 
@@ -176,28 +174,28 @@ def planDay(start, goal, actions):
     while stack:
         #ap.append[a1];
         #np.append((a1,c + a1.duration));
-        #stack = sorted(stack, key=calcPathDuration,reverse=True);
+        stack = sorted(stack, key=calcPathDuration,reverse=True);
 
         #pprint(stack)
         
         s0, path = stack.pop()
         #pprint(vars(s0))
-        print(s0.utime)
+        #print(s0.utime)
         
         for a1 in actions:
             if (a1.pre(s0)):
                 s1 = a1.eff(s0);
-        
+                plan = path + [a1]
                 if goal(s1):
-                    plan = path + [a1]
                     #state = s1;
                     return s1, plan
-                stack.append((s1,path + [a1]));
-                visited.add(s1);
-        print(len(stack))
+                stack.append((s1,plan));
+                #visited.add(s1);
+        #print(len(stack))
+        #print(len(path))
 
 
-actions = [eat, gotoShop,gotoWork,work,goHome,wait];
+actions = [eat, gotoShop, gotoWork, work, goHome, wait];
 
 start = state0
 
