@@ -4,6 +4,7 @@ import random
 import copy
 from pprint import pprint
 import os
+import bisect
 
 distToWork = 1;
 distToShop = 1;
@@ -26,7 +27,7 @@ class stateClass:
 state0 = stateClass();
 
 
-state0.sat=200;
+state0.sat=32;
 state0.heatHome=0;
 state0.inv=['foodStamp','foodStamp'];
 state0.invHome=['wood','food'];
@@ -155,7 +156,7 @@ class wait():
     
 
 def goal(state):
-    return  (state.utime>60)&(state.utime<100)&(state.energy>0)&(state.sat>0)&(state.workDays>0)
+    return  (state.utime>60)&(state.utime<100)&(state.energy>0)&(state.sat>0)&(state.workDays>1)
 
 
 
@@ -169,16 +170,18 @@ def calcPathDuration(stackEntry):
 def planDay(start, goal, actions):
 
     stack=[(start,[])];
+    pathLen=[0]
     #visited = set([start]);
 
     while stack:
         #ap.append[a1];
         #np.append((a1,c + a1.duration));
-        stack = sorted(stack, key=calcPathDuration,reverse=True);
+        #stack = sorted(stack, key=calcPathDuration,reverse=True);
 
         #pprint(stack)
         
-        s0, path = stack.pop()
+        s0, path = stack.pop(0)
+        pathLen.pop(0)
         #pprint(vars(s0))
         #print(s0.utime)
         
@@ -189,10 +192,15 @@ def planDay(start, goal, actions):
                 if goal(s1):
                     #state = s1;
                     return s1, plan
-                stack.append((s1,plan));
+                pl1 = calcPathDuration((s1,plan))
+                #pl1 = len(plan)
+                i = bisect.bisect(pathLen,pl1);
+                pathLen.insert(i,pl1);
+                stack.insert(i,(s1,plan));
                 #visited.add(s1);
-        #print(len(stack))
-        #print(len(path))
+        print(len(stack))
+        print(len(path))
+        print(pathLen)
 
 
 actions = [eat, gotoShop, gotoWork, work, goHome, wait];
