@@ -1026,7 +1026,7 @@ int main(int argc, char *argv[])
 
 
     tess = tessNewTess(&ma);
-    tess2 = tessNewTess(&ma);
+    tess2 = tessNewTess(&ma2);
 
     if (!tess)
         return -1;
@@ -1084,7 +1084,7 @@ int main(int argc, char *argv[])
 
     glfwSetTime(0);
 
-    char* levelPath;
+    char* levelPath = "little.geojson";
 
     if (argc == 1)
     {
@@ -1227,17 +1227,18 @@ int main(int argc, char *argv[])
 
 	const int nvp2 = 3;
 
-
+	tessSetOption(tess2, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
         return -1;
 
 
 
     const float* vertsOuter = tessGetVertices(tess2);
-    const int* vindsOuter = tessGetVertexIndices(tess2);
+	const TESSindex* vindsOuter = tessGetVertexIndices(tess2);
     const int* elemsOuter = tessGetElements(tess2);
     const int nvertsOuter = tessGetVertexCount(tess2);
-    const int nelemsOuter = tessGetElementCount(tess2);
+    int nelemsOuter = tessGetElementCount(tess2);
+	//const int nelemsOuter = nEO;
 	/*
 	veO = (float*)malloc(nvertsOuter*2*sizeof(float));
 	memcpy(veO, vertsOuter, nvertsOuter * 2 * sizeof(float));
@@ -1279,7 +1280,7 @@ int main(int argc, char *argv[])
     pathGraphLines.reserve(500);
 
 
-    TESSindex stack[nelemsOuter];
+    TESSindex* stack = new TESSindex[nelemsOuter];
     for (int seedPoly  = 0; seedPoly < nelemsOuter; seedPoly ++)
         if (!visited[seedPoly]){
 
@@ -1432,7 +1433,7 @@ int main(int argc, char *argv[])
 
 
 
-
+	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
         return -1;
     printf("Memory used: %.1f kB\n", allocated/1024.0f);
@@ -1445,6 +1446,8 @@ int main(int argc, char *argv[])
     const int* elems = tessGetElements(tess);
     const int nverts = tessGetVertexCount(tess);
     const int nelems = tessGetElementCount(tess);
+
+	debug_log().AddLog("vinds: %d, %d \n", vinds[0], vinds[1]);
 
     g_camera.m_width = width;
     g_camera.m_height = height;

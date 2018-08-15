@@ -221,6 +221,15 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   uppery = boundingBox.ymax;
 
 
+
+
+  float frame[8] = { lowerx,lowery,lowerx,uppery, upperx, uppery, upperx, lowerx };
+
+
+  tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
+
+
+
   glm::mat2 r1 (cos(aN), -sin(aN), sin(aN), cos(aN) );
 
 
@@ -289,12 +298,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 	
 	}
-
-
-    float frame[8] =  {lowerx,lowery,lowerx,uppery, upperx, uppery, upperx, lowerx};
-
-
-    tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
 
 
     return m3;
