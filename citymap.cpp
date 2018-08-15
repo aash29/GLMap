@@ -94,6 +94,8 @@ map_t* path_map;
 
 bool drawGrid = true;
 bool drawBlockedCells = true;
+bool drawPaths = true;
+
 bool m_showOpenDialog = true;
 
 
@@ -594,6 +596,7 @@ void sInterface() {
 
         ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
         ImGui::Checkbox("Draw Grid", &drawGrid);
+		ImGui::Checkbox("Draw Paths", &drawPaths);
 
         ImGui::End();
 
@@ -1017,23 +1020,23 @@ int main(int argc, char *argv[])
     ma.userData = (void*)&allocated;
     ma.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
 
-
+	/*
     memset(&ma2, 0, sizeof(ma2));
     ma2.memalloc = stdAlloc;
     ma2.memfree = stdFree;
     ma2.userData = (void*)&allocated2;
     ma2.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
-
+	*/
 
     tess = tessNewTess(&ma);
-    tess2 = tessNewTess(&ma2);
+    //tess2 = tessNewTess(&ma2);
 
     if (!tess)
         return -1;
-
+	/*
     if (!tess2)
         return -1;
-
+		*/
 
     if (!glfwInit()) {
         printf("Failed to init GLFW.");
@@ -1218,7 +1221,7 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-    city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
+    //city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
     city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
 
 
@@ -1227,28 +1230,17 @@ int main(int argc, char *argv[])
 
 	const int nvp2 = 3;
 
-	tessSetOption(tess2, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-    if (!tessTesselate(tess2, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
+	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
         return -1;
 
 
 
-    const float* vertsOuter = tessGetVertices(tess2);
-	const TESSindex* vindsOuter = tessGetVertexIndices(tess2);
-    const int* elemsOuter = tessGetElements(tess2);
-    const int nvertsOuter = tessGetVertexCount(tess2);
-    int nelemsOuter = tessGetElementCount(tess2);
-	//const int nelemsOuter = nEO;
-	/*
-	veO = (float*)malloc(nvertsOuter*2*sizeof(float));
-	memcpy(veO, vertsOuter, nvertsOuter * 2 * sizeof(float));
-
-	nelemsO = nelemsOuter;
-	*/
-
-	
-
-
+    const float* vertsOuter = tessGetVertices(tess);
+	const TESSindex* vindsOuter = tessGetVertexIndices(tess);
+    const int* elemsOuter = tessGetElements(tess);
+    const int nvertsOuter = tessGetVertexCount(tess);
+    int nelemsOuter = tessGetElementCount(tess);
 
 	vertx = new double[nelemsOuter*nvp2];
 	verty = new double[nelemsOuter*nvp2];
@@ -1269,8 +1261,6 @@ int main(int argc, char *argv[])
 		}
 	}
 
-
-
     map<int, pathNode> pathGraph;
 	int pathIndex = nvertsOuter;
 
@@ -1284,25 +1274,24 @@ int main(int argc, char *argv[])
     for (int seedPoly  = 0; seedPoly < nelemsOuter; seedPoly ++)
         if (!visited[seedPoly]){
 
-        //int seedPoly = 3000;
-
-
         int nstack = 0;
         stack[nstack++] = seedPoly;
         visited[seedPoly] = 1;
 
         while (nstack > 0) {
             int idx = stack[--nstack];
+
+			pathGraph[idx].id = idx;
+
             const TESSindex *poly = &elemsOuter[idx * nvp2 * 2];
             const TESSindex *nei = &poly[nvp2];
-            //pathGraph.insert(pair<int,pathNode>(idx, pathNode()));
-            //pathGraph[pathIndex].id = pathIndex;
 
             float cmx = 0;
             float cmy = 0;
             int cpv = 0;
-            for (int i = 0; i < nvp2; i++) {
-                if (poly[i] == TESS_UNDEF) break;
+			for (int i = 0; i < nvp2; i++) {
+				if (poly[i] == TESS_UNDEF) break;
+			
                 //pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
                 //pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
                 //pathGraph[poly[i]].id = poly[i];
@@ -1317,7 +1306,7 @@ int main(int argc, char *argv[])
 
             pathGraph[idx].x = cmx;
             pathGraph[idx].y = cmy;
-            pathGraph[idx].id = idx;
+
 
 
             float x0 = vertsOuter[poly[0] * 2];
@@ -1341,11 +1330,6 @@ int main(int argc, char *argv[])
             my[2] = y2 + (y0 - y2) / 2;
 
 
-            pathGraph[idx].x = cmx;
-            pathGraph[idx].y = cmy;
-            pathGraph[idx].id = idx;
-
-
             for (int i = 0; i < nvp2; i++) {
                 if (nei[i] != TESS_UNDEF) {
                     int idn = pairingNum(idx, nei[i]);
@@ -1362,76 +1346,42 @@ int main(int argc, char *argv[])
 
                     pathGraphLines.push_back(pathGraph[idn].x);
                     pathGraphLines.push_back(pathGraph[idn].y);
-
-
-
-
                 }
             }
+			for (int i = 0; i < nvp2; i++) {
+				if (poly[i] == TESS_UNDEF) break;
+				if (vindsOuter[poly[i]] != TESS_UNDEF) {
+					std::string id;
+					int bn1 = buildingIndex(city, vindsOuter[poly[i]], id);
+					if (bn1 > -1) {
+						int idn = pairingNum(idx, nelemsOuter + bn1);
+						pathGraph[idn].id = idn;
+
+						pathGraph[idn].x = city[id].anchorx;
+						pathGraph[idn].y = city[id].anchory;
+
+						debug_log().AddLog("anchors: %g, %g \n", city[id].anchorx, city[id].anchory);
+
+						pathGraph[idx].neigh.push_back(idn);
+						pathGraph[idn].neigh.push_back(idx);
 
 
+						pathGraphLines.push_back(pathGraph[idx].x);
+						pathGraphLines.push_back(pathGraph[idx].y);
 
-/*
-		
-		pathGraph[poly[0]].neigh.push_back(poly[cpv - 1]);
-		pathGraph[poly[0]].neigh.push_back(poly[1]);
-
-		for (int i = 1; i < cpv-1; i++) {
-			pathGraph[poly[i]].neigh.push_back(poly[i - 1]);
-			pathGraph[poly[i]].neigh.push_back(poly[i + 1]);
-		}
-
-		pathGraph[poly[cpv - 1]].neigh.push_back(poly[cpv - 2]);
-		pathGraph[poly[cpv - 1]].neigh.push_back(poly[0]);
-*/
-
-/*
-            for (int i = 0; i < nvp2; i++) {
-                if (nei[i] != TESS_UNDEF && !visited[nei[i]]) {
-                    //pathGraph[idx].neigh.push_back(nei[i]);
-                    stack[nstack++] = nei[i];
-                    visited[nei[i]] = 1;
-
-                }
-            }
-            */
+						pathGraphLines.push_back(pathGraph[idn].x);
+						pathGraphLines.push_back(pathGraph[idn].y);
+					}
+				}
+			}
         }
     }
-/*
-    //set<int> visitedNodes;
-    vector<int> stackPath;
-
-
-    stackPath.push_back(seedPoly);
-    //visitedNodes.insert(seedPoly);
-    while (stackPath.size() > 0) {
-        int cn = stackPath.back();
-        stackPath.pop_back();
-
-        debug_log().AddLog("%d,",cn);
-
-        for (int n1: pathGraph[cn].neigh) {
-            pathGraphLines.push_back(pathGraph[cn].x);
-            pathGraphLines.push_back(pathGraph[cn].y);
-
-            pathGraphLines.push_back(pathGraph[n1].x);
-            pathGraphLines.push_back(pathGraph[n1].y);
-
-            if (visitedNodes.find(n1) == visitedNodes.end()){
-                stackPath.push_back(n1);
-				visitedNodes.insert(n1);
-            }
-
-        }
-
-    }
-    */
 
 
 
     debug_log().AddLog("\n graph nodes: %d \n", pathGraph.size());
 
-
+	city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
 
 	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
@@ -1722,14 +1672,15 @@ int main(int argc, char *argv[])
 
 
             drawPathGraph(graphSh,g_camera,1.f,0.f,0.f);
+			
+			if (drawPaths){
 
-/*
-            lineSh.vertexCount = round(pathGraphLines.size() / 2);
-            lineSh.data = pathGraphLines.data();
-            glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-            glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
-            drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-*/
+				lineSh.vertexCount = round(pathGraphLines.size() / 2);
+				lineSh.data = pathGraphLines.data();
+				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+				glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
+				drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
+			}
 
             //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
             //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);

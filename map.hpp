@@ -24,6 +24,10 @@ struct building
   std::string addrNumber;
   std::string addrStreet;
   std::string type;
+  int firstVertexIndex;
+  int lastVertexIndex;
+  float anchorx;
+  float anchory;
   
   std::vector<std::vector<float> > coords;
 
@@ -181,19 +185,16 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 		  for (int i = 0; i<c1[j].size();i++){
 
-			  //unCol.insert(unCol.end(),c1[j].begin(),c1[j].end());
-
-
-			  m3[id].coords[j].push_back(c1[j][i][0]);
+			m3[id].coords[j].push_back(c1[j][i][0]);
 			m3[id].coords[j].push_back(c1[j][i][1]);
 			
 			singlePolygon.nvert++;
 
-			  m3[id].bounds.xmin=std::min(m3[id].bounds.xmin, c1[j][i][0]);
-			  m3[id].bounds.xmax=std::max(m3[id].bounds.xmax, c1[j][i][0]);
+			m3[id].bounds.xmin=std::min(m3[id].bounds.xmin, c1[j][i][0]);
+			m3[id].bounds.xmax=std::max(m3[id].bounds.xmax, c1[j][i][0]);
 
-			  m3[id].bounds.ymin=std::min(m3[id].bounds.ymin, c1[j][i][1]);
-			  m3[id].bounds.ymax=std::max(m3[id].bounds.ymax, c1[j][i][1]);
+			m3[id].bounds.ymin=std::min(m3[id].bounds.ymin, c1[j][i][1]);
+			m3[id].bounds.ymax=std::max(m3[id].bounds.ymax, c1[j][i][1]);
 		  };
 
 
@@ -237,50 +238,65 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   singlePolygon.verty = new double[singlePolygon.nvert];
   
   int spCounter = 0;
+  int buildingCounter = 7;
 
 
 
   debug_log().AddLog("upperx: %f \n", upperx);
 
+
     for (auto &it : m3) {
+		std::vector<float> unCol = std::vector<float>();
+		it.second.firstVertexIndex = buildingCounter;
 
-	std::vector<float> unCol = std::vector<float>();
+		for (int j = 0; j < it.second.coords.size(); j++) {
 
-	for (int j = 0; j < it.second.coords.size(); j++) {
+			singlePolygon.vertx[spCounter] = 0.f;
+			singlePolygon.verty[spCounter] = 0.f;
+			spCounter++;
+			buildingCounter++;
 
+			for (int i = 0; i < it.second.coords[j].size();i=i+2) {
 
-	singlePolygon.vertx[spCounter] = 0.f;
-	singlePolygon.verty[spCounter] = 0.f;
-	spCounter++;
-	  for (int i = 0; i < it.second.coords[j].size();i=i+2){
+			  float x = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
+			  float y = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
 
-	    float x = lowerx + (it.second.coords[j][i]-xmin)/(xmax-xmin)*(upperx-lowerx);
-	    float y = lowery + (it.second.coords[j][i+1]-ymin)/(ymax-ymin)*(uppery-lowery);
-
-	    glm::vec2 v1(x,y);
-	    glm::vec2 v2 = r1 * v1;
-
-
-		  unCol.push_back(v2[0]);
-		  unCol.push_back(v2[1]);
+			  glm::vec2 v1(x,y);
+			  glm::vec2 v2 = r1 * v1;
 
 
-	    singlePolygon.vertx[spCounter] = v2[0];
-	    singlePolygon.verty[spCounter] = v2[1];
-	    spCounter++;
+			  unCol.push_back(v2[0]);
+			  unCol.push_back(v2[1]);
+
+
+			  singlePolygon.vertx[spCounter] = v2[0];
+			  singlePolygon.verty[spCounter] = v2[1];
+			  spCounter++;
+			  buildingCounter++;
 	    
-	    it.second.coords[j][i] = v2[0];
-	    it.second.coords[j][i+1] = v2[1];
-	  }
+			  it.second.coords[j][i] = v2[0];
+			  it.second.coords[j][i+1] = v2[1];
 
-	  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
+			  if (j == 0) {
+				  it.second.anchorx += v2[0];
+				  it.second.anchory += v2[1];
+			  }
+		    }
+			if (j == 0) {
+				it.second.anchorx /= (it.second.coords[j].size() / 2);
+				it.second.anchory /= (it.second.coords[j].size() / 2);
+			}
 
-		unCol.push_back(0.f);
-		unCol.push_back(0.f);
 
-	  singlePolygon.vertx[spCounter] = 0.f;
-	  singlePolygon.verty[spCounter] = 0.f;
-	  spCounter++;
+	    tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2, round(it.second.coords[j].size()/2));
+
+
+	    unCol.push_back(0.f);
+	    unCol.push_back(0.f);
+
+	    singlePolygon.vertx[spCounter] = 0.f;
+	    singlePolygon.verty[spCounter] = 0.f;
+	    spCounter++;
 	}
 
 		float* cont1 = unCol.data();
@@ -296,11 +312,29 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 		it.second.numVert = numVert;
 
+		it.second.lastVertexIndex = buildingCounter;
+
 	
 	}
 
 
     return m3;
+};
+
+int buildingIndex(cityMap city, int index, std::string & id)
+{
+	int b1 = 0;
+	for (auto &it : city) {
+		if ((index >= it.second.firstVertexIndex) && (index <= it.second.lastVertexIndex)) {
+			id = it.second.id;
+			return b1;
+		}
+		b1++;
+	}
+	
+	return -1;
+
+
 };
 
 std::vector<float> getOutlines(cityMap city1)
