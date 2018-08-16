@@ -13,5 +13,5 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 add_executable(GLMap ${SOURCE_FILES})
 
-target_link_libraries(GLMap GLEW; OpenGL; glfw ; SOIL ; libtess2.a)
+target_link_libraries(GLMap GLEW; OpenGL; glfw ; SOIL ; libtess2.a; Box2D)
 

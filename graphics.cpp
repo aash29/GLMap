@@ -32,6 +32,13 @@ glm::mat4 setupCam()
   return trans;
 };
 
+static void sCheckGLError() {
+    GLenum errCode = glGetError();
+    if (errCode != GL_NO_ERROR) {
+        fprintf(stderr, "OpenGL error = %d\n", errCode);
+        assert(false);
+    }
+}
 
 
 GLuint createShader(GLenum type, const GLchar* src) {
@@ -169,7 +176,7 @@ shaderData drawLineShaderInit( float* points, int numPoints) {
   
 }
 
-void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
+void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b, GLfloat w) {
 
 
   glBindVertexArray(sh.vao);
@@ -191,10 +198,78 @@ void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
   GLint uniColor = glGetUniformLocation(sh.shaderProgram, "lineColor");
   
   glUniform4f(uniColor, r,g,b,1.f);
+
+  GLint linewidth = glGetUniformLocation(sh.shaderProgram, "linewidth");
+
+  glUniform1f(linewidth, w);
    
   glDrawArrays(GL_LINES, 0, sh.vertexCount);
 
 };
+
+
+shaderData drawThinLineShaderInit( float* points, int numPoints) {
+
+    shaderData outSh;
+
+    outSh.vertexShader = createShader(GL_VERTEX_SHADER, vertexSource);
+    outSh.fragmentShader = createShader(GL_FRAGMENT_SHADER, fragmentSource);
+
+    outSh.shaderProgram = glCreateProgram();
+
+
+
+    glAttachShader(outSh.shaderProgram, outSh.vertexShader);
+    glAttachShader(outSh.shaderProgram, outSh.fragmentShader);
+    //glAttachShader(outSh.shaderProgram, outSh.geometryShader);
+
+    glLinkProgram(outSh.shaderProgram);
+    glUseProgram(outSh.shaderProgram);
+
+
+    glGenBuffers(1, &outSh.vbo);
+
+    outSh.data = points;
+    outSh.vertexCount = numPoints;
+
+
+    glBindBuffer(GL_ARRAY_BUFFER, outSh.vbo);
+    glBufferData(GL_ARRAY_BUFFER, outSh.vertexCount*2*sizeof(float), outSh.data, GL_DYNAMIC_DRAW);
+
+    // Create VAO
+    glGenVertexArrays(1, &outSh.vao);
+    glBindVertexArray(outSh.vao);
+
+    // Specify layout of point data
+    GLint posAttrib = glGetAttribLocation(outSh.shaderProgram, "pos");
+    glEnableVertexAttribArray(posAttrib);
+    glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    return outSh;
+
+}
+
+void drawThinLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b) {
+
+
+    glBindVertexArray(sh.vao);
+
+    glUseProgram(sh.shaderProgram);
+
+    glm::mat4 trans = setupCam();
+
+    GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+
+    glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(trans));
+
+    GLint uniColor = glGetUniformLocation(sh.shaderProgram, "setColor");
+
+    glUniform4f(uniColor, r,g,b,1.f);
+
+    glDrawArrays(GL_LINES, 0, sh.vertexCount);
+
+};
+
 
 shaderData drawBuildingOutlinesInit(float* verts, const int nverts)
 {
@@ -592,6 +667,32 @@ void texQuadDraw(shaderData sh, int posx, int posy)
   
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 };
+
+
+
+void freeQuadDraw(shaderData sh, float x, float y) {
+    glBindVertexArray(sh.vao);
+
+    glUseProgram(sh.shaderProgram);
+
+    glActiveTexture(GL_TEXTURE0);
+
+    glBindTexture(GL_TEXTURE_2D, sh.texture);
+
+    glUniform1i(glGetUniformLocation(sh.shaderProgram, "texKitten"), 0);
+
+    glm::mat4 trans = setupCam();
+
+    glm::mat4 translate1 = glm::translate(glm::mat4(1.f), glm::vec3(x, y, 0.f));
+
+    glm::mat4 m1 = trans * translate1;
+
+    GLuint uniTrans = glGetUniformLocation(sh.shaderProgram, "Model");
+
+    glUniformMatrix4fv(uniTrans, 1, GL_FALSE, glm::value_ptr(m1));
+
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+}
 /*
 
 

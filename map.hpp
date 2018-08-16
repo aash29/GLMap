@@ -78,10 +78,8 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon)
+cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon, bool computeBounds)
 {
-  
-  
   std::string m_currentLevel = std::string(name);
   
 
@@ -99,13 +97,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 	float aN = 0.f;
 
-	auto f0 = jsonObj.find("mapBounds");
-    std::vector<float> c1 =  (*f0);
-
-    xmin = c1[0];
-    xmax = c1[1];
-    ymin = c1[2];
-    ymax = c1[3];
 
 
 
@@ -140,8 +131,14 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 	ymax = 59.9379525f;
 	*/
 
+    xmin = +INFINITY;
+    xmax = -INFINITY;
+    ymin = +INFINITY;
+    ymax = -INFINITY;
 
-	singlePolygon.nvert = 0;
+
+
+    singlePolygon.nvert = 0;
 	
 
     for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
@@ -193,8 +190,14 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			m3[id].bounds.xmin=std::min(m3[id].bounds.xmin, c1[j][i][0]);
 			m3[id].bounds.xmax=std::max(m3[id].bounds.xmax, c1[j][i][0]);
 
+            xmin =   std::min(xmin, c1[j][i][0]);
+            xmax =   std::max(xmax, c1[j][i][0]);
+
 			m3[id].bounds.ymin=std::min(m3[id].bounds.ymin, c1[j][i][1]);
 			m3[id].bounds.ymax=std::max(m3[id].bounds.ymax, c1[j][i][1]);
+
+            ymin = std::min(ymin, c1[j][i][1]);
+            ymax = std::max(ymax, c1[j][i][1]);
 		  };
 
 
@@ -210,9 +213,20 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
     }
   }
 
+    if (!computeBounds) {
+        auto f0 = jsonObj.find("mapBounds");
+        std::vector<float> c1 = (*f0);
+
+        xmin = c1[0];
+        xmax = c1[1];
+        ymin = c1[2];
+        ymax = c1[3];
+    }
 
 
-  float lowerx,lowery,upperx,uppery;
+
+
+    float lowerx,lowery,upperx,uppery;
 
 
   lowery = boundingBox.ymin;

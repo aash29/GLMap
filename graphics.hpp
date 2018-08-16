@@ -23,7 +23,7 @@ struct shaderData {
 
 GLuint createShader(GLenum type, const GLchar* src);
 shaderData drawLineShaderInit( float* points, int numPoints );
-void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b);
+void drawLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b, GLfloat w=0.0015f);
 shaderData drawMapShaderInit(const float* verts, const int nverts, const int* elements, const  int nelement );
 void drawMap( shaderData sh, Camera cam);
 shaderData drawBuildingOutlinesInit(float* verts, const int nverts);
@@ -35,6 +35,11 @@ void drawQuad(shaderData sh, float posx, float posy);
 
 shaderData drawPathGraphShaderInit( float* points, int numPoints);
 void drawPathGraph(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b);
+
+shaderData drawThinLineShaderInit( float* points, int numPoints);
+void drawThinLine(shaderData sh, Camera cam, GLfloat r, GLfloat g, GLfloat b);
+
+void freeQuadDraw(shaderData sh, float x, float y);
 
 extern float angleNorth;
 
