@@ -1767,14 +1767,14 @@ int main(int argc, char *argv[])
 
         if (drawPaths) {
             //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-            //drawThinLine(graphEdges, g_camera, 1.f, 0.f, 0.f);
-
+            drawThinLine(graphEdges, g_camera, 1.f, 0.f, 0.f);
+            /*
             lineSh.vertexCount = round(pathGraphLines.size() / 2);
             lineSh.data = pathGraphLines.data();
             glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
             glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
             drawLine(lineSh, g_camera, 1.f, 0.f, 0.f, 0.0005f);
-
+*/
             //glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
         }
 
