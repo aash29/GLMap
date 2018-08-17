@@ -56,7 +56,7 @@
 using namespace std;
 
 
-//Camera g_camera;
+enum mode {AgentControl, TraingleInspect};
 
 
 string curAgent = "";
