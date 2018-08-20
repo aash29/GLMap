@@ -50,6 +50,7 @@
 #include <Box2D/Box2D.h>
 
 
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
 
@@ -1091,6 +1092,8 @@ int main(int argc, char *argv[])
 
     char* levelPath = "little.geojson";
 
+
+
     if (argc == 1)
     {
         m_showOpenDialog = true;
@@ -1216,7 +1219,7 @@ int main(int argc, char *argv[])
     xm = 0;
     ym = 0;
 
-    loadGrid(levelPath, xp,yp);
+    //loadGrid(levelPath, xp,yp);
 
     boundingBox.xmin=xm;
     boundingBox.xmax=xp;
@@ -1224,8 +1227,13 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-    //city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
+
     city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
+
+
+
+
+    //nodes.insert()
 
 
 
