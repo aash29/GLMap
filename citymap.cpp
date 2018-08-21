@@ -1231,7 +1231,7 @@ int main(int argc, char *argv[])
     city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
 
 
-
+#ifdef LOADGEOJSON
 
     //nodes.insert()
 
@@ -1681,7 +1681,7 @@ int main(int argc, char *argv[])
 */
     // When the world destructor is called, all bodies and joints are freed. This can
     // create orphaned pointers, so be careful about your world management.
-
+#endif
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
@@ -1707,7 +1707,7 @@ int main(int argc, char *argv[])
         glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-
+/*
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
             b2Vec2 position = body->GetPosition();
@@ -1719,11 +1719,11 @@ int main(int argc, char *argv[])
 
 
         }
-
-
+*/
+/*
         if (drawGrid)
             drawLine(gridSh, g_camera, 0.f, 0.f, 1.f, 0.0015f);
-
+*/
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         drawMap(mapSh, g_camera);

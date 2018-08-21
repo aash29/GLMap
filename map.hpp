@@ -15,6 +15,8 @@ using namespace std;
 #include "tinyxml2.h"
 using namespace tinyxml2;
 
+#include "pathnode.hpp"
+
 struct rect
 {
     float xmin,xmax,ymin,ymax;
@@ -98,25 +100,70 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
   std::string ext = m_currentLevel.substr(di+1, m_currentLevel.size());
 	if (ext=="osm"){
 
-        map<unsigned int,node> nodes;
+
+		map<unsigned int, vector<unsigned int> > pathGraph;
+
+        map<unsigned int, node> nodes;
 
 		XMLDocument* doc = new XMLDocument();
 
 		doc->LoadFile(name);
 
 		XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("node");
-		unsigned int id;
-        double lat;
-        double lon;
-		n1->QueryAttribute("id",&id);
-        n1->QueryAttribute("lat",&lat);
-        n1->QueryAttribute("lon",&lon);
+        while (n1) {
 
-        node node1 = {id,lat,lon};
-        nodes[id] = node1;
-        //nodes.insert(pair<unsigned int,node>(id,n1));
+            unsigned int id;
+			double lat;
+			double lon;
+			n1->QueryAttribute("id", &id);
+			n1->QueryAttribute("lat", &lat);
+			n1->QueryAttribute("lon", &lon);
+
+			node node1 = {id, lat, lon};
+			nodes[id] = node1;
+            n1 = n1->NextSiblingElement("node");
+            //nodes.insert(pair<unsigned int,node>(id,n1));
+        }
+
+        XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
+		while (w1) {
 
 
+			//graphNode gn1;
+			//gn1.id = id;
+
+			map<string, string> tags;
+			XMLElement* tag = w1->FirstChildElement("tag");
+			while (tag) {
+				const char *key = tag->Attribute("k");
+				const char *value = tag->Attribute("v");
+				tags[key] = value;
+				tag = tag->NextSiblingElement("tag");
+			}
+			if (tags.count("highway")>0){
+                XMLElement* nd1 = w1->FirstChildElement("nd");
+
+                unsigned int id;
+                nd1->QueryAttribute("id",&id);
+                pathGraph[id] = vector<unsigned int>();
+                nd1->NextSiblingElement("nd");
+                unsigned int previd = id;
+
+                while(nd1){
+
+                    //unsigned int id;
+                    nd1->QueryAttribute("id",&id);
+                    pathGraph[id] = vector<unsigned int>();
+                    pathGraph[id].push_back(previd);
+                    pathGraph[previd].push_back(id);
+                    previd = id;
+
+                    nd1 = nd1->NextSiblingElement("nd");
+                }
+
+			}
+            w1 = w1->NextSiblingElement("way");
+		}
 	} else {
 
 		nlohmann::json jsonObj;
