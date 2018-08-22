@@ -2,14 +2,14 @@
 #define MAP_HPP
 
 #include "tesselator.h"
-#include <map>
-#include "json.hpp"
+#include "../map"
+#include "../json.hpp"
 #include <fstream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "camera.hpp"
+//#include "../camera.hpp"
 using namespace std;
 
 #include "tinyxml2.h"
@@ -150,7 +150,6 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
                 unsigned int previd = id;
 
                 while(nd1){
-
                     //unsigned int id;
                     nd1->QueryAttribute("id",&id);
                     pathGraph[id] = vector<unsigned int>();
@@ -464,7 +463,7 @@ static int pnpoly(int nvert, double *vertx, double *verty, double testx, double 
 std::string selectBuilding( map<string, building> city, float testx, float testy)
 {
 	glm::mat4 rotN;
-	rotN = glm::rotate(rotN, glm::radians(-g_camera.angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
+	//rotN = glm::rotate(rotN, glm::radians(-g_camera.angleNorth), glm::vec3(0.0f, 0.0f, 1.0f));
 
 	std::vector<float> unCol = std::vector<float>();
 	std::vector<float> unDraw = std::vector<float>();

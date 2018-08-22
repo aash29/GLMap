@@ -2,7 +2,7 @@
 #define GRAPHICS_HPP
 //#include <GL/gl.h>
 #include <GL/glew.h>
-#include "camera.hpp"
+//#include "camera.hpp"
 
 struct shaderData {
   GLuint vertexShader;

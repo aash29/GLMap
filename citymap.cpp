@@ -23,8 +23,8 @@
 #include "json.hpp"
 #include <fstream>
 #include <map>
-#include "camera.hpp"
-#include "graphics.hpp"
+//#include "camera.hpp"
+//#include "graphics.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "appLog.h"
@@ -48,6 +48,7 @@
 //#include <gperftools/profiler.h>
 
 #include <Box2D/Box2D.h>
+#include "DebugDraw.h"
 
 
 
@@ -67,12 +68,12 @@ GLint uniTrans;
 
 GLFWwindow *window = NULL;
 bool rightMouseDown;
-glm::vec2 lastp;
-glm::vec2 selp;
+b2Vec2 lastp;
+b2Vec2 selp;
 
 map<string, building> city;
 string selected;
-shaderData lineSh;
+//shaderData lineSh;
 
 map <string, strVec> objects;
 map<string, agent> agents;
@@ -258,7 +259,7 @@ std::string selectBuilding(float testx, float testy)
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     double xd, yd;
     glfwGetCursorPos(window, &xd, &yd);
-    glm::vec2 ps((float) xd, (float) yd);
+    b2Vec2 ps((float) xd, (float) yd);
     selp = g_camera.ConvertScreenToWorld(ps);
 
     ImGuiIO &io = ImGui::GetIO();
@@ -378,7 +379,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             if (action == GLFW_PRESS) {
                 lastp = g_camera.ConvertScreenToWorld(ps);
                 rightMouseDown = true;
-                glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+                b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
                 //test->RightMouseDown(pw);
             }
 
@@ -391,12 +392,12 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 
 
 static void sMouseMotion(GLFWwindow *, double xd, double yd) {
-    glm::vec2 ps((float) xd, (float) yd);
+    b2Vec2 ps((float) xd, (float) yd);
 
-    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+    b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
     //test->MouseMove(pw);
     if (rightMouseDown) {
-        glm::vec2 diff = pw - lastp;
+        b2Vec2 diff = pw - lastp;
         g_camera.m_center.x -= diff.x;
         g_camera.m_center.y -= diff.y;
         lastp = g_camera.ConvertScreenToWorld(ps);
@@ -581,11 +582,11 @@ void sInterface() {
         ImGui::Text("Current turn: %d", currentTurn);
         ImGui::Text("Absolute turn: %d", absoluteTurn);
 
-        glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
-        glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+        b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
+        b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
 
         ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
-        ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+        //ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -1230,7 +1231,41 @@ int main(int argc, char *argv[])
 
     city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
 
+    g_debugDraw.Create();
 
+
+    while (!glfwWindowShouldClose(window)) {
+        float ct = (float) glfwGetTime();
+        if (run) t += ct - pt;
+
+        pt = ct;
+
+        glfwPollEvents();
+
+        g_debugDraw.DrawCircle(b2Vec2(0.f,0.f),5.f,b2Color(1.f,1.f,1.f));
+
+
+        ImGui_ImplGlfwGL3_NewFrame();
+        //glfwPollEvents();
+
+        sInterface();
+
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+        g_debugDraw.Flush();
+        ImGui::Render();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+}
+
+/*
 #ifdef LOADGEOJSON
 
     //nodes.insert()
@@ -1439,6 +1474,7 @@ int main(int argc, char *argv[])
     yp = 0;
     */
 
+    /*
     float xgridSize = (boundingBox.xmax-boundingBox.xmin)/(xp-xm);
     float ygridSize = (boundingBox.ymax-boundingBox.ymin)/(yp-ym);
 
@@ -1598,18 +1634,11 @@ int main(int argc, char *argv[])
 
     //agent0.getAgentPos(setState);
 
-    /*
-    agent0.planFunc.push_back(
-                  [&](){
-                agent0.x++;
-                return 0;
-                  });
-                  */
 
 
     //setupPhysics();
 
-
+/*
     // Define the gravity vector.
     b2Vec2 gravity(0.0f, -1.0f);
 
@@ -1664,7 +1693,7 @@ int main(int argc, char *argv[])
     int32 velocityIterations = 6;
     int32 positionIterations = 2;
 
-/*
+
     // This is our little game loop.
     for (int32 i = 0; i < 60; ++i)
     {
@@ -1678,7 +1707,7 @@ int main(int argc, char *argv[])
 
         printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
     }
-*/
+
     // When the world destructor is called, all bodies and joints are freed. This can
     // create orphaned pointers, so be careful about your world management.
 #endif
@@ -1707,7 +1736,7 @@ int main(int argc, char *argv[])
         glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-/*
+
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
             b2Vec2 position = body->GetPosition();
@@ -1719,11 +1748,9 @@ int main(int argc, char *argv[])
 
 
         }
-*/
-/*
         if (drawGrid)
             drawLine(gridSh, g_camera, 0.f, 0.f, 1.f, 0.0015f);
-*/
+
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         drawMap(mapSh, g_camera);
@@ -1776,13 +1803,7 @@ int main(int argc, char *argv[])
         if (drawPaths) {
             //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
             drawThinLine(graphEdges, g_camera, 1.f, 0.f, 0.f);
-            /*
-            lineSh.vertexCount = round(pathGraphLines.size() / 2);
-            lineSh.data = pathGraphLines.data();
-            glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-            glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
-            drawLine(lineSh, g_camera, 1.f, 0.f, 0.f, 0.0005f);
-*/
+
             //glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
         }
 
@@ -1795,7 +1816,7 @@ int main(int argc, char *argv[])
         for (auto a0: agents) {
             texQuadDraw(texSh, a0.second.x, a0.second.y);
         };
-        /*
+
               for (std::string s1 : agents){
 
                 getAgentPos(state, s1, x, y);
@@ -1803,7 +1824,6 @@ int main(int argc, char *argv[])
 
                 texQuadDraw(texSh,x,y);
               }
-              */
 
 
         if (drawBlockedCells) {
@@ -1815,14 +1835,15 @@ int main(int argc, char *argv[])
                 }
             };
         };
+
+
         ImGui::Render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-if (tess) tessDeleteTess(tess);
-	if (tess2) tessDeleteTess(tess2);
+*/
+//if (tess) tessDeleteTess(tess);
 
 
 //    if (vflags)
