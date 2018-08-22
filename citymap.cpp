@@ -97,7 +97,7 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
-bool computeBounds = true;
+bool computeBounds = false;
 
 
 bool m_showOpenDialog = true;
@@ -1212,13 +1212,16 @@ int main(int argc, char *argv[])
         levelPath = argv[1];
         //city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
         //city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
+        xm = 0;
+        ym = 0;
+        xp = 100;
+        yp = 60;
 
     }
 
     printf("go...\n");
 
-    xm = 0;
-    ym = 0;
+
 
     //loadGrid(levelPath, xp,yp);
 
@@ -1229,7 +1232,8 @@ int main(int argc, char *argv[])
 
 
 
-    city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
+    pathways roads = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
+
 
     g_debugDraw.Create();
 
@@ -1241,9 +1245,6 @@ int main(int argc, char *argv[])
         pt = ct;
 
         glfwPollEvents();
-
-        g_debugDraw.DrawCircle(b2Vec2(0.f,0.f),5.f,b2Color(1.f,1.f,1.f));
-
 
         ImGui_ImplGlfwGL3_NewFrame();
         //glfwPollEvents();
@@ -1257,6 +1258,18 @@ int main(int argc, char *argv[])
         glEnable(GL_BLEND);
         glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+
+        for (auto const& n1 : roads.pathGraph)
+        {
+            for (int neigh1: n1.second) {
+
+                b2Vec2 l0(roads.nodes[n1.first].x, roads.nodes[n1.first].y);
+                b2Vec2 l1(roads.nodes[neigh1].x, roads.nodes[neigh1].y);
+
+                g_debugDraw.DrawSegment(l0, l1, b2Color(1.f, 1.f, 1.f));
+            }
+        }
 
         g_debugDraw.Flush();
         ImGui::Render();

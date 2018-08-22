@@ -19,7 +19,7 @@ using namespace tinyxml2;
 
 struct rect
 {
-    float xmin,xmax,ymin,ymax;
+    double xmin,xmax,ymin,ymax;
 };
 
 struct building
@@ -60,6 +60,13 @@ struct node {
     unsigned int id;
     double lat;
     double lon;
+	double x;
+	double y;
+};
+
+struct pathways {
+    map<unsigned int, node> nodes;
+    map<unsigned int, vector<unsigned int> > pathGraph;
 };
 
 
@@ -90,16 +97,26 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, polygon &singlePolygon, bool computeBounds)
+pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, polygon &singlePolygon, bool computeBounds)
 {
   std::string m_currentLevel = std::string(name);
-
 
   int di = m_currentLevel.find_last_of('.');
 
   std::string ext = m_currentLevel.substr(di+1, m_currentLevel.size());
-	if (ext=="osm"){
 
+  double lowery = gameCoords.ymin;
+  double lowerx = gameCoords.xmin;
+
+  double upperx = gameCoords.xmax;
+  double uppery = gameCoords.ymax;
+
+
+  double xmin = +INFINITY;
+  double xmax = -INFINITY;
+  double ymin = +INFINITY;
+  double ymax = -INFINITY;
+  if (ext=="osm"){
 
 		map<unsigned int, vector<unsigned int> > pathGraph;
 
@@ -119,13 +136,51 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			n1->QueryAttribute("lat", &lat);
 			n1->QueryAttribute("lon", &lon);
 
-			node node1 = {id, lat, lon};
+
+            xmin = std::min(xmin, lon);
+            xmax = std::max(xmax, lon);
+
+            ymin = std::min(ymin, lat);
+            ymax = std::max(ymax, lat);
+
+
+			node node1 = {id, lat, lon, lat, lon};
 			nodes[id] = node1;
+            pathGraph[id] = vector<unsigned int>();
+
             n1 = n1->NextSiblingElement("node");
-            //nodes.insert(pair<unsigned int,node>(id,n1));
+
         }
 
-        XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
+
+      double width = xmax - xmin;
+      double height = ymax - ymin;
+
+      double xcp = (xmax + xmin)/2;
+      double ycp = (ymax + ymin)/2;
+
+      xmax = xcp + width/2*1.2f;
+      xmin = xcp - width/2*1.2f;
+
+      ymax = ycp + height/2*1.2f;
+      ymin = ycp - height/2*1.2f;
+
+      if (!computeBounds) {
+          XMLElement* bounds = doc->FirstChildElement("osm")->FirstChildElement("bounds");
+          bounds->QueryAttribute("minlon",&xmin);
+          bounds->QueryAttribute("maxlon",&xmax);
+          bounds->QueryAttribute("minlat",&ymin);
+          bounds->QueryAttribute("maxlat",&ymax);
+      }
+
+      for (auto& n1 : nodes){
+          n1.second.x = lowerx + (n1.second.lon - xmin) / (xmax - xmin) * (upperx - lowerx);
+          n1.second.y = lowery + (n1.second.lat - ymin) / (ymax - ymin) * (uppery - lowery);
+      }
+
+
+
+      XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
 		while (w1) {
 
 
@@ -140,22 +195,23 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 				tags[key] = value;
 				tag = tag->NextSiblingElement("tag");
 			}
-			if (tags.count("highway")>0){
+			if ((tags.count("highway")>0) || (tags.count("area:highway"))){
                 XMLElement* nd1 = w1->FirstChildElement("nd");
 
-                unsigned int id;
-                nd1->QueryAttribute("id",&id);
-                pathGraph[id] = vector<unsigned int>();
+                unsigned int ref;
+                nd1->QueryAttribute("ref",&ref);
+
+                //pathGraph[ref] = vector<unsigned int>();
                 nd1->NextSiblingElement("nd");
-                unsigned int previd = id;
+                unsigned int previd = ref;
 
                 while(nd1){
                     //unsigned int id;
-                    nd1->QueryAttribute("id",&id);
-                    pathGraph[id] = vector<unsigned int>();
-                    pathGraph[id].push_back(previd);
-                    pathGraph[previd].push_back(id);
-                    previd = id;
+                    nd1->QueryAttribute("ref",&ref);
+                    //pathGraph[ref] = vector<unsigned int>();
+                    pathGraph[ref].push_back(previd);
+                    pathGraph[previd].push_back(ref);
+                    previd = ref;
 
                     nd1 = nd1->NextSiblingElement("nd");
                 }
@@ -163,7 +219,11 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			}
             w1 = w1->NextSiblingElement("way");
 		}
-	} else {
+      pathways roads = {nodes, pathGraph};
+      return roads;
+	}
+  /*
+  else {
 
 		nlohmann::json jsonObj;
 
@@ -202,17 +262,8 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 			float **a2;
 			float *a1[10];
 
-			/*
-            xmin = 30.2882633f;
-            xmax = 30.2882633f;
-            ymin = 59.9379525f;
-            ymax = 59.9379525f;
-            */
 
-			xmin = +INFINITY;
-			xmax = -INFINITY;
-			ymin = +INFINITY;
-			ymax = -INFINITY;
+
 
 
 			singlePolygon.nvert = 0;
@@ -300,14 +351,9 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 		}
 
 
-		float lowerx, lowery, upperx, uppery;
 
 
-		lowery = boundingBox.ymin;
-		lowerx = boundingBox.xmin;
 
-		upperx = boundingBox.xmax;
-		uppery = boundingBox.ymax;
 
 
 		float frame[8] = {lowerx, lowery, lowerx, uppery, upperx, uppery, upperx, lowerx};
@@ -405,6 +451,7 @@ cityMap loadLevel(const char *name, TESStesselator* tess, rect &boundingBox, pol
 
 		return m3;
 	}
+   */
 };
 
 int buildingIndex(cityMap city, int index, std::string & id)
