@@ -23,8 +23,8 @@
 #include "json.hpp"
 #include <fstream>
 #include <map>
-#include "camera.hpp"
-#include "graphics.hpp"
+//#include "camera.hpp"
+//#include "graphics.hpp"
 #include "imgui.h"
 #include "imgui_impl_glfw_gl3.h"
 #include "appLog.h"
@@ -47,6 +47,8 @@
 //#include <gklib_defs.h>
 //#include <gperftools/profiler.h>
 
+#include <Box2D/Box2D.h>
+#include "DebugDraw.h"
 
 
 
@@ -56,7 +58,7 @@
 using namespace std;
 
 
-//Camera g_camera;
+enum mode {AgentControl, TraingleInspect};
 
 
 string curAgent = "";
@@ -66,12 +68,12 @@ GLint uniTrans;
 
 GLFWwindow *window = NULL;
 bool rightMouseDown;
-glm::vec2 lastp;
-glm::vec2 selp;
+b2Vec2 lastp;
+b2Vec2 selp;
 
 map<string, building> city;
 string selected;
-shaderData lineSh;
+//shaderData lineSh;
 
 map <string, strVec> objects;
 map<string, agent> agents;
@@ -95,6 +97,8 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
+bool computeBounds = false;
+
 
 bool m_showOpenDialog = true;
 
@@ -255,7 +259,7 @@ std::string selectBuilding(float testx, float testy)
 static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     double xd, yd;
     glfwGetCursorPos(window, &xd, &yd);
-    glm::vec2 ps((float) xd, (float) yd);
+    b2Vec2 ps((float) xd, (float) yd);
     selp = g_camera.ConvertScreenToWorld(ps);
 
     ImGuiIO &io = ImGui::GetIO();
@@ -375,7 +379,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
             if (action == GLFW_PRESS) {
                 lastp = g_camera.ConvertScreenToWorld(ps);
                 rightMouseDown = true;
-                glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+                b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
                 //test->RightMouseDown(pw);
             }
 
@@ -388,12 +392,12 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 
 
 static void sMouseMotion(GLFWwindow *, double xd, double yd) {
-    glm::vec2 ps((float) xd, (float) yd);
+    b2Vec2 ps((float) xd, (float) yd);
 
-    glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+    b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
     //test->MouseMove(pw);
     if (rightMouseDown) {
-        glm::vec2 diff = pw - lastp;
+        b2Vec2 diff = pw - lastp;
         g_camera.m_center.x -= diff.x;
         g_camera.m_center.y -= diff.y;
         lastp = g_camera.ConvertScreenToWorld(ps);
@@ -578,11 +582,11 @@ void sInterface() {
         ImGui::Text("Current turn: %d", currentTurn);
         ImGui::Text("Absolute turn: %d", absoluteTurn);
 
-        glm::vec2 ps = glm::vec2(io.MousePos.x, io.MousePos.y);
-        glm::vec2 pw = g_camera.ConvertScreenToWorld(ps);
+        b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
+        b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
 
         ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
-        ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+        //ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
 
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
 
@@ -1089,6 +1093,8 @@ int main(int argc, char *argv[])
 
     char* levelPath = "little.geojson";
 
+
+
     if (argc == 1)
     {
         m_showOpenDialog = true;
@@ -1138,6 +1144,7 @@ int main(int argc, char *argv[])
                 // right
                 ImGui::BeginGroup();
                 ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
+                ImGui::Checkbox("Compute bounds", &computeBounds);
                 ImGui::Text("Selected level: %s", selected);
                 ImGui::Separator();
 
@@ -1205,15 +1212,18 @@ int main(int argc, char *argv[])
         levelPath = argv[1];
         //city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
         //city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
+        xm = 0;
+        ym = 0;
+        xp = 100;
+        yp = 60;
 
     }
 
     printf("go...\n");
 
-    xm = 0;
-    ym = 0;
 
-    loadGrid(levelPath, xp,yp);
+
+    //loadGrid(levelPath, xp,yp);
 
     boundingBox.xmin=xm;
     boundingBox.xmax=xp;
@@ -1221,8 +1231,57 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-    //city = loadLevel(levelPath, tess2, boundingBox, singlePolygon);
-    city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
+
+    pathways roads = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
+
+
+    g_debugDraw.Create();
+
+
+    while (!glfwWindowShouldClose(window)) {
+        float ct = (float) glfwGetTime();
+        if (run) t += ct - pt;
+
+        pt = ct;
+
+        glfwPollEvents();
+
+        ImGui_ImplGlfwGL3_NewFrame();
+        //glfwPollEvents();
+
+        sInterface();
+
+
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+
+        for (auto const& n1 : roads.pathGraph)
+        {
+            for (int neigh1: n1.second) {
+
+                b2Vec2 l0(roads.nodes[n1.first].x, roads.nodes[n1.first].y);
+                b2Vec2 l1(roads.nodes[neigh1].x, roads.nodes[neigh1].y);
+
+                g_debugDraw.DrawSegment(l0, l1, b2Color(1.f, 1.f, 1.f));
+            }
+        }
+
+        g_debugDraw.Flush();
+        ImGui::Render();
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+}
+
+/*
+#ifdef LOADGEOJSON
+
+    //nodes.insert()
 
 
 
@@ -1381,7 +1440,7 @@ int main(int argc, char *argv[])
 
     debug_log().AddLog("\n graph nodes: %d \n", pathGraph.size());
 
-	city = loadLevel(levelPath, tess, boundingBox, singlePolygon);
+	city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
 
 	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
@@ -1413,7 +1472,8 @@ int main(int argc, char *argv[])
 
 
     shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
-    float stub[4] = {0.f,0.f,0.f,0.f};
+
+    float stub[4] = {0.f,0.f,0.f,0.f};   //
     lineSh = drawLineShaderInit(stub, 2);
 
     vector<float> gridVec = vector<float>();
@@ -1427,6 +1487,7 @@ int main(int argc, char *argv[])
     yp = 0;
     */
 
+    /*
     float xgridSize = (boundingBox.xmax-boundingBox.xmin)/(xp-xm);
     float ygridSize = (boundingBox.ymax-boundingBox.ymin)/(yp-ym);
 
@@ -1497,6 +1558,8 @@ int main(int argc, char *argv[])
     shared_ptr<navigation_path<location_t>> path;
     shaderData graphSh = drawPathGraphShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
 
+
+    shaderData graphEdges = drawThinLineShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
 
 
     agents.clear();
@@ -1584,18 +1647,91 @@ int main(int argc, char *argv[])
 
     //agent0.getAgentPos(setState);
 
-    /*
-    agent0.planFunc.push_back(
-                  [&](){
-                agent0.x++;
-                return 0;
-                  });
-                  */
 
-    while (!glfwWindowShouldClose(window))
+
+    //setupPhysics();
+
+/*
+    // Define the gravity vector.
+    b2Vec2 gravity(0.0f, -1.0f);
+
+    // Construct a world object, which will hold and simulate the rigid bodies.
+    b2World world(gravity);
+
+    // Define the ground body.
+    b2BodyDef groundBodyDef;
+    groundBodyDef.position.Set(0.0f, 0.0f);
+
+    // Call the body factory which allocates memory for the ground body
+    // from a pool and creates the ground box shape (also from a pool).
+    // The body is also added to the world.
+    b2Body* groundBody = world.CreateBody(&groundBodyDef);
+
+    // Define the ground box shape.
+    b2PolygonShape groundBox;
+
+    // The extents are the half-widths of the box.
+    groundBox.SetAsBox(50.0f, 0.1f);
+
+    // Add the ground fixture to the ground body.
+    groundBody->CreateFixture(&groundBox, 0.0f);
+
+    // Define the dynamic body. We set its position and call the body factory.
+    b2BodyDef bodyDef;
+    bodyDef.type = b2_dynamicBody;
+    bodyDef.position.Set(0.0f, 10.0f);
+    b2Body* body = world.CreateBody(&bodyDef);
+
+    // Define another box shape for our dynamic body.
+    b2PolygonShape dynamicBox;
+    dynamicBox.SetAsBox(1.0f, 1.0f);
+
+    // Define the dynamic body fixture.
+    b2FixtureDef fixtureDef;
+    fixtureDef.shape = &dynamicBox;
+
+    // Set the box density to be non-zero, so it will be dynamic.
+    fixtureDef.density = 1.0f;
+
+    // Override the default friction.
+    fixtureDef.friction = 0.3f;
+
+    // Add the shape to the body.
+    body->CreateFixture(&fixtureDef);
+
+    // Prepare for simulation. Typically we use a time step of 1/60 of a
+    // second (60Hz) and 10 iterations. This provides a high quality simulation
+    // in most game scenarios.
+    float32 timeStep = 1.0f / 60.0f;
+    int32 velocityIterations = 6;
+    int32 positionIterations = 2;
+
+
+    // This is our little game loop.
+    for (int32 i = 0; i < 60; ++i)
     {
-        float ct = (float)glfwGetTime();
+        // Instruct the world to perform a single step of simulation.
+        // It is generally best to keep the time step and iterations fixed.
+        world.Step(timeStep, velocityIterations, positionIterations);
+
+        // Now print the position and angle of the body.
+        b2Vec2 position = body->GetPosition();
+        float32 angle = body->GetAngle();
+
+        printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
+    }
+
+    // When the world destructor is called, all bodies and joints are freed. This can
+    // create orphaned pointers, so be careful about your world management.
+#endif
+
+    while (!glfwWindowShouldClose(window)) {
+        float ct = (float) glfwGetTime();
         if (run) t += ct - pt;
+
+
+
+
         pt = ct;
 
         glfwPollEvents();
@@ -1606,122 +1742,121 @@ int main(int argc, char *argv[])
         sInterface();
 
 
-        // Draw tesselated pieces.
-        if (tess)
-        {
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
 
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            glEnable(GL_BLEND);
-            glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-            glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
-            if (drawGrid)
-                drawLine(gridSh,g_camera, 0.f, 0.f, 1.f);
+        if (t>timeStep) {
+            world.Step(timeStep, velocityIterations, positionIterations);
+            b2Vec2 position = body->GetPosition();
+            float32 angle = body->GetAngle();
 
-			
-            glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-            drawMap(mapSh, g_camera);
-            glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+            debug_log().AddLog("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
 
-            drawBuildingOutlines( outlineSh, g_camera);
-            
-			if (selected!=std::string("none"))
-                drawLine(lineSh, g_camera,0.f,0.f,1.f);
-
-			
-			for (auto b1 : city) {
-				string id1 = b1.first;
-				
-				std::vector<float> unDraw = std::vector<float>();
-
-				for (auto it : city[id1].coords)
-				{
-					unDraw.push_back(it[0]);
-					unDraw.push_back(it[1]);
-					for (int i = 2; i < it.size() - 1; i = i + 2)
-					{
-						unDraw.push_back(it[i]);
-						unDraw.push_back(it[i + 1]);
-
-						unDraw.push_back(it[i]);
-						unDraw.push_back(it[i + 1]);
-					}
-					unDraw.push_back(it[0]);
-					unDraw.push_back(it[1]);
-				};
+            freeQuadDraw(texSh, position.x, position.y);
 
 
-
-				lineSh.vertexCount = round(unDraw.size() / 2);
-				lineSh.data = unDraw.data();
-				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-				glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
-
-				if (b1.second.type=="shop"){
-					drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-				}
-
-				if (b1.second.type == "dwelling") {
-					drawLine(lineSh, g_camera, 0.f, 1.f, 0.f);
-				}
-
-			}
-
-
-            drawPathGraph(graphSh,g_camera,1.f,0.f,0.f);
-			
-			if (drawPaths){
-
-				lineSh.vertexCount = round(pathGraphLines.size() / 2);
-				lineSh.data = pathGraphLines.data();
-				glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-				glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
-				drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-			}
-
-            //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
-            //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);
-
-
-
-
-            for (auto a0: agents)
-            {
-                texQuadDraw(texSh,a0.second.x,a0.second.y);
-            };
-            /*
-                  for (std::string s1 : agents){
-
-                    getAgentPos(state, s1, x, y);
-
-
-                    texQuadDraw(texSh,x,y);
-                  }
-                  */
-
-
-            if (drawBlockedCells)
-            {
-                for (int i = -xm; i < xp; i++)
-                {
-                    for (int j = -ym; j < yp; j++)
-                    {
-                        if (!path_map->walkable[path_map->at(i, j)]) {
-                            drawQuad(quadSh, i+0.5f, j+0.5f);
-                        }
-                    }
-                };
-            };
-            ImGui::Render();
         }
+        if (drawGrid)
+            drawLine(gridSh, g_camera, 0.f, 0.f, 1.f, 0.0015f);
+
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        drawMap(mapSh, g_camera);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        drawBuildingOutlines(outlineSh, g_camera);
+
+        //if (selected!=std::string("none"))                 // double lines WTF??
+        //    drawLine(lineSh, g_camera,0.f,0.f,1.f);
+
+
+        for (auto b1 : city) {
+            string id1 = b1.first;
+
+            std::vector<float> unDraw = std::vector<float>();
+
+            for (auto it : city[id1].coords) {
+                unDraw.push_back(it[0]);
+                unDraw.push_back(it[1]);
+                for (int i = 2; i < it.size() - 1; i = i + 2) {
+                    unDraw.push_back(it[i]);
+                    unDraw.push_back(it[i + 1]);
+
+                    unDraw.push_back(it[i]);
+                    unDraw.push_back(it[i + 1]);
+                }
+                unDraw.push_back(it[0]);
+                unDraw.push_back(it[1]);
+            };
+
+
+            lineSh.vertexCount = round(unDraw.size() / 2);
+            lineSh.data = unDraw.data();
+            glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
+            glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
+
+            if (b1.second.type == "shop") {
+                drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
+            }
+
+            if (b1.second.type == "dwelling") {
+                drawLine(lineSh, g_camera, 0.f, 1.f, 0.f);
+            }
+
+        }
+
+
+        drawPathGraph(graphSh, g_camera, 1.f, 0.f, 0.f);
+
+        if (drawPaths) {
+            //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+            drawThinLine(graphEdges, g_camera, 1.f, 0.f, 0.f);
+
+            //glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+        }
+
+        //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
+        //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);
+
+
+
+
+        for (auto a0: agents) {
+            texQuadDraw(texSh, a0.second.x, a0.second.y);
+        };
+
+              for (std::string s1 : agents){
+
+                getAgentPos(state, s1, x, y);
+
+
+                texQuadDraw(texSh,x,y);
+              }
+
+
+        if (drawBlockedCells) {
+            for (int i = -xm; i < xp; i++) {
+                for (int j = -ym; j < yp; j++) {
+                    if (!path_map->walkable[path_map->at(i, j)]) {
+                        drawQuad(quadSh, i + 0.5f, j + 0.5f);
+                    }
+                }
+            };
+        };
+
+
+        ImGui::Render();
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    if (tess) tessDeleteTess(tess);
-	if (tess2) tessDeleteTess(tess2);
+*/
+//if (tess) tessDeleteTess(tess);
 
 
 //    if (vflags)
