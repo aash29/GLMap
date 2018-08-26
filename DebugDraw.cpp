@@ -219,6 +219,8 @@ struct GLRenderPoints
         "	color = f_color;\n"
         "}\n";
 
+
+
 		m_programId = sCreateShaderProgram(vs, fs);
 		m_projectionUniform = glGetUniformLocation(m_programId, "projectionMatrix");
 		m_vertexAttribute = 0;
@@ -338,7 +340,7 @@ struct GLRenderPoints
 //
 struct GLRenderLines
 {
-	void Create()
+	void Create(float* vertexData, float vertexNum, float* colorData)
 	{
 		const char* vs = \
         "#version 400\n"
@@ -375,14 +377,15 @@ struct GLRenderLines
 		glEnableVertexAttribArray(m_colorAttribute);
 
 		// Vertex buffer
+		
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
 		glVertexAttribPointer(m_vertexAttribute, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertices), m_vertices, GL_DYNAMIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, 2 * vertexNum * sizeof(GLfloat), vertexData, GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
 		glVertexAttribPointer(m_colorAttribute, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
-		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
-
+		glBufferData(GL_ARRAY_BUFFER, 4 * vertexNum * sizeof(GLfloat), colorData, GL_DYNAMIC_DRAW);
+		
 		sCheckGLError();
 
 		// Cleanup
@@ -413,9 +416,25 @@ struct GLRenderLines
 		if (m_count == e_maxVertices)
 			Flush();
 
+		//m_vertices[m_count] = v;
+		//m_colors[m_count] = c;
+		//++m_count;
+	}
+
+	void VertexArray(float* vertices, int vertexCount, float* color)
+	{
+		m_vertices = vertices;
+		m_colors = color;
+		m_count = vertexCount;
+
+		/*
+		if (m_count == e_maxVertices)
+			Flush();
+
 		m_vertices[m_count] = v;
 		m_colors[m_count] = c;
 		++m_count;
+		*/
 	}
 
     void Flush()
@@ -433,10 +452,10 @@ struct GLRenderLines
 		glBindVertexArray(m_vaoId);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Vec2), m_vertices);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(float) * 2, m_vertices);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Color), m_colors);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(float) * 4, m_colors);
 
 		glDrawArrays(GL_LINES, 0, m_count);
 
@@ -450,8 +469,8 @@ struct GLRenderLines
 	}
 
 	enum { e_maxVertices = 2 * 512 };
-	b2Vec2 m_vertices[e_maxVertices];
-	b2Color m_colors[e_maxVertices];
+	float* m_vertices;
+	float* m_colors;
 
 	int32 m_count;
 
@@ -510,6 +529,9 @@ struct GLRenderTriangles
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
 		glVertexAttribPointer(m_colorAttribute, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
+
+
+
 
 		sCheckGLError();
 
@@ -605,18 +627,22 @@ DebugDraw::DebugDraw()
 //
 DebugDraw::~DebugDraw()
 {
-	b2Assert(m_points == NULL);
-	b2Assert(m_lines == NULL);
-	b2Assert(m_triangles == NULL);
+	//b2Assert(m_points == NULL);
+	//b2Assert(m_lines == NULL);
+	//b2Assert(m_triangles == NULL);
 }
 
 //
-void DebugDraw::Create()
+void DebugDraw::Create(float* vertexData, float vertexNum, float* colorData)
 {
 	m_points = new GLRenderPoints;
 	m_points->Create();
 	m_lines = new GLRenderLines;
-	m_lines->Create();
+
+	m_lines->m_vertices = new float[1];
+	m_lines->m_colors = new float[1];
+
+	m_lines->Create(vertexData, vertexNum, colorData);
 	m_triangles = new GLRenderTriangles;
 	m_triangles->Create();
 }
@@ -635,6 +661,13 @@ void DebugDraw::Destroy()
 	m_triangles->Destroy();
 	delete m_triangles;
 	m_triangles = NULL;
+}
+
+
+void DebugDraw::DrawLines(float* data, int vertexCount, float* color)
+{
+	m_lines->VertexArray(data, vertexCount, color);
+	
 }
 
 //

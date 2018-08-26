@@ -1046,14 +1046,15 @@ int main(int argc, char *argv[])
         printf("Failed to init GLFW.");
         return -1;
     }
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+	
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
+	
 
     mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
@@ -1084,7 +1085,15 @@ int main(int argc, char *argv[])
     glfwSetCharCallback(window, charCallback);
 
     glewExperimental = GL_TRUE;
-    glewInit();
+    //glewInit();
+
+
+	GLenum err = glewInit();
+	if (GLEW_OK != err)
+	{
+		fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+		exit(EXIT_FAILURE);
+	}
 
     ImGui_ImplGlfwGL3_Init(window, false);
 
@@ -1093,6 +1102,11 @@ int main(int argc, char *argv[])
 
     char* levelPath = "little.geojson";
 
+
+	xm = 0;
+	ym = 0;
+	xp = 100;
+	yp = 60;
 
 
     if (argc == 1)
@@ -1151,7 +1165,7 @@ int main(int argc, char *argv[])
                 char pathToFile[100] = "";
                 strcat(pathToFile, "./maps/");
                 strcat(pathToFile, selected);
-
+				/*
                 std::ifstream t;
 				t.open(pathToFile);
 
@@ -1181,7 +1195,7 @@ int main(int argc, char *argv[])
 				t.seekg(0, ios::beg);
 				buffer.clear();
 				buffer.seekg(0, ios::beg);
-
+				*/
                 ImGui::EndChild();
                 ImGui::BeginChild("buttons");
                 if (ImGui::Button("Load"))
@@ -1212,15 +1226,11 @@ int main(int argc, char *argv[])
         levelPath = argv[1];
         //city = loadLevel(argv[1], tess, boundingBox, singlePolygon);
         //city = loadLevel(argv[1], tess2, boundingBox, singlePolygon);
-        xm = 0;
-        ym = 0;
-        xp = 100;
-        yp = 60;
+
 
     }
 
     printf("go...\n");
-
 
 
     //loadGrid(levelPath, xp,yp);
@@ -1234,8 +1244,35 @@ int main(int argc, char *argv[])
 
     pathways roads = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
 
+	float* linesDataStore = new float[2 * 500000];
+	float* linesColorStore = new float[4 * 500000];
 
-    g_debugDraw.Create();
+	std::fill(linesColorStore, linesColorStore + 4 * 500000, 1.f);
+
+	int vertexCount = 0;
+	for (auto const& n1 : roads.pathGraph)
+	{
+		for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
+
+
+			float x0 = roads.nodes[n1.first].x;
+			float y0 = roads.nodes[n1.first].y;
+			linesDataStore[vertexCount * 2] = x0;
+			linesDataStore[vertexCount * 2 + 1] = y0;
+			vertexCount++;
+
+
+			float x1 = roads.nodes[n1.second[neigh1]].x;
+			float y1 = roads.nodes[n1.second[neigh1]].y;
+
+			linesDataStore[vertexCount * 2] = x1;
+			linesDataStore[vertexCount * 2 + 1] = y1;
+
+			vertexCount++;
+		}
+	}
+
+	g_debugDraw.Create(linesDataStore, vertexCount, linesColorStore);
 
 
     while (!glfwWindowShouldClose(window)) {
@@ -1260,17 +1297,33 @@ int main(int argc, char *argv[])
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
+
+		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
+
+		//g_debugDraw.DrawSegment(b2Vec2(0.f, 0.f), b2Vec2(10.f, 10.f), b2Color(1,1,1));
+
+		/*
+
         for (auto const& n1 : roads.pathGraph)
         {
-            for (int neigh1: n1.second) {
+			for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
 
-                b2Vec2 l0(roads.nodes[n1.first].x, roads.nodes[n1.first].y);
-                b2Vec2 l1(roads.nodes[neigh1].x, roads.nodes[neigh1].y);
+
+				double x0 = roads.nodes[n1.first].x;
+				double y0 = roads.nodes[n1.first].y;
+
+				double x1 = roads.nodes[n1.second[neigh1]].x;
+				double y1 = roads.nodes[n1.second[neigh1]].y;
+
+
+				b2Vec2 l0(x0, y0);
+				b2Vec2 l1(x1, y1);
 
                 g_debugDraw.DrawSegment(l0, l1, b2Color(1.f, 1.f, 1.f));
             }
         }
 
+		*/
         g_debugDraw.Flush();
         ImGui::Render();
 

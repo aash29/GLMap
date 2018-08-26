@@ -2,7 +2,6 @@
 #define MAP_HPP
 
 #include "tesselator.h"
-#include "../map"
 #include "../json.hpp"
 #include <fstream>
 
@@ -60,8 +59,8 @@ struct node {
     unsigned int id;
     double lat;
     double lon;
-	double x;
-	double y;
+	float x;
+	float y;
 };
 
 struct pathways {
@@ -173,6 +172,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, pol
           bounds->QueryAttribute("maxlat",&ymax);
       }
 
+	  //for (map<unsigned int, node>::iterator n1 = nodes.begin(); n1 != nodes) {
       for (auto& n1 : nodes){
           n1.second.x = lowerx + (n1.second.lon - xmin) / (xmax - xmin) * (upperx - lowerx);
           n1.second.y = lowery + (n1.second.lat - ymin) / (ymax - ymin) * (uppery - lowery);
