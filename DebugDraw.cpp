@@ -639,8 +639,8 @@ void DebugDraw::Create(float* vertexData, float vertexNum, float* colorData)
 	m_points->Create();
 	m_lines = new GLRenderLines;
 
-	m_lines->m_vertices = new float[1];
-	m_lines->m_colors = new float[1];
+	//m_lines->m_vertices = new float[1];
+	//m_lines->m_colors = new float[1];
 
 	m_lines->Create(vertexData, vertexNum, colorData);
 	m_triangles = new GLRenderTriangles;

@@ -1000,9 +1000,8 @@ int main(int argc, char *argv[])
 
 
     TESSalloc ma;
-    TESSalloc ma2;
     TESStesselator* tess = 0;
-    TESStesselator* tess2 = 0;
+
     const int nvp = 3;
     //unsigned char* vflags = 0;
     int nvflags = 0;
@@ -1024,34 +1023,16 @@ int main(int argc, char *argv[])
     ma.userData = (void*)&allocated;
     ma.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
 
-	/*
-    memset(&ma2, 0, sizeof(ma2));
-    ma2.memalloc = stdAlloc;
-    ma2.memfree = stdFree;
-    ma2.userData = (void*)&allocated2;
-    ma2.extraVertices = 256; // realloc not provided, allow 256 extra vertices.
-	*/
-
     tess = tessNewTess(&ma);
-    //tess2 = tessNewTess(&ma2);
 
     if (!tess)
         return -1;
-	/*
-    if (!tess2)
-        return -1;
-		*/
+
 
     if (!glfwInit()) {
         printf("Failed to init GLFW.");
         return -1;
     }
-	
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
-    
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 
     glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	
@@ -1244,6 +1225,24 @@ int main(int argc, char *argv[])
 
     pathways roads = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
 
+
+
+
+    tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
+        return -1;
+    printf("Memory used: %.1f kB\n", allocated/1024.0f);
+
+
+
+
+    const float* verts = tessGetVertices(tess);
+    const int* vinds = tessGetVertexIndices(tess);
+    const int* elems = tessGetElements(tess);
+    const int nverts = tessGetVertexCount(tess);
+    const int nelems = tessGetElementCount(tess);
+
+
 	float* linesDataStore = new float[2 * 500000];
 	float* linesColorStore = new float[4 * 500000];
 
@@ -1292,39 +1291,33 @@ int main(int argc, char *argv[])
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+
+        //glEnable(GL_BLEND);
+        //glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
 
 		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
-		//g_debugDraw.DrawSegment(b2Vec2(0.f, 0.f), b2Vec2(10.f, 10.f), b2Color(1,1,1));
-
-		/*
-
-        for (auto const& n1 : roads.pathGraph)
-        {
-			for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
+        b2Vec2 vertices[3];
 
 
-				double x0 = roads.nodes[n1.first].x;
-				double y0 = roads.nodes[n1.first].y;
-
-				double x1 = roads.nodes[n1.second[neigh1]].x;
-				double y1 = roads.nodes[n1.second[neigh1]].y;
-
-
-				b2Vec2 l0(x0, y0);
-				b2Vec2 l1(x1, y1);
-
-                g_debugDraw.DrawSegment(l0, l1, b2Color(1.f, 1.f, 1.f));
+        for (int i = 0; i < nelems; i++) {
+            const TESSindex *poly = &elems[i * 3];
+            for (int j = 0; j < 3; j++) {
+                if (poly[j] == TESS_UNDEF) break;
+                vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
             }
+            g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
         }
 
-		*/
-        g_debugDraw.Flush();
+
+
+	    g_debugDraw.Flush();
+
+
+        //glDisable(GL_BLEND);
         ImGui::Render();
 
         glfwSwapBuffers(window);
