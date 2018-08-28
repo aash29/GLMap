@@ -283,10 +283,12 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, pol
                     if (not w1) break;
 
                     XMLElement* nd1 = w1->FirstChildElement("nd");
-                    vector<float> coords = vector<float>();
+                    vector<float> coordsx = vector<float>();
+                    vector<float> coordsy = vector<float>();
 
                     buildings.back().push_back(vector<unsigned int>());
 
+                    float wind = 0.f; //determine winding
                     while(nd1) {
                         unsigned int ref;
                         nd1->QueryAttribute("ref",&ref);
@@ -295,14 +297,29 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, pol
                         //pathGraph[ref].push_back(previd);
                         //pathGraph[previd].push_back(ref);
                         //previd = ref;
+
+
                         buildings.back().back().push_back(ref);
-                        coords.push_back(nodes[ref].x);
-                        coords.push_back(nodes[ref].y);
+                        coordsx.push_back(nodes[ref].x);
+                        coordsy.push_back(nodes[ref].y);
+                        if (coordsx.size()>1){
+                            wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
+                        }
 
                         nd1 = nd1->NextSiblingElement("nd");
                     }
-                    //std::reverse(coords.begin(),coords.end());
-                    tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+
+                    if (wind < 0){
+                        std::reverse(coordsx.begin(),coordsx.end());
+                        std::reverse(coordsy.begin(),coordsy.end());
+                    }
+                    vector<float> coords = vector<float>();
+                    for (int i= 0; i < coordsx.size(); i++) {
+                        coords.push_back(coordsx[i]);
+                        coords.push_back(coordsy[i]);
+                    }
+
+                    tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
                 //}
                     mem1 = mem1->NextSiblingElement("member");
                 }
