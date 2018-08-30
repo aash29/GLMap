@@ -178,6 +178,7 @@ int pairingNum(int a, int b) {
 }
 
 
+b2Body* agentBody;
 
 
 
@@ -432,8 +433,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         agent* agent0 = &agents.begin()->second;
 
 
-        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS)
-        {
+        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+
+
+            agentBody->SetAngularVelocity(-1.f);
+            /*
             dx = 1, dy = 0;
 
             agent0->planFunc.push_back(
@@ -452,13 +456,16 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
+             */
         }
 
 
         if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
         {
-            dx = -1, dy = 0;
 
+            agentBody->SetAngularVelocity(1.f);
+            /*
+            dx = -1, dy = 0;
             agent0->planFunc.push_back(
                     [&, dx, dy]() {
                         if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
@@ -475,9 +482,17 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
+             */
         }
-        if (key == GLFW_KEY_UP && action == GLFW_PRESS)
-        {
+        if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+
+            b2Vec2 forward  = agentBody->GetWorldVector(b2Vec2(1.f,0.f));
+            forward.Normalize();
+            forward.operator*=(1.2f);
+
+            agentBody->SetLinearVelocity(forward);
+
+            /*
             dx = 0, dy = 1;
 
             agent0->planFunc.push_back(
@@ -496,10 +511,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
+             */
 
         }
-        if (key == GLFW_KEY_DOWN && action == GLFW_PRESS)
-        {
+        if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
+            /*
             dx = 0, dy = -1;
 
             agent0->planFunc.push_back(
@@ -517,6 +533,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
                     });
             endTurn();
+             */
 
         }
     }
@@ -636,7 +653,7 @@ void sInterface() {
     ImGui::InputInt2("end", endPos);
 
 
-	
+
     if (ImGui::Button("Find")) {
 
         for (auto a1:agents) {
@@ -1281,37 +1298,20 @@ int main(int argc, char *argv[])
 	// Construct a world object, which will hold and simulate the rigid bodies.
 	b2World world(gravity);
 
-	// Define the ground body.
-	b2BodyDef groundBodyDef;
-	groundBodyDef.position.Set(50.0f, 50.0f);
-
-	// Call the body factory which allocates memory for the ground body
-	// from a pool and creates the ground box shape (also from a pool).
-	// The body is also added to the world.
-	b2Body* groundBody = world.CreateBody(&groundBodyDef);
-
-	// Define the ground box shape.
-	b2PolygonShape groundBox;
-
-	// The extents are the half-widths of the box.
-	groundBox.SetAsBox(50.0f, 0.1f);
-
-	// Add the ground fixture to the ground body.
-	groundBody->CreateFixture(&groundBox, 0.0f);
 
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(0.0f, 10.0f);
-	b2Body* body = world.CreateBody(&bodyDef);
+	bodyDef.position.Set(50.0f, 50.0f);
+	agentBody = world.CreateBody(&bodyDef);
 
 	// Define another box shape for our dynamic body.
-	b2PolygonShape dynamicBox;
-	dynamicBox.SetAsBox(1.0f, 1.0f);
+	b2PolygonShape agentShape;
+    agentShape.SetAsBox(1.0f, 1.0f);
 
 	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
-	fixtureDef.shape = &dynamicBox;
+	fixtureDef.shape = &agentShape;
 
 	// Set the box density to be non-zero, so it will be dynamic.
 	fixtureDef.density = 1.0f;
@@ -1320,7 +1320,9 @@ int main(int argc, char *argv[])
 	fixtureDef.friction = 0.3f;
 
 	// Add the shape to the body.
-	body->CreateFixture(&fixtureDef);
+    agentBody->CreateFixture(&fixtureDef);
+
+    agentBody->SetAngularDamping(10.f);
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
 	// second (60Hz) and 10 iterations. This provides a high quality simulation
@@ -1355,9 +1357,9 @@ int main(int argc, char *argv[])
 
 		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
+
+
         b2Vec2 vertices[3];
-
-
         for (int i = 0; i < nelems; i++) {
             const TESSindex *poly = &elems[i * 3];
             for (int j = 0; j < 3; j++) {
@@ -1368,6 +1370,28 @@ int main(int argc, char *argv[])
         }
 
 
+
+        if (t>timeStep) {
+            world.Step(timeStep, velocityIterations, positionIterations);
+            b2Vec2 position = agentBody->GetPosition();
+            float32 angle = agentBody->GetAngle();
+
+
+            b2Rot forward =  b2Rot(angle);
+            b2Vec2 x1 = b2Mul(forward,b2Vec2(1.f,0.f));
+            //g_debugDraw.DrawTransform(agentBody->GetTransform());
+
+            b2Vec2 vertices[3];
+            vertices[0] = position + x1;
+            vertices[1] = position + b2Vec2(x1.y,-x1.x);
+            vertices[2] = position - b2Vec2(x1.y,-x1.x);
+            //g_debugDraw.DrawSolidCircle(position, 1.f, b2Vec2(0.f, 0.f), b2Color(2.f,2.f,2.f));
+
+            g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(2.f,2.f,2.f));
+
+            //debug_log().AddLog("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
+
+        }
 
 	    g_debugDraw.Flush();
 
