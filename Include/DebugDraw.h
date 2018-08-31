@@ -33,7 +33,7 @@ struct Camera
 	{
 		m_center.Set(0.0f, 50.0f);
 		m_extent = 50.0f;
-		m_zoom = 1.0f;
+		m_zoom = 5.0f;
 		m_width = 1280;
 		m_height = 800;
 	}

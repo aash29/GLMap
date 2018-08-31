@@ -125,6 +125,9 @@ double* verty;
 int* vertNumber;
 int nElemsTriangSelect;
 
+b2World world(b2Vec2_zero);
+
+b2Body* agentBody;
 
 
 struct navigator {
@@ -178,7 +181,6 @@ int pairingNum(int a, int b) {
 }
 
 
-b2Body* agentBody;
 
 
 
@@ -420,24 +422,44 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
     int dx, dy;
 
-    if (!io.WantCaptureKeyboard) {
-        TESS_NOTUSED(scancode);
-        TESS_NOTUSED(mods);
-        if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-            glfwSetWindowShouldClose(window, GL_TRUE);
-        if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS)||(action == GLFW_REPEAT)) ) {
-            endTurn();
-        }
+	if (!io.WantCaptureKeyboard) {
+		TESS_NOTUSED(scancode);
+		TESS_NOTUSED(mods);
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+			glfwSetWindowShouldClose(window, GL_TRUE);
+		if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS) || (action == GLFW_REPEAT))) {
+			endTurn();
+		}
 
+		/*
+		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
+			agentBody->SetAngularVelocity(-2.f);
+		}
 
+		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
+			agentBody->SetAngularVelocity(2.f);
+		}
+		if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
+			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+			forward.Normalize();
+			forward.operator*=(1.2f);
+
+			agentBody->SetLinearVelocity(forward);
+		}
+
+		if (action == GLFW_RELEASE){
+			agentBody->SetAngularVelocity(0.f);
+		}
+		*/
+
+/*
         agent* agent0 = &agents.begin()->second;
 
 
         if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
 
 
-            agentBody->SetAngularVelocity(-1.f);
-            /*
+            
             dx = 1, dy = 0;
 
             agent0->planFunc.push_back(
@@ -456,15 +478,15 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
-             */
+             
         }
 
 
         if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
         {
 
-            agentBody->SetAngularVelocity(1.f);
-            /*
+
+            
             dx = -1, dy = 0;
             agent0->planFunc.push_back(
                     [&, dx, dy]() {
@@ -482,17 +504,13 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
-             */
+             
         }
         if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
 
-            b2Vec2 forward  = agentBody->GetWorldVector(b2Vec2(1.f,0.f));
-            forward.Normalize();
-            forward.operator*=(1.2f);
 
-            agentBody->SetLinearVelocity(forward);
 
-            /*
+            
             dx = 0, dy = 1;
 
             agent0->planFunc.push_back(
@@ -511,11 +529,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
                     });
 
             endTurn();
-             */
+            
 
         }
         if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
-            /*
+            
             dx = 0, dy = -1;
 
             agent0->planFunc.push_back(
@@ -533,9 +551,9 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
                     });
             endTurn();
-             */
+            
 
-        }
+        } */
     }
     else
     {
@@ -544,6 +562,7 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
         if (action == GLFW_RELEASE)
             io.KeysDown[key] = false;
     }
+
 };
 
 void charCallback(GLFWwindow*, unsigned int c)
@@ -632,6 +651,11 @@ void sInterface() {
         ImFontAtlas* atlas = ImGui::GetIO().Fonts;
         ImFont* font = atlas->Fonts[0];
         //font->Scale = 2.f;
+
+
+
+
+
     }
 
 
@@ -1060,8 +1084,8 @@ int main(int argc, char *argv[])
     height = mode->height;
 
 
-    //width = 600;
-    //height = 600;
+	g_camera.m_width = width;
+	g_camera.m_height = height;
 
 
 
@@ -1163,37 +1187,6 @@ int main(int argc, char *argv[])
                 char pathToFile[100] = "";
                 strcat(pathToFile, "./maps/");
                 strcat(pathToFile, selected);
-				/*
-                std::ifstream t;
-				t.open(pathToFile);
-
-                std::stringstream buffer;
-				buffer << t.rdbuf();
-
-
-
-				static char bstr[15000];
-				
-				//int n = buffer.str().size();
-				if (buffer.str().size()< 15000) {
-
-                
-					strcpy(bstr, buffer.str().c_str());
-
-				}
-				else {
-
-					strcpy(bstr, "Too large");
-				}
-
-                //coinsLog.AddLog(buffer.str().c_str());
-                ImGui::TextWrapped(bstr);
-
-				t.clear();
-				t.seekg(0, ios::beg);
-				buffer.clear();
-				buffer.seekg(0, ios::beg);
-				*/
                 ImGui::EndChild();
                 ImGui::BeginChild("buttons");
                 if (ImGui::Button("Load"))
@@ -1240,7 +1233,7 @@ int main(int argc, char *argv[])
 
 
 
-    pathways roads = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
+    pathways roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
 
@@ -1292,13 +1285,6 @@ int main(int argc, char *argv[])
 
 
 
-	// Define the gravity vector.
-	b2Vec2 gravity(0.0f, 0.0f);
-
-	// Construct a world object, which will hold and simulate the rigid bodies.
-	b2World world(gravity);
-
-
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
@@ -1323,6 +1309,7 @@ int main(int argc, char *argv[])
     agentBody->CreateFixture(&fixtureDef);
 
     agentBody->SetAngularDamping(10.f);
+	agentBody->SetLinearDamping(10.f);
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
 	// second (60Hz) and 10 iterations. This provides a high quality simulation
@@ -1373,30 +1360,51 @@ int main(int argc, char *argv[])
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
-            b2Vec2 position = agentBody->GetPosition();
-            float32 angle = agentBody->GetAngle();
-
-
-            b2Rot forward =  b2Rot(angle);
-            b2Vec2 x1 = b2Mul(forward,b2Vec2(1.f,0.f));
-            //g_debugDraw.DrawTransform(agentBody->GetTransform());
-
-            b2Vec2 vertices[3];
-            vertices[0] = position + x1;
-            vertices[1] = position + b2Vec2(x1.y,-x1.x);
-            vertices[2] = position - b2Vec2(x1.y,-x1.x);
-            //g_debugDraw.DrawSolidCircle(position, 1.f, b2Vec2(0.f, 0.f), b2Color(2.f,2.f,2.f));
-
-            g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(2.f,2.f,2.f));
-
-            //debug_log().AddLog("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
-
+			t = 0;
         }
 
+
+		b2Vec2 position = agentBody->GetPosition();
+		float32 angle = agentBody->GetAngle();
+
+
+		b2Rot forward = b2Rot(angle);
+		b2Vec2 x1 = b2Mul(forward, b2Vec2(1.f, 0.f));
+		//g_debugDraw.DrawTransform(agentBody->GetTransform());
+
+		b2Vec2 verticesTri[3];
+		verticesTri[0] = position + x1;
+		verticesTri[1] = position + b2Vec2(x1.y, -x1.x);
+		verticesTri[2] = position - b2Vec2(x1.y, -x1.x);
+		//g_debugDraw.DrawSolidCircle(position, 1.f, b2Vec2(0.f, 0.f), b2Color(2.f,2.f,2.f));
+		g_debugDraw.DrawSolidPolygon(verticesTri, 3, b2Color(2.f, 2.f, 2.f));
+
+
+		int state;
+		state = glfwGetKey(window, GLFW_KEY_RIGHT);
+		if (state == GLFW_PRESS){
+			agentBody->SetAngularVelocity(-2.f);
+		}
+
+		state = glfwGetKey(window, GLFW_KEY_LEFT);
+		if (state == GLFW_PRESS) {
+			agentBody->SetAngularVelocity(2.f);
+		}
+
+
+		state = glfwGetKey(window, GLFW_KEY_UP);
+		if (state == GLFW_PRESS) {
+			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+			forward.Normalize();
+			forward.operator*=(5.f);
+
+			agentBody->SetLinearVelocity(forward);
+		}
+
+
+		
+
 	    g_debugDraw.Flush();
-
-
-        //glDisable(GL_BLEND);
         ImGui::Render();
 
         glfwSwapBuffers(window);

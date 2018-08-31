@@ -2,7 +2,7 @@
 #define MAP_HPP
 
 #include "tesselator.h"
-#include "../json.hpp"
+//#include "../json.hpp"
 #include <fstream>
 
 #include <glm/glm.hpp>
@@ -15,6 +15,7 @@ using namespace std;
 using namespace tinyxml2;
 
 #include "pathnode.hpp"
+#include <Box2D/Box2D.h>
 
 struct rect
 {
@@ -97,7 +98,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, polygon &singlePolygon, bool computeBounds)
+pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)
 {
     std::string m_currentLevel = std::string(name);
 
@@ -248,6 +249,23 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, pol
 					coords.push_back(coordsy[i]);
 				}
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+
+
+				{
+					b2BodyDef bd;
+					b2Body* ground = world->CreateBody(&bd);
+
+					b2Vec2* vs;
+					vs = new b2Vec2[coordsx.size()];
+
+					for (int i = 0; i < coordsx.size(); i++) {
+						vs[i].Set(coordsx[i], coordsy[i]);
+					}
+					b2ChainShape shape;
+					shape.CreateLoop(vs, coordsx.size());
+					ground->CreateFixture(&shape, 0.0f);
+				}
+
             }
 
             w1 = w1->NextSiblingElement("way");
