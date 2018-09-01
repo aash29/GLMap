@@ -6,7 +6,7 @@ include_directories(./Include)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11  -g -I./Include -ltess2 -L. -lGLEW -lGL -lglfw -lSOIL")
 
-set(SOURCE_FILES citymap.cpp imgui.cpp imgui_draw.cpp imgui_impl_glfw_gl3.cpp imgui_demo.cpp appLog.cpp agent.cpp tinyxml2.cpp Include/map.hpp DebugDraw.cpp RenderGL3.cpp )
+set(SOURCE_FILES citymap.cpp imgui.cpp imgui_draw.cpp imgui_impl_glfw_gl3.cpp imgui_demo.cpp appLog.cpp agent.cpp tinyxml2.cpp Include/map.hpp DebugDraw.cpp RenderGL3.cpp Include/agent.h)
 
 link_directories(${CMAKE_SOURCE_DIR})
 
