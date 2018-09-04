@@ -1128,7 +1128,7 @@ int main(int argc, char *argv[])
 	xm = 0;
 	ym = 0;
 	xp = 100;
-	yp = 70;
+	yp = 50;
 
 
     if (argc == 1)

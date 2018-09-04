@@ -184,6 +184,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 
         XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
         while (w1) {
+            const char* id = w1->Attribute("id");
 
             map<string, string> tags;
             XMLElement* tag = w1->FirstChildElement("tag");
@@ -258,11 +259,11 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					b2Vec2* vs;
 					vs = new b2Vec2[coordsx.size()];
 
-					for (int i = 0; i < coordsx.size(); i++) {
+					for (int i = 0; i < coordsx.size()-1; i++) {
 						vs[i].Set(coordsx[i], coordsy[i]);
 					}
 					b2ChainShape shape;
-					shape.CreateLoop(vs, coordsx.size());
+					shape.CreateLoop(vs, coordsx.size()-1);
 					ground->CreateFixture(&shape, 0.0f);
 				}
 
