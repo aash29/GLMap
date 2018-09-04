@@ -1383,12 +1383,12 @@ int main(int argc, char *argv[])
 		int state;
 		state = glfwGetKey(window, GLFW_KEY_RIGHT);
 		if (state == GLFW_PRESS){
-			agentBody->SetAngularVelocity(-2.f);
+			agentBody->SetAngularVelocity(-4.f);
 		}
 
 		state = glfwGetKey(window, GLFW_KEY_LEFT);
 		if (state == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(2.f);
+			agentBody->SetAngularVelocity(4.f);
 		}
 
 
@@ -1400,6 +1400,16 @@ int main(int argc, char *argv[])
 
 			agentBody->SetLinearVelocity(forward);
 		}
+
+
+        state = glfwGetKey(window, GLFW_KEY_DOWN);
+        if (state == GLFW_PRESS) {
+            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(-1.f, 0.f));
+            forward.Normalize();
+            forward.operator*=(5.f);
+
+            agentBody->SetLinearVelocity(forward);
+        }
 
 
         world.DrawDebugData();
