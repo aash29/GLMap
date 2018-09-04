@@ -1051,7 +1051,6 @@ int main(int argc, char *argv[])
 	unsigned char mem[1024*1024];
 #else
     int allocated = 0;
-    int allocated2 = 0;
 #endif
     TESS_NOTUSED(argc);
     TESS_NOTUSED(argv);
@@ -1253,10 +1252,10 @@ int main(int argc, char *argv[])
     const int nelems = tessGetElementCount(tess);
 
 
-	float* linesDataStore = new float[2 * 500000];
-	float* linesColorStore = new float[4 * 500000];
+    b2Vec2* linesDataStore = new b2Vec2[500000];
+	b2Color* linesColorStore = new b2Color[500000];
 
-	std::fill(linesColorStore, linesColorStore + 4 * 500000, 1.f);
+	//std::fill(linesColorStore, linesColorStore + 4 * 500000, 1.f);
 
 	int vertexCount = 0;
 	for (auto const& n1 : roads.pathGraph)
@@ -1266,23 +1265,25 @@ int main(int argc, char *argv[])
 
 			float x0 = roads.nodes[n1.first].x;
 			float y0 = roads.nodes[n1.first].y;
-			linesDataStore[vertexCount * 2] = x0;
-			linesDataStore[vertexCount * 2 + 1] = y0;
+            linesDataStore[vertexCount] = b2Vec2(x0,y0);
+            linesColorStore[vertexCount] = b2Color (1.f,1.f,1.f,1.f);
 			vertexCount++;
 
 
 			float x1 = roads.nodes[n1.second[neigh1]].x;
 			float y1 = roads.nodes[n1.second[neigh1]].y;
-
-			linesDataStore[vertexCount * 2] = x1;
-			linesDataStore[vertexCount * 2 + 1] = y1;
+            linesDataStore[vertexCount] = b2Vec2(x1,y1);
+            linesColorStore[vertexCount] = b2Color (1.f,1.f,1.f,1.f);
 
 			vertexCount++;
 		}
 	}
 
-	g_debugDraw.Create(linesDataStore, vertexCount, linesColorStore);
+	g_debugDraw.Create();
 
+    world.SetDebugDraw(&g_debugDraw);
+
+    g_debugDraw.SetFlags(b2Draw::e_shapeBit);
 
 
 	// Define the dynamic body. We set its position and call the body factory.
@@ -1293,7 +1294,21 @@ int main(int argc, char *argv[])
 
 	// Define another box shape for our dynamic body.
 	b2PolygonShape agentShape;
-    agentShape.SetAsBox(1.0f, 1.0f);
+
+    b2Vec2 x1 = b2Vec2(0.3f, 0.f);
+
+    b2Vec2 verticesTri[3];
+
+    verticesTri[0] =  x1;
+    verticesTri[1] =  b2Vec2(x1.y, -x1.x);
+    verticesTri[2] =  -b2Vec2(x1.y, -x1.x);
+
+    agentShape.Set(verticesTri,3);
+
+
+
+    //agentShape.SetAsBox(1.0f, 1.0f);
+
 
 	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
@@ -1356,28 +1371,13 @@ int main(int argc, char *argv[])
             g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
         }
 
-
-
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
 			t = 0;
         }
 
 
-		b2Vec2 position = agentBody->GetPosition();
-		float32 angle = agentBody->GetAngle();
 
-
-		b2Rot forward = b2Rot(angle);
-		b2Vec2 x1 = b2Mul(forward, b2Vec2(1.f, 0.f));
-		//g_debugDraw.DrawTransform(agentBody->GetTransform());
-
-		b2Vec2 verticesTri[3];
-		verticesTri[0] = position + x1;
-		verticesTri[1] = position + b2Vec2(x1.y, -x1.x);
-		verticesTri[2] = position - b2Vec2(x1.y, -x1.x);
-		//g_debugDraw.DrawSolidCircle(position, 1.f, b2Vec2(0.f, 0.f), b2Color(2.f,2.f,2.f));
-		g_debugDraw.DrawSolidPolygon(verticesTri, 3, b2Color(2.f, 2.f, 2.f));
 
 
 		int state;
@@ -1402,7 +1402,7 @@ int main(int argc, char *argv[])
 		}
 
 
-		
+        world.DrawDebugData();
 
 	    g_debugDraw.Flush();
         ImGui::Render();
