@@ -85,7 +85,7 @@ public:
 
     void Flush();
 
-	int linesStartingIndex;
+	//int linesStartingIndex;
 
 	
 private:

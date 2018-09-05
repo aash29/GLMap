@@ -1281,9 +1281,9 @@ int main(int argc, char *argv[])
 
 	g_debugDraw.Create();
 
-    world.SetDebugDraw(&g_debugDraw);
+	g_debugDraw.SetFlags(b2Draw::e_shapeBit);
 
-    g_debugDraw.SetFlags(b2Draw::e_shapeBit);
+    world.SetDebugDraw(&g_debugDraw);
 
 
 	// Define the dynamic body. We set its position and call the body factory.
@@ -1355,7 +1355,7 @@ int main(int argc, char *argv[])
         //glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-
+		g_debugDraw.DrawPoint(b2Vec2(0.f,0.f), 4.0f, b2Color(1.f,1.f,1.f));
 
 		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
