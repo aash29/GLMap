@@ -1252,6 +1252,41 @@ int main(int argc, char *argv[])
     const int nelems = tessGetElementCount(tess);
 
 
+	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
+
+	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
+		return -1;
+
+
+
+	int vertexSize = 2;
+	const int nelemsCont = tessGetElementCount(tess);
+	const TESSindex* elemsCont = tessGetElements(tess);
+	const float* vertsCont = tessGetVertices(tess);
+	for (int i = 0; i < nelemsCont; i++) {
+		const TESSindex base = elemsCont[i * 2];
+		const TESSindex count = elemsCont[i * 2 + 1];
+
+		{
+			b2BodyDef bd;
+			b2Body* ground = world.CreateBody(&bd);
+
+			b2Vec2* vs;
+			vs = new b2Vec2[count];
+
+			for (int j = 0; j < count; j++) {
+				//&verts[(base + j) * vertexSize]
+				vs[j].Set(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize+1]);
+			}
+			b2ChainShape shape;
+			shape.CreateLoop(vs, count);
+			ground->CreateFixture(&shape, 0.0f);
+
+		}
+	}
+
+
+
     b2Vec2* linesDataStore = new b2Vec2[500000];
 	b2Color* linesColorStore = new b2Color[500000];
 
@@ -1360,7 +1395,7 @@ int main(int argc, char *argv[])
 		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
 
-
+		/*
         b2Vec2 vertices[3];
         for (int i = 0; i < nelems; i++) {
             const TESSindex *poly = &elems[i * 3];
@@ -1370,6 +1405,7 @@ int main(int argc, char *argv[])
             }
             g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
         }
+		*/
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);

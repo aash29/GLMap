@@ -251,7 +251,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 				}
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
 
-
+				/*
 				{
 					b2BodyDef bd;
 					b2Body* ground = world->CreateBody(&bd);
@@ -266,6 +266,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					shape.CreateLoop(vs, coordsx.size()-1);
 					ground->CreateFixture(&shape, 0.0f);
 				}
+				*/
 
             }
 
@@ -344,6 +345,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 
                     tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
                 //}
+					/*
 					{
 						b2BodyDef bd;
 						b2Body* ground = world->CreateBody(&bd);
@@ -358,6 +360,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 						shape.CreateLoop(vs, coordsx.size() - 1);
 						ground->CreateFixture(&shape, 0.0f);
 					}
+					*/
 
                     mem1 = mem1->NextSiblingElement("member");
                 }
