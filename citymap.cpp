@@ -1231,7 +1231,6 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-
     pathways roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
@@ -1251,7 +1250,7 @@ int main(int argc, char *argv[])
     const int nverts = tessGetVertexCount(tess);
     const int nelems = tessGetElementCount(tess);
 
-
+	tess = tessNewTess(&ma);
 	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
@@ -1324,7 +1323,7 @@ int main(int argc, char *argv[])
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(50.0f, 50.0f);
+	bodyDef.position.Set(33.0f, 16.0f);
 	agentBody = world.CreateBody(&bodyDef);
 
 	// Define another box shape for our dynamic body.
@@ -1395,7 +1394,7 @@ int main(int argc, char *argv[])
 		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
 
-		/*
+		
         b2Vec2 vertices[3];
         for (int i = 0; i < nelems; i++) {
             const TESSindex *poly = &elems[i * 3];
@@ -1405,7 +1404,7 @@ int main(int argc, char *argv[])
             }
             g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
         }
-		*/
+		
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);

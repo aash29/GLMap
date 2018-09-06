@@ -285,6 +285,85 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
                 tags[key] = value;
                 tag = tag->NextSiblingElement("tag");
             }
+
+			if (tags["place"]=="island") {
+
+				XMLElement* mem1 = r1->FirstChildElement("member");
+				while (mem1) {
+					//if (mem1->Attribute("role","outer")) {
+					int ref;
+					mem1->QueryAttribute("ref", &ref);
+
+					XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
+					while (w1) {
+
+						int id;
+						w1->QueryAttribute("id", &id);
+						if (id == ref) break;
+						w1 = w1->NextSiblingElement("way");
+					}
+
+					if (not w1) {
+						mem1 = mem1->NextSiblingElement("member");
+						continue;
+					}
+						
+
+					XMLElement* nd1 = w1->FirstChildElement("nd");
+					vector<float> coordsx = vector<float>();
+					vector<float> coordsy = vector<float>();
+
+					buildings.back().push_back(vector<unsigned int>());
+
+					float wind = 0.f; //determine winding
+					while (nd1) {
+						unsigned int ref;
+						nd1->QueryAttribute("ref", &ref);
+
+						buildings.back().back().push_back(ref);
+						coordsx.push_back(nodes[ref].x);
+						coordsy.push_back(nodes[ref].y);
+						if (coordsx.size() > 1) {
+							wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
+						}
+
+						nd1 = nd1->NextSiblingElement("nd");
+					}
+					/*
+					if (mem1->Attribute("role", "outer")) {
+						if (wind < 0) {
+							std::reverse(coordsx.begin(), coordsx.end());
+							std::reverse(coordsy.begin(), coordsy.end());
+						}
+					}
+					else {
+						if (wind > 0) {
+							std::reverse(coordsx.begin(), coordsx.end());
+							std::reverse(coordsy.begin(), coordsy.end());
+						}
+					}
+					*/
+					{
+						b2BodyDef bd;
+						b2Body* ground = world->CreateBody(&bd);
+
+						b2Vec2* vs;
+						vs = new b2Vec2[coordsx.size()];
+
+						for (int i = 0; i < coordsx.size(); i++) {
+							vs[i].Set(coordsx[i], coordsy[i]);
+						}
+						b2ChainShape shape;
+						shape.CreateChain(vs, coordsx.size());
+						ground->CreateFixture(&shape, 0.0f);
+					}
+					mem1 = mem1->NextSiblingElement("member");
+				}
+			}
+			
+		
+
+
             if (tags.count("building")>0) {
                 buildings.push_back(vector< vector<unsigned int> >());
 
