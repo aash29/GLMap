@@ -121,7 +121,9 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 
         map<unsigned int, vector<unsigned int> > pathGraph;
         vector < vector < vector <unsigned int> > > buildings;
+
         map<unsigned int, node> nodes;
+		map<unsigned int, vector<unsigned int> > ways;
 
         XMLDocument* doc = new XMLDocument();
 
@@ -185,6 +187,20 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
         XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
         while (w1) {
             const char* id = w1->Attribute("id");
+
+
+			ways[stoi(id)] = vector<unsigned int>();
+
+			XMLElement* nd1 = w1->FirstChildElement("nd");
+
+			unsigned int ref;
+
+			while (nd1) {
+				nd1->QueryAttribute("ref", &ref);
+				ways[stoi(id)].push_back(ref);
+				nd1 = nd1->NextSiblingElement("nd");
+			}
+
 
             map<string, string> tags;
             XMLElement* tag = w1->FirstChildElement("tag");
@@ -250,25 +266,9 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					coords.push_back(coordsy[i]);
 				}
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
-
-				/*
-				{
-					b2BodyDef bd;
-					b2Body* ground = world->CreateBody(&bd);
-
-					b2Vec2* vs;
-					vs = new b2Vec2[coordsx.size()];
-
-					for (int i = 0; i < coordsx.size()-1; i++) {
-						vs[i].Set(coordsx[i], coordsy[i]);
-					}
-					b2ChainShape shape;
-					shape.CreateLoop(vs, coordsx.size()-1);
-					ground->CreateFixture(&shape, 0.0f);
-				}
-				*/
-
             }
+
+
 
             w1 = w1->NextSiblingElement("way");
         }
