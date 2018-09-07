@@ -15,6 +15,11 @@
 
 using namespace std;
 
+struct action {
+    std::string name;
+    std::string params;
+};
+
 
 
 class agent {
@@ -36,11 +41,5 @@ public:
 
 
     void update();
-
-    //void getAgentPos(unordered_set<string> setState);
-
-    //void goTo(int x, int y);
 };
-
-
-#endif //GLMAP_AGENT_H
+#endif GLMAP_AGENT_H

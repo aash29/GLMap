@@ -57,7 +57,7 @@ public:
 	DebugDraw();
 	~DebugDraw();
 
-	void Create(float* vertexData, float vertexNum, float* colorData);
+	void Create();
 
 	void Destroy();
 
@@ -71,7 +71,7 @@ public:
 
 	void DrawSegment(const b2Vec2& p1, const b2Vec2& p2, const b2Color& color);
 
-	void DrawLines(float* data, int vertexCount, float* color);
+	void DrawLines(b2Vec2* data, int vertexCount, b2Color* color);
 
 	void DrawTransform(const b2Transform& xf);
 
@@ -84,6 +84,8 @@ public:
     void DrawAABB(b2AABB* aabb, const b2Color& color);
 
     void Flush();
+
+	//int linesStartingIndex;
 
 	
 private:
