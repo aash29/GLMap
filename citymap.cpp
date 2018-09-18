@@ -423,34 +423,16 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
     int dx, dy;
 
 	if (!io.WantCaptureKeyboard) {
-		TESS_NOTUSED(scancode);
-		TESS_NOTUSED(mods);
+		//TESS_NOTUSED(scancode);
+		//TESS_NOTUSED(mods);
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS) || (action == GLFW_REPEAT))) {
 			endTurn();
 		}
 
-		/*
-		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(-2.f);
-		}
 
-		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(2.f);
-		}
-		if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-			forward.Normalize();
-			forward.operator*=(1.2f);
 
-			agentBody->SetLinearVelocity(forward);
-		}
-
-		if (action == GLFW_RELEASE){
-			agentBody->SetAngularVelocity(0.f);
-		}
-		*/
 
 /*
         agent* agent0 = &agents.begin()->second;
@@ -1098,7 +1080,7 @@ int main(int argc, char *argv[])
     glfwMakeContextCurrent(window);
     //glfwSwapInterval(1); // Enable vsync
 
-
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
     glfwSetScrollCallback(window, sScrollCallback);
     glfwSetCursorPosCallback(window, sMouseMotion);
     glfwSetMouseButtonCallback(window, sMouseButton);
@@ -1331,13 +1313,17 @@ int main(int argc, char *argv[])
 
     b2Vec2 x1 = b2Vec2(0.3f, 0.f);
 
-    b2Vec2 verticesTri[3];
+	b2Vec2 x11 = b2Vec2(0.2f, 0.1f);
+	b2Vec2 x12 = b2Vec2(0.2f, -0.1f);
 
-    verticesTri[0] =  x1;
-    verticesTri[1] =  b2Vec2(x1.y, -x1.x);
-    verticesTri[2] =  -b2Vec2(x1.y, -x1.x);
+    b2Vec2 verticesTri[4];
 
-    agentShape.Set(verticesTri,3);
+    verticesTri[0] = x11;
+	verticesTri[1] = x12;
+    verticesTri[2] =  b2Vec2(x1.y, -x1.x);
+    verticesTri[3] =  -b2Vec2(x1.y, -x1.x);
+
+    agentShape.Set(verticesTri,4);
 
 
 
@@ -1366,6 +1352,8 @@ int main(int argc, char *argv[])
 	float32 timeStep = 1.0f / 60.0f;
 	int32 velocityIterations = 6;
 	int32 positionIterations = 2;
+
+
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
@@ -1411,11 +1399,18 @@ int main(int argc, char *argv[])
 			t = 0;
         }
 
-
-
-
+		g_camera.m_center = agentBody->GetPosition();
 
 		int state;
+
+		float refVel = 5.f;
+
+		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+		if (state == GLFW_PRESS) {
+			refVel = 10.f;
+		}
+
+
 		state = glfwGetKey(window, GLFW_KEY_RIGHT);
 		if (state == GLFW_PRESS){
 			agentBody->SetAngularVelocity(-4.f);
@@ -1431,21 +1426,33 @@ int main(int argc, char *argv[])
 		if (state == GLFW_PRESS) {
 			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
 			forward.Normalize();
-			forward.operator*=(5.f);
 
-			agentBody->SetLinearVelocity(forward);
+			float K = 2.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+			forward*=K;
+
+			agentBody->ApplyForceToCenter(forward,true);
+
+			//agentBody->SetLinearVelocity(forward);
 		}
 
 
         state = glfwGetKey(window, GLFW_KEY_DOWN);
         if (state == GLFW_PRESS) {
-            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(-1.f, 0.f));
+            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
             forward.Normalize();
-            forward.operator*=(5.f);
 
-            agentBody->SetLinearVelocity(forward);
+			float K = 2.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(),forward));
+
+			forward *= K;
+
+
+			agentBody->ApplyForceToCenter(forward,true);
+
+            //agentBody->SetLinearVelocity(forward);
+			
         }
-
+		
+		
 
         world.DrawDebugData();
 
