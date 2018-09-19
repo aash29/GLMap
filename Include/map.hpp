@@ -266,6 +266,8 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					coords.push_back(coordsy[i]);
 				}
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+
+
             }
 
 
