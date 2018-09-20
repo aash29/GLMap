@@ -1418,22 +1418,7 @@ int main(int argc, char *argv[])
         //glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
         //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-		g_debugDraw.DrawPoint(b2Vec2(0.f,0.f), 4.0f, b2Color(1.f,1.f,1.f));
-
-		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
-
-
 		
-        b2Vec2 vertices[3];
-        for (int i = 0; i < nelems; i++) {
-            const TESSindex *poly = &elems[i * 3];
-            for (int j = 0; j < 3; j++) {
-                if (poly[j] == TESS_UNDEF) break;
-                vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
-            }
-            g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
-        }
-
         b2Vec2 p1 = agentBody->GetPosition();
         b2Vec2 p2 = agentBody->GetPosition() + 10.f*agentBody->GetWorldVector(b2Vec2(1.f,0.f));
 
@@ -1442,26 +1427,15 @@ int main(int argc, char *argv[])
 
 
 
-        if (callback.m_hit)
-        {
-            g_debugDraw.DrawPoint(callback.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
-            g_debugDraw.DrawSegment(p1, callback.m_point, b2Color(0.8f, 0.8f, 0.8f));
-            b2Vec2 head = callback.m_point + 0.5f * callback.m_normal;
-            g_debugDraw.DrawSegment(callback.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
-        }
-        else
-        {
-            g_debugDraw.DrawSegment(p1, p2, b2Color(0.8f, 0.8f, 0.8f));
-        }
-
 
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
+			g_camera.m_center = agentBody->GetPosition();
 			t = 0;
         }
 
-		g_camera.m_center = agentBody->GetPosition();
+
 
 		int state;
 
@@ -1515,6 +1489,33 @@ int main(int argc, char *argv[])
         }
 		
 		
+
+		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
+
+
+		if (callback.m_hit)
+		{
+			g_debugDraw.DrawPoint(callback.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
+			g_debugDraw.DrawSegment(p1, callback.m_point, b2Color(0.8f, 0.8f, 0.8f));
+			b2Vec2 head = callback.m_point + 0.5f * callback.m_normal;
+			g_debugDraw.DrawSegment(callback.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
+		}
+		else
+		{
+			g_debugDraw.DrawSegment(p1, p2, b2Color(0.8f, 0.8f, 0.8f));
+		}
+
+
+		b2Vec2 vertices[3];
+		for (int i = 0; i < nelems; i++) {
+			const TESSindex *poly = &elems[i * 3];
+			for (int j = 0; j < 3; j++) {
+				if (poly[j] == TESS_UNDEF) break;
+				vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
+			}
+			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f, 0.f, 0.f, 1.f));
+		}
+
 
         world.DrawDebugData();
 
