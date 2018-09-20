@@ -50,6 +50,7 @@
 #include <Box2D/Box2D.h>
 #include "DebugDraw.h"
 
+#include "entity.h"
 
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -97,6 +98,10 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
+bool cameraFollow = true;
+bool drawFOV = false;
+
+
 bool computeBounds = false;
 
 
@@ -128,6 +133,9 @@ int nElemsTriangSelect;
 b2World world(b2Vec2_zero);
 
 b2Body* agentBody;
+
+int agentCollisionMarker = 0;
+float sight = 10.f;
 
 
 class RayCastClosestCallback : public b2RayCastCallback
@@ -655,9 +663,12 @@ void sInterface() {
         //ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
         //ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
-        ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
-        ImGui::Checkbox("Draw Grid", &drawGrid);
+        //ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
+        //ImGui::Checkbox("Draw Grid", &drawGrid);
 		ImGui::Checkbox("Draw Paths", &drawPaths);
+        ImGui::Checkbox("Camera Follow", &cameraFollow);
+        ImGui::Checkbox("Draw FOV", &drawFOV);
+
 
         ImGui::End();
 
@@ -1151,8 +1162,7 @@ int main(int argc, char *argv[])
 	yp = 50;
 
 
-    if (argc == 1)
-    {
+    if (argc == 1) {
         m_showOpenDialog = true;
 
         while (m_showOpenDialog)
@@ -1381,11 +1391,15 @@ int main(int argc, char *argv[])
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
 
+
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
 
     agentBody->SetAngularDamping(10.f);
 	agentBody->SetLinearDamping(10.f);
+
+    agentBody->SetUserData(&agentCollisionMarker);
+
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
 	// second (60Hz) and 10 iterations. This provides a high quality simulation
@@ -1414,24 +1428,16 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
 
-        //glEnable(GL_BLEND);
-        //glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-
-		
-        b2Vec2 p1 = agentBody->GetPosition();
-        b2Vec2 p2 = agentBody->GetPosition() + 10.f*agentBody->GetWorldVector(b2Vec2(1.f,0.f));
-
-        RayCastClosestCallback callback;
-        world.RayCast(&callback, p1, p2);
-
-
-
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
-			g_camera.m_center = agentBody->GetPosition();
+            if (cameraFollow) {
+                g_camera.m_center = agentBody->GetPosition();
+            }
 			t = 0;
         }
 
@@ -1487,23 +1493,74 @@ int main(int argc, char *argv[])
             //agentBody->SetLinearVelocity(forward);
 			
         }
-		
-		
-
-		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 
 
-		if (callback.m_hit)
-		{
-			g_debugDraw.DrawPoint(callback.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
-			g_debugDraw.DrawSegment(p1, callback.m_point, b2Color(0.8f, 0.8f, 0.8f));
-			b2Vec2 head = callback.m_point + 0.5f * callback.m_normal;
-			g_debugDraw.DrawSegment(callback.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
-		}
-		else
-		{
-			g_debugDraw.DrawSegment(p1, p2, b2Color(0.8f, 0.8f, 0.8f));
-		}
+
+        if (drawPaths) {
+            g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
+        }
+
+
+
+
+        for (auto t1: things){
+            b2Vec2 agentPos = agentBody->GetPosition();
+            b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
+            b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y) - agentPos);
+
+            if ((agentPos - thingPos).Length() < sight) {
+                RayCastClosestCallback cb;
+
+                world.RayCast(&cb, agentPos, thingPos);
+
+                /*
+                if (cb.m_hit)
+                {
+                    g_debugDraw.DrawPoint(cb.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
+                    g_debugDraw.DrawSegment(agentPos, cb.m_point, b2Color(0.8f, 0.8f, 0.8f));
+                    b2Vec2 head = cb.m_point + 0.5f * cb.m_normal;
+                    g_debugDraw.DrawSegment(cb.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
+                }
+                else
+                {
+                    g_debugDraw.DrawSegment(agentPos, thingPos, b2Color(0.8f, 0.8f, 0.8f));
+                }
+                 */
+
+
+                if (!cb.m_hit) {
+                    g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
+                }
+            }
+
+
+        }
+
+        if (drawFOV) {
+
+            for (float phi = 0.f; phi < 2 * b2_pi; phi = +phi + 0.01f) {
+                b2Vec2 p1 = agentBody->GetPosition();
+                b2Vec2 p2;
+                p2.x = p1.x + sight * cos(phi);
+                p2.y = p1.y + sight * sin(phi);
+
+
+
+                //b2Vec2 p2 = agentBody->GetPosition() + 10.f * agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+
+                RayCastClosestCallback callback;
+                world.RayCast(&callback, p1, p2);
+
+                if (callback.m_hit) {
+                    //g_debugDraw.DrawPoint(callback.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
+                    g_debugDraw.DrawSegment(p1, callback.m_point, b2Color(0.8f, 0.8f, 0.8f, 0.4f));
+                    //b2Vec2 head = callback.m_point + 0.5f * callback.m_normal;
+                    //g_debugDraw.DrawSegment(callback.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
+                } else {
+                    g_debugDraw.DrawSegment(p1, p2, b2Color(0.8f, 0.8f, 0.8f, 0.4f));
+                }
+            }
+        }
 
 
 		b2Vec2 vertices[3];

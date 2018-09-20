@@ -17,6 +17,8 @@ using namespace tinyxml2;
 #include "pathnode.hpp"
 #include <Box2D/Box2D.h>
 
+#include "entity.h"
+
 struct rect
 {
     double xmin,xmax,ymin,ymax;
@@ -98,8 +100,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)
-{
+pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)  {
     std::string m_currentLevel = std::string(name);
 
     int di = m_currentLevel.find_last_of('.');
@@ -150,6 +151,24 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
             node node1 = {id, lat, lon, lat, lon};
             nodes[id] = node1;
             pathGraph[id] = vector<unsigned int>();
+
+
+            map<string, string> tags;
+            XMLElement* tag = n1->FirstChildElement("tag");
+            while (tag) {
+                const char *key = tag->Attribute("k");
+                const char *value = tag->Attribute("v");
+                tags[key] = value;
+                tag = tag->NextSiblingElement("tag");
+            }
+
+            if ((tags.count("historic")>0) || (tags.count("memorial")>0)) {
+                things.insert(std::pair<int, entity>(id,entity()));
+                things[id].id = id;
+                things[id].nodeId = id;
+                //things[id].x = &nodes[id].x;
+                //things[id].y = &nodes[id].y;
+            }
 
             n1 = n1->NextSiblingElement("node");
 
@@ -309,7 +328,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 						mem1 = mem1->NextSiblingElement("member");
 						continue;
 					}
-						
+
 
 					XMLElement* nd1 = w1->FirstChildElement("nd");
 					vector<float> coordsx = vector<float>();
@@ -362,8 +381,8 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					mem1 = mem1->NextSiblingElement("member");
 				}
 			}
-			
-		
+
+
 
 
             if (tags.count("building")>0) {
