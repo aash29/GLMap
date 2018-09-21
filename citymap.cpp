@@ -50,6 +50,7 @@
 #include <Box2D/Box2D.h>
 #include "DebugDraw.h"
 
+#include "entity.h"
 
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -97,6 +98,10 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
+bool cameraFollow = true;
+bool drawFOV = false;
+
+
 bool computeBounds = false;
 
 
@@ -128,6 +133,48 @@ int nElemsTriangSelect;
 b2World world(b2Vec2_zero);
 
 b2Body* agentBody;
+
+int agentCollisionMarker = 0;
+float sight = 10.f;
+
+
+class RayCastClosestCallback : public b2RayCastCallback
+{
+public:
+    RayCastClosestCallback()
+    {
+        m_hit = false;
+    }
+
+    float32 ReportFixture(b2Fixture* fixture, const b2Vec2& point, const b2Vec2& normal, float32 fraction) override
+    {
+        b2Body* body = fixture->GetBody();
+        void* userData = body->GetUserData();
+        if (userData)
+        {
+            int32 index = *(int32*)userData;
+            if (index == 0)
+            {
+                // By returning -1, we instruct the calling code to ignore this fixture and
+                // continue the ray-cast to the next fixture.
+                return -1.0f;
+            }
+        }
+
+        m_hit = true;
+        m_point = point;
+        m_normal = normal;
+
+        // By returning the current fraction, we instruct the calling code to clip the ray and
+        // continue the ray-cast to the next fixture. WARNING: do not assume that fixtures
+        // are reported in order. However, by clipping, we can always get the closest fixture.
+        return fraction;
+    }
+
+    bool m_hit;
+    b2Vec2 m_point;
+    b2Vec2 m_normal;
+};
 
 
 struct navigator {
@@ -423,34 +470,16 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
     int dx, dy;
 
 	if (!io.WantCaptureKeyboard) {
-		TESS_NOTUSED(scancode);
-		TESS_NOTUSED(mods);
+		//TESS_NOTUSED(scancode);
+		//TESS_NOTUSED(mods);
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, GL_TRUE);
 		if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS) || (action == GLFW_REPEAT))) {
 			endTurn();
 		}
 
-		/*
-		if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(-2.f);
-		}
 
-		if (key == GLFW_KEY_LEFT && action == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(2.f);
-		}
-		if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-			forward.Normalize();
-			forward.operator*=(1.2f);
 
-			agentBody->SetLinearVelocity(forward);
-		}
-
-		if (action == GLFW_RELEASE){
-			agentBody->SetAngularVelocity(0.f);
-		}
-		*/
 
 /*
         agent* agent0 = &agents.begin()->second;
@@ -634,9 +663,12 @@ void sInterface() {
         //ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
         //ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
 
-        ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
-        ImGui::Checkbox("Draw Grid", &drawGrid);
+        //ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
+        //ImGui::Checkbox("Draw Grid", &drawGrid);
 		ImGui::Checkbox("Draw Paths", &drawPaths);
+        ImGui::Checkbox("Camera Follow", &cameraFollow);
+        ImGui::Checkbox("Draw FOV", &drawFOV);
+
 
         ImGui::End();
 
@@ -1098,7 +1130,7 @@ int main(int argc, char *argv[])
     glfwMakeContextCurrent(window);
     //glfwSwapInterval(1); // Enable vsync
 
-
+	glfwSetInputMode(window, GLFW_STICKY_KEYS, 1);
     glfwSetScrollCallback(window, sScrollCallback);
     glfwSetCursorPosCallback(window, sMouseMotion);
     glfwSetMouseButtonCallback(window, sMouseButton);
@@ -1130,8 +1162,7 @@ int main(int argc, char *argv[])
 	yp = 50;
 
 
-    if (argc == 1)
-    {
+    if (argc == 1) {
         m_showOpenDialog = true;
 
         while (m_showOpenDialog)
@@ -1270,6 +1301,8 @@ int main(int argc, char *argv[])
 			b2BodyDef bd;
 			b2Body* ground = world.CreateBody(&bd);
 
+            ground->SetActive(true);
+
 			b2Vec2* vs;
 			vs = new b2Vec2[count];
 
@@ -1331,13 +1364,17 @@ int main(int argc, char *argv[])
 
     b2Vec2 x1 = b2Vec2(0.3f, 0.f);
 
-    b2Vec2 verticesTri[3];
+	b2Vec2 x11 = b2Vec2(0.2f, 0.1f);
+	b2Vec2 x12 = b2Vec2(0.2f, -0.1f);
 
-    verticesTri[0] =  x1;
-    verticesTri[1] =  b2Vec2(x1.y, -x1.x);
-    verticesTri[2] =  -b2Vec2(x1.y, -x1.x);
+    b2Vec2 verticesTri[4];
 
-    agentShape.Set(verticesTri,3);
+    verticesTri[0] = x11;
+	verticesTri[1] = x12;
+    verticesTri[2] =  b2Vec2(x1.y, -x1.x);
+    verticesTri[3] =  -b2Vec2(x1.y, -x1.x);
+
+    agentShape.Set(verticesTri,4);
 
 
 
@@ -1354,11 +1391,15 @@ int main(int argc, char *argv[])
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
 
+
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
 
     agentBody->SetAngularDamping(10.f);
 	agentBody->SetLinearDamping(10.f);
+
+    agentBody->SetUserData(&agentCollisionMarker);
+
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
 	// second (60Hz) and 10 iterations. This provides a high quality simulation
@@ -1366,6 +1407,8 @@ int main(int argc, char *argv[])
 	float32 timeStep = 1.0f / 60.0f;
 	int32 velocityIterations = 6;
 	int32 positionIterations = 2;
+
+
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
@@ -1376,7 +1419,7 @@ int main(int argc, char *argv[])
         glfwPollEvents();
 
         ImGui_ImplGlfwGL3_NewFrame();
-        //glfwPollEvents();
+
 
         sInterface();
 
@@ -1385,37 +1428,31 @@ int main(int argc, char *argv[])
         glClear(GL_COLOR_BUFFER_BIT);
 
 
-        //glEnable(GL_BLEND);
-        //glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        //glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+        glEnable(GL_BLEND);
+        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
-		g_debugDraw.DrawPoint(b2Vec2(0.f,0.f), 4.0f, b2Color(1.f,1.f,1.f));
-
-		g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
-
-
-		
-        b2Vec2 vertices[3];
-        for (int i = 0; i < nelems; i++) {
-            const TESSindex *poly = &elems[i * 3];
-            for (int j = 0; j < 3; j++) {
-                if (poly[j] == TESS_UNDEF) break;
-                vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
-            }
-            g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f,0.f,0.f,1.f));
-        }
-		
 
         if (t>timeStep) {
             world.Step(timeStep, velocityIterations, positionIterations);
+            if (cameraFollow) {
+                g_camera.m_center = agentBody->GetPosition();
+            }
 			t = 0;
         }
 
 
 
-
-
 		int state;
+
+		float refVel = 5.f;
+
+		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+		if (state == GLFW_PRESS) {
+			refVel = 10.f;
+		}
+
+
 		state = glfwGetKey(window, GLFW_KEY_RIGHT);
 		if (state == GLFW_PRESS){
 			agentBody->SetAngularVelocity(-4.f);
@@ -1431,20 +1468,110 @@ int main(int argc, char *argv[])
 		if (state == GLFW_PRESS) {
 			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
 			forward.Normalize();
-			forward.operator*=(5.f);
 
-			agentBody->SetLinearVelocity(forward);
+			float K = 2.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+			forward*=K;
+
+			agentBody->ApplyForceToCenter(forward,true);
+
+			//agentBody->SetLinearVelocity(forward);
 		}
 
 
         state = glfwGetKey(window, GLFW_KEY_DOWN);
         if (state == GLFW_PRESS) {
-            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(-1.f, 0.f));
+            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
             forward.Normalize();
-            forward.operator*=(5.f);
 
-            agentBody->SetLinearVelocity(forward);
+			float K = 2.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(),forward));
+
+			forward *= K;
+
+
+			agentBody->ApplyForceToCenter(forward,true);
+
+            //agentBody->SetLinearVelocity(forward);
+			
         }
+
+
+
+        if (drawPaths) {
+            g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
+        }
+
+
+
+
+        for (auto t1: things){
+            b2Vec2 agentPos = agentBody->GetPosition();
+            b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
+            b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y) - agentPos);
+
+            if ((agentPos - thingPos).Length() < sight) {
+                RayCastClosestCallback cb;
+
+                world.RayCast(&cb, agentPos, thingPos);
+
+                /*
+                if (cb.m_hit)
+                {
+                    g_debugDraw.DrawPoint(cb.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
+                    g_debugDraw.DrawSegment(agentPos, cb.m_point, b2Color(0.8f, 0.8f, 0.8f));
+                    b2Vec2 head = cb.m_point + 0.5f * cb.m_normal;
+                    g_debugDraw.DrawSegment(cb.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
+                }
+                else
+                {
+                    g_debugDraw.DrawSegment(agentPos, thingPos, b2Color(0.8f, 0.8f, 0.8f));
+                }
+                 */
+
+
+                if (!cb.m_hit) {
+                    g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
+                }
+            }
+
+
+        }
+
+        if (drawFOV) {
+
+            for (float phi = 0.f; phi < 2 * b2_pi; phi = +phi + 0.01f) {
+                b2Vec2 p1 = agentBody->GetPosition();
+                b2Vec2 p2;
+                p2.x = p1.x + sight * cos(phi);
+                p2.y = p1.y + sight * sin(phi);
+
+
+
+                //b2Vec2 p2 = agentBody->GetPosition() + 10.f * agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+
+                RayCastClosestCallback callback;
+                world.RayCast(&callback, p1, p2);
+
+                if (callback.m_hit) {
+                    //g_debugDraw.DrawPoint(callback.m_point, 5.0f, b2Color(0.4f, 0.9f, 0.4f));
+                    g_debugDraw.DrawSegment(p1, callback.m_point, b2Color(0.8f, 0.8f, 0.8f, 0.4f));
+                    //b2Vec2 head = callback.m_point + 0.5f * callback.m_normal;
+                    //g_debugDraw.DrawSegment(callback.m_point, head, b2Color(0.9f, 0.9f, 0.4f));
+                } else {
+                    g_debugDraw.DrawSegment(p1, p2, b2Color(0.8f, 0.8f, 0.8f, 0.4f));
+                }
+            }
+        }
+
+
+		b2Vec2 vertices[3];
+		for (int i = 0; i < nelems; i++) {
+			const TESSindex *poly = &elems[i * 3];
+			for (int j = 0; j < 3; j++) {
+				if (poly[j] == TESS_UNDEF) break;
+				vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
+			}
+			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f, 0.f, 0.f, 1.f));
+		}
 
 
         world.DrawDebugData();
