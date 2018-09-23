@@ -138,8 +138,21 @@ int agentCollisionMarker = 0;
 float sight = 10.f;
 
 
-class RayCastClosestCallback : public b2RayCastCallback
-{
+class SensorcontactListener: public b2ContactListener {
+	void BeginContact(b2Contact* contact) {
+		b2Fixture* f1 = contact->GetFixtureA();
+		void* userData = f1->GetUserData();
+		if (userData)
+		{
+			int32 index = *(int32*)userData;
+			debug_log().AddLog("collision with id: %d", index);
+		}
+	}
+
+
+};
+
+class RayCastClosestCallback : public b2RayCastCallback {
 public:
     RayCastClosestCallback()
     {
