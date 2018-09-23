@@ -1395,6 +1395,18 @@ int main(int argc, char *argv[])
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
 
+
+
+{
+    b2CircleShape sensor;
+    sensor.m_radius = sight;
+    b2FixtureDef fd;
+    fd.shape = &sensor;
+    fd.isSensor = true;
+    agentBody->CreateFixture(&fd);
+}
+
+
     agentBody->SetAngularDamping(10.f);
 	agentBody->SetLinearDamping(10.f);
 

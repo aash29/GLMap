@@ -47,6 +47,7 @@ struct Camera
 	float32 m_zoom;
 	int32 m_width;
 	int32 m_height;
+	b2Vec2* follow = 0;
 };
 
 // This class implements debug drawing callbacks that are invoked
