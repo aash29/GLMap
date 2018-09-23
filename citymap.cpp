@@ -138,15 +138,25 @@ int agentCollisionMarker = 0;
 float sight = 10.f;
 
 
-class SensorcontactListener: public b2ContactListener {
+class sensorContactListener: public b2ContactListener {
 	void BeginContact(b2Contact* contact) {
 		b2Fixture* f1 = contact->GetFixtureA();
 		void* userData = f1->GetUserData();
 		if (userData)
 		{
 			int32 index = *(int32*)userData;
-			debug_log().AddLog("collision with id: %d", index);
+			debug_log().AddLog("collision with id: %d \n", index);
 		}
+
+
+		b2Fixture* f2 = contact->GetFixtureB();
+		userData = f2->GetUserData();
+		if (userData)
+		{
+			int32 index = *(int32*)userData;
+			debug_log().AddLog("collision with id: %d \n", index);
+		}
+
 	}
 
 
@@ -1416,6 +1426,7 @@ int main(int argc, char *argv[])
     b2FixtureDef fd;
     fd.shape = &sensor;
     fd.isSensor = true;
+	fd.userData = &agentCollisionMarker;
     agentBody->CreateFixture(&fd);
 }
 
@@ -1424,6 +1435,8 @@ int main(int argc, char *argv[])
 	agentBody->SetLinearDamping(10.f);
 
     agentBody->SetUserData(&agentCollisionMarker);
+
+	world.SetContactListener(new sensorContactListener);
 
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
