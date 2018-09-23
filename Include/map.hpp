@@ -394,6 +394,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
                     int ref;
                     mem1->QueryAttribute("ref", &ref);
 
+                    /*
                     XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
                     while (w1){
 
@@ -404,26 +405,24 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
                     }
 
                     if (not w1) break;
+                    */
 
-                    XMLElement* nd1 = w1->FirstChildElement("nd");
+                    //XMLElement* nd1 = w1->FirstChildElement("nd");
                     vector<float> coordsx = vector<float>();
                     vector<float> coordsy = vector<float>();
 
                     buildings.back().push_back(vector<unsigned int>());
 
                     float wind = 0.f; //determine winding
-                    while(nd1) {
-                        unsigned int ref;
-                        nd1->QueryAttribute("ref",&ref);
+                    for (int ni: ways[ref]) {
 
+                        unsigned int ref;
                         buildings.back().back().push_back(ref);
-                        coordsx.push_back(nodes[ref].x);
-                        coordsy.push_back(nodes[ref].y);
+                        coordsx.push_back(nodes[ni].x);
+                        coordsy.push_back(nodes[ni].y);
                         if (coordsx.size()>1){
                             wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
                         }
-
-                        nd1 = nd1->NextSiblingElement("nd");
                     }
 					if (mem1->Attribute("role", "outer")) {
 						if (wind < 0) {
