@@ -166,6 +166,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
                 things.insert(std::pair<int, entity>(id,entity()));
                 things[id].id = id;
                 things[id].nodeId = id;
+                things[id].type = POI;
                 //things[id].x = &nodes[id].x;
                 //things[id].y = &nodes[id].y;
             }

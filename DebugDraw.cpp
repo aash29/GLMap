@@ -699,7 +699,7 @@ void DebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, cons
         m_triangles->Vertex(vertices[i], fillColor);
         m_triangles->Vertex(vertices[i+1], fillColor);
     }
-
+/*
     b2Vec2 p1 = vertices[vertexCount - 1];
 	for (int32 i = 0; i < vertexCount; ++i)
 	{
@@ -708,6 +708,7 @@ void DebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, cons
 		m_lines->Vertex(p2, color);
         p1 = p2;
 	}
+ */
 }
 
 //

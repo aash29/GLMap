@@ -47,7 +47,7 @@
 //#include <gklib_defs.h>
 //#include <gperftools/profiler.h>
 
-#include <Box2D/Box2D.h>
+#include "Box2D/Box2D.h"
 #include "DebugDraw.h"
 
 #include "entity.h"
@@ -133,34 +133,19 @@ int nElemsTriangSelect;
 b2World world(b2Vec2_zero);
 
 b2Body* agentBody;
+entity playerAgent;
 
 int agentCollisionMarker = 0;
+int POImarker = 1;
 float sight = 10.f;
 
 
-class sensorContactListener: public b2ContactListener {
-	void BeginContact(b2Contact* contact) {
-		b2Fixture* f1 = contact->GetFixtureA();
-		void* userData = f1->GetUserData();
-		if (userData)
-		{
-			int32 index = *(int32*)userData;
-			debug_log().AddLog("collision with id: %d \n", index);
-		}
+//const int16	visibilityGroup = 1;
+//const int16	buildingsGroup = 2;
 
+const uint16 visibilityCategory = 0x0001;
+const uint16 buildingsCategory = 0x0002;
 
-		b2Fixture* f2 = contact->GetFixtureB();
-		userData = f2->GetUserData();
-		if (userData)
-		{
-			int32 index = *(int32*)userData;
-			debug_log().AddLog("collision with id: %d \n", index);
-		}
-
-	}
-
-
-};
 
 class RayCastClosestCallback : public b2RayCastCallback {
 public:
@@ -176,7 +161,7 @@ public:
         if (userData)
         {
             int32 index = *(int32*)userData;
-            if (index == 0)
+            if ((index == 0) || (index == 1))
             {
                 // By returning -1, we instruct the calling code to ignore this fixture and
                 // continue the ray-cast to the next fixture.
@@ -198,6 +183,65 @@ public:
     b2Vec2 m_point;
     b2Vec2 m_normal;
 };
+
+
+class sensorContactListener: public b2ContactListener {
+	void BeginContact(b2Contact* contact) {
+		b2Fixture* f1 = contact->GetFixtureA();
+
+		void* userData = f1->GetUserData();
+        entity* t1 = NULL;
+
+		if (userData)
+		{
+			t1 = (entity*)userData;
+			//debug_log().AddLog("collision with id: %d \n", index);
+		}
+
+
+		b2Fixture* f2 = contact->GetFixtureB();
+		userData = f2->GetUserData();
+        //int32 ud2 = -1;
+        entity* t2 = NULL;
+		if (userData)
+		{
+            t2 = (entity*)userData;
+			//debug_log().AddLog("collision with id: %d \n", index);
+		}
+
+        if ((f1->GetFilterData().categoryBits==visibilityCategory) && (f2->GetFilterData().categoryBits==visibilityCategory)) {
+
+
+            if ((t1->type == POI) && (t2->type == player)) {
+                std::swap(t1, t2);
+                std::swap(f1, f2);
+
+            }
+
+            if ((t1->type == player) && (t2->type == POI)) {
+
+                t2->descriptionArmed = true;
+
+                /*b2Vec2 agentPos = f1->GetBody()->GetPosition();
+                b2Vec2 thingPos = agentPos + 0.97f*(f2->GetBody()->GetPosition() - agentPos);
+
+                RayCastClosestCallback cb;
+
+                world.RayCast(&cb, agentPos, thingPos);
+
+                if (!cb.m_hit) {
+                    t2->descriptionArmed = true;
+                    //debug_log().AddLog("collision with POI \n");
+                }
+                 */
+            }
+        }
+
+	}
+
+
+};
+
 
 
 struct navigator {
@@ -1311,6 +1355,10 @@ int main(int argc, char *argv[])
 		return -1;
 
 
+    b2BodyDef bd;
+    b2Body* ground = world.CreateBody(&bd);
+
+    ground->SetActive(true);
 
 	int vertexSize = 2;
 	const int nelemsCont = tessGetElementCount(tess);
@@ -1321,11 +1369,6 @@ int main(int argc, char *argv[])
 		const TESSindex count = elemsCont[i * 2 + 1];
 
 		{
-			b2BodyDef bd;
-			b2Body* ground = world.CreateBody(&bd);
-
-            ground->SetActive(true);
-
 			b2Vec2* vs;
 			vs = new b2Vec2[count];
 
@@ -1335,7 +1378,12 @@ int main(int argc, char *argv[])
 			}
 			b2ChainShape shape;
 			shape.CreateLoop(vs, count);
-			ground->CreateFixture(&shape, 0.0f);
+            b2FixtureDef fd;
+            fd.shape = &shape;
+            fd.filter.categoryBits = buildingsCategory;
+            fd.filter.maskBits = buildingsCategory;
+
+			ground->CreateFixture(&fd);
 
 		}
 	}
@@ -1414,9 +1462,17 @@ int main(int argc, char *argv[])
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
 
+    fixtureDef.filter.categoryBits = buildingsCategory;
+    fixtureDef.filter.maskBits = buildingsCategory;
+
 
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
+
+
+    playerAgent.body = agentBody;
+    playerAgent.type = player;
+
 
 
 
@@ -1426,15 +1482,42 @@ int main(int argc, char *argv[])
     b2FixtureDef fd;
     fd.shape = &sensor;
     fd.isSensor = true;
-	fd.userData = &agentCollisionMarker;
+	fd.userData = &playerAgent;
+    fd.filter.categoryBits = visibilityCategory;
+    fd.filter.maskBits = visibilityCategory;
+
     agentBody->CreateFixture(&fd);
+
 }
 
 
     agentBody->SetAngularDamping(10.f);
 	agentBody->SetLinearDamping(10.f);
 
-    agentBody->SetUserData(&agentCollisionMarker);
+    agentBody->SetUserData(&playerAgent);
+
+
+    for (auto &t1: things){
+        b2BodyDef bd;
+        bd.userData = &POImarker;
+        bd.type = b2_staticBody;
+        b2Vec2 thingPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
+        bd.position = thingPos;
+
+        t1.second.body = world.CreateBody(&bd);
+
+        b2CircleShape sensor;
+        sensor.m_radius = 0.5f;
+        b2FixtureDef fd;
+        fd.shape = &sensor;
+        fd.isSensor = true;
+        fd.userData = &things[t1.second.id];
+        fd.filter.categoryBits = visibilityCategory;
+        fd.filter.maskBits = visibilityCategory;
+        t1.second.body->CreateFixture(&fd);
+
+
+    }
 
 	world.SetContactListener(new sensorContactListener);
 
@@ -1462,7 +1545,7 @@ int main(int argc, char *argv[])
         sInterface();
 
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -1541,7 +1624,10 @@ int main(int argc, char *argv[])
 
 
 
-        for (auto t1: things){
+        for (auto &t1: things){
+
+
+
             b2Vec2 agentPos = agentBody->GetPosition();
             b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
             b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y) - agentPos);
@@ -1567,6 +1653,11 @@ int main(int argc, char *argv[])
 
 
                 if (!cb.m_hit) {
+
+                    if (t1.second.descriptionArmed){
+                        debug_log().AddLog("collision with POI \n");
+                        t1.second.descriptionArmed = false;
+                    }
                     g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
                 }
             }
@@ -1621,584 +1712,6 @@ int main(int argc, char *argv[])
         glfwPollEvents();
 }
 
-/*
-#ifdef LOADGEOJSON
-
-    //nodes.insert()
-
-
-
-
-
-	const int nvp2 = 3;
-
-	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_CONNECTED_POLYGONS, nvp2, 2, 0))
-        return -1;
-
-
-
-    const float* vertsOuter = tessGetVertices(tess);
-	const TESSindex* vindsOuter = tessGetVertexIndices(tess);
-    const int* elemsOuter = tessGetElements(tess);
-    const int nvertsOuter = tessGetVertexCount(tess);
-    int nelemsOuter = tessGetElementCount(tess);
-
-	vertx = new double[nelemsOuter*nvp2];
-	verty = new double[nelemsOuter*nvp2];
-	vertNumber = new int[nelemsOuter*nvp2];
-
-	nElemsTriangSelect = nelemsOuter;
-
-	long int idv = 0;
-
-	for (int i = 0; i < nelemsOuter; i++) {
-		const TESSindex* poly = &elemsOuter[i * nvp2 * 2];
-		for (int j = 0; j < nvp2; j++) {
-			if (poly[j] == TESS_UNDEF) break;
-			vertx[idv] = vertsOuter[poly[j] * 2];
-			verty[idv] = vertsOuter[poly[j] * 2 + 1];
-			vertNumber[idv] = poly[j];
-			idv++;
-		}
-	}
-
-    map<int, pathNode> pathGraph;
-	int pathIndex = nvertsOuter;
-
-    unsigned char *visited = (unsigned char *) calloc(nelemsOuter, sizeof(unsigned char));
-
-    std::vector<float> pathGraphLines = std::vector<float>();
-    pathGraphLines.reserve(500);
-
-
-    TESSindex* stack = new TESSindex[nelemsOuter];
-    for (int seedPoly  = 0; seedPoly < nelemsOuter; seedPoly ++)
-        if (!visited[seedPoly]){
-
-        int nstack = 0;
-        stack[nstack++] = seedPoly;
-        visited[seedPoly] = 1;
-
-        while (nstack > 0) {
-            int idx = stack[--nstack];
-
-			pathGraph[idx].id = idx;
-
-            const TESSindex *poly = &elemsOuter[idx * nvp2 * 2];
-            const TESSindex *nei = &poly[nvp2];
-
-            float cmx = 0;
-            float cmy = 0;
-            int cpv = 0;
-			for (int i = 0; i < nvp2; i++) {
-				if (poly[i] == TESS_UNDEF) break;
-			
-                //pathGraph[poly[i]].x = vertsOuter[poly[i] * 2];
-                //pathGraph[poly[i]].y = vertsOuter[poly[i] * 2 + 1];
-                //pathGraph[poly[i]].id = poly[i];
-
-                //pathIndex++;
-                cpv++;
-                cmx = cmx + vertsOuter[poly[i] * 2];
-                cmy = cmy + vertsOuter[poly[i] * 2 + 1];
-            }
-            cmx = cmx / cpv;
-            cmy = cmy / cpv;
-
-            pathGraph[idx].x = cmx;
-            pathGraph[idx].y = cmy;
-
-
-
-            float x0 = vertsOuter[poly[0] * 2];
-            float y0 = vertsOuter[poly[0] * 2 + 1];
-
-            float x1 = vertsOuter[poly[1] * 2];
-            float y1 = vertsOuter[poly[1] * 2 + 1];
-
-            float x2 = vertsOuter[poly[2] * 2];
-            float y2 = vertsOuter[poly[2] * 2 + 1];
-
-            float mx[3];
-            float my[3];
-            mx[0] = x0 + (x1 - x0) / 2;
-            my[0] = y0 + (y1 - y0) / 2;
-
-            mx[1] = x1 + (x2 - x1) / 2;
-            my[1] = y1 + (y2 - y1) / 2;
-
-            mx[2] = x2 + (x0 - x2) / 2;
-            my[2] = y2 + (y0 - y2) / 2;
-
-
-            for (int i = 0; i < nvp2; i++) {
-                if (nei[i] != TESS_UNDEF) {
-                    int idn = pairingNum(idx, nei[i]);
-
-                    pathGraph[idn].x = mx[i];
-                    pathGraph[idn].y = my[i];
-                    pathGraph[idn].id = idn;
-
-                    pathGraph[idx].neigh.push_back(idn);
-                    pathGraph[idn].neigh.push_back(idx);
-
-                    pathGraphLines.push_back(pathGraph[idx].x);
-                    pathGraphLines.push_back(pathGraph[idx].y);
-
-                    pathGraphLines.push_back(pathGraph[idn].x);
-                    pathGraphLines.push_back(pathGraph[idn].y);
-                }
-            }
-			for (int i = 0; i < nvp2; i++) {
-				if (poly[i] == TESS_UNDEF) break;
-				if (vindsOuter[poly[i]] != TESS_UNDEF) {
-					std::string id;
-					int bn1 = buildingIndex(city, vindsOuter[poly[i]], id);
-					if (bn1 > -1) {
-						int idn = pairingNum(idx, nelemsOuter + bn1);
-						pathGraph[idn].id = idn;
-
-						pathGraph[idn].x = city[id].anchorx;
-						pathGraph[idn].y = city[id].anchory;
-
-						debug_log().AddLog("anchors: %g, %g \n", city[id].anchorx, city[id].anchory);
-
-						pathGraph[idx].neigh.push_back(idn);
-						pathGraph[idn].neigh.push_back(idx);
-
-
-						pathGraphLines.push_back(pathGraph[idx].x);
-						pathGraphLines.push_back(pathGraph[idx].y);
-
-						pathGraphLines.push_back(pathGraph[idn].x);
-						pathGraphLines.push_back(pathGraph[idn].y);
-					}
-				}
-			}
-        }
-    }
-
-
-
-    debug_log().AddLog("\n graph nodes: %d \n", pathGraph.size());
-
-	city = loadLevel(levelPath, tess, boundingBox, singlePolygon, computeBounds);
-
-	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
-        return -1;
-    printf("Memory used: %.1f kB\n", allocated/1024.0f);
-
-
-
-
-    const float* verts = tessGetVertices(tess);
-    const int* vinds = tessGetVertexIndices(tess);
-    const int* elems = tessGetElements(tess);
-    const int nverts = tessGetVertexCount(tess);
-    const int nelems = tessGetElementCount(tess);
-
-	debug_log().AddLog("vinds: %d, %d \n", vinds[0], vinds[1]);
-
-    g_camera.m_width = width;
-    g_camera.m_height = height;
-
-    g_camera.m_span = (boundingBox.xmax-boundingBox.xmin)/2;
-    //g_camera.m_span = 0.5f;
-
-    g_camera.m_center.x = (boundingBox.xmax + boundingBox.xmin) / 2;
-    g_camera.m_center.y = (boundingBox.ymax + boundingBox.ymin) / 2;
-
-
-    //GLuint shaderProgram =  initModernOpenGL( verts,  nverts, elems,  nelems );
-
-
-    shaderData mapSh =  drawMapShaderInit(verts, nverts, elems, nelems);
-
-    float stub[4] = {0.f,0.f,0.f,0.f};   //
-    lineSh = drawLineShaderInit(stub, 2);
-
-    vector<float> gridVec = vector<float>();
-
-
-    debug_log().AddLog("bb: %g,%g,%g,%g \n",boundingBox.xmin, boundingBox.xmax, boundingBox.ymin ,boundingBox.ymax);
-    /*
-    xm = 0;
-    xp = 0;
-    ym = 0;
-    yp = 0;
-    */
-
-    /*
-    float xgridSize = (boundingBox.xmax-boundingBox.xmin)/(xp-xm);
-    float ygridSize = (boundingBox.ymax-boundingBox.ymin)/(yp-ym);
-
-    for (float x=0; x < xp; x=x+xgridSize)
-    {
-        gridVec.push_back(x);
-        gridVec.push_back(boundingBox.ymin);
-        gridVec.push_back(x);
-        gridVec.push_back(boundingBox.ymax);
-        //xp++;
-    }
-
-    for (float x=0; x >xm; x=x-xgridSize)
-    {
-        gridVec.push_back(x);
-        gridVec.push_back(boundingBox.ymin);
-        gridVec.push_back(x);
-        gridVec.push_back(boundingBox.ymax);
-        //xm++;
-    }
-
-    for (float y=0; y < yp; y=y+ygridSize)
-    {
-        gridVec.push_back(boundingBox.xmin);
-        gridVec.push_back(y);
-        gridVec.push_back(boundingBox.xmax);
-        gridVec.push_back(y);
-        //yp++;
-    }
-
-
-    for (float y=0; y > ym; y=y-ygridSize)
-    {
-        gridVec.push_back(boundingBox.xmin);
-        gridVec.push_back(y);
-        gridVec.push_back(boundingBox.xmax);
-        gridVec.push_back(y);
-        //ym++;
-    }
-
-
-    float* grid = gridVec.data();
-
-
-    shaderData gridSh = drawLineShaderInit(grid, 2*(xm+xp+ym+yp));
-
-
-
-    vector<float> outlines = getOutlines(city);
-    debug_log().AddLog("%f,%f,%f,%f",outlines[0],outlines[1],outlines[2],outlines[3]);
-
-    float* outlinesData = outlines.data();
-    int outlineVerts = round(outlines.size()/2);
-
-
-    shaderData outlineSh = drawBuildingOutlinesInit(outlinesData,outlineVerts);
-
-
-    shaderData texSh = texQuadInit();
-
-
-    shaderData quadSh = drawQuadInit();
-
-
-    int x, y;
-
-
-    shared_ptr<navigation_path<location_t>> path;
-    shaderData graphSh = drawPathGraphShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
-
-
-    shaderData graphEdges = drawThinLineShaderInit(pathGraphLines.data(), round(pathGraphLines.size() / 2));
-
-
-    agents.clear();
-    for (auto b1 : city) {
-        if (b1.second.type=="dwelling") {
-            int x = b1.second.coords[0][0];
-            int y = b1.second.coords[0][1];
-
-            string id = "agent" + b1.second.id;
-
-            debug_log().AddLog("\n");
-
-            debug_log().AddLog("agent %s created \n", id.c_str());
-
-            agents.insert(std::pair<string, agent>(id, agent()));
-            agents[id].id = id;
-            agents[id].x = x;
-            agents[id].y = y;
-            agents[id].home = b1.second.id;
-
-        }
-    }
-
-    curAgent = agents.begin()->first;
-
-    debug_log().AddLog("\n");
-    debug_log().AddLog("agents count: %d", agents.size());
-    debug_log().AddLog("\n");
-    debug_log().AddLog(curAgent.c_str());
-    debug_log().AddLog("\n");
-
-
-    pathfinding_map = new map_t(xm,xp,ym,yp);
-    heatmap = new heatmap_t(xm,xp,ym,yp);
-    buildingTypes = new heatmap_t(xm,xp,ym,yp);
-
-
-    //std::shared_ptr<navigation_path<location_t>> path;
-
-    //pathfinding_map = map_t(-xm, xp, -ym, yp);
-
-    path_map = pathfinding_map;
-
-
-    for (int i = -xm; i < xp; i++) {
-        for (int j = -ym; j < yp; j++) {
-
-            buildingTypes->deltaHeat[buildingTypes->at(i,j)] = 0;
-
-            string id = selectBuilding((i+0.5f)*g_camera.gridSize, (j+0.5f)*g_camera.gridSize);
-
-            if (id!="none"){
-                path_map->walkable[path_map->at(i,j)] = false;
-                heatmap->deltaHeat[heatmap->at(i,j)] = 1;
-                if (city[id].type=="dwelling") {
-                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 1;
-                    path_map->walkable[path_map->at(i,j)] = true;
-                }
-                if (city[id].type == "shop") {
-                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 2;
-                    path_map->walkable[path_map->at(i,j)] = true;
-                }
-                if (city[id].type == "office") {
-                    buildingTypes->deltaHeat[buildingTypes->at(i, j)] = 3;
-                }
-            }
-        }
-    }
-
-
-    for (auto a0:agents){
-        string id = a0.first;
-        agents[id].effects.push_back([&, id]{
-            agents[id].heat=agents[id].heat+heatmap->deltaHeat[heatmap->at(agents[id].x,agents[id].y)];
-            agents[id].heat = max(0,agents[id].heat);
-            agents[id].heat = min(100,agents[id].heat);
-
-            agents[id].fed--;
-
-            return 0;
-        });
-    }
-
-
-
-    //agent0.getAgentPos(setState);
-
-
-
-    //setupPhysics();
-
-/*
-    // Define the gravity vector.
-    b2Vec2 gravity(0.0f, -1.0f);
-
-    // Construct a world object, which will hold and simulate the rigid bodies.
-    b2World world(gravity);
-
-    // Define the ground body.
-    b2BodyDef groundBodyDef;
-    groundBodyDef.position.Set(0.0f, 0.0f);
-
-    // Call the body factory which allocates memory for the ground body
-    // from a pool and creates the ground box shape (also from a pool).
-    // The body is also added to the world.
-    b2Body* groundBody = world.CreateBody(&groundBodyDef);
-
-    // Define the ground box shape.
-    b2PolygonShape groundBox;
-
-    // The extents are the half-widths of the box.
-    groundBox.SetAsBox(50.0f, 0.1f);
-
-    // Add the ground fixture to the ground body.
-    groundBody->CreateFixture(&groundBox, 0.0f);
-
-    // Define the dynamic body. We set its position and call the body factory.
-    b2BodyDef bodyDef;
-    bodyDef.type = b2_dynamicBody;
-    bodyDef.position.Set(0.0f, 10.0f);
-    b2Body* body = world.CreateBody(&bodyDef);
-
-    // Define another box shape for our dynamic body.
-    b2PolygonShape dynamicBox;
-    dynamicBox.SetAsBox(1.0f, 1.0f);
-
-    // Define the dynamic body fixture.
-    b2FixtureDef fixtureDef;
-    fixtureDef.shape = &dynamicBox;
-
-    // Set the box density to be non-zero, so it will be dynamic.
-    fixtureDef.density = 1.0f;
-
-    // Override the default friction.
-    fixtureDef.friction = 0.3f;
-
-    // Add the shape to the body.
-    body->CreateFixture(&fixtureDef);
-
-    // Prepare for simulation. Typically we use a time step of 1/60 of a
-    // second (60Hz) and 10 iterations. This provides a high quality simulation
-    // in most game scenarios.
-    float32 timeStep = 1.0f / 60.0f;
-    int32 velocityIterations = 6;
-    int32 positionIterations = 2;
-
-
-    // This is our little game loop.
-    for (int32 i = 0; i < 60; ++i)
-    {
-        // Instruct the world to perform a single step of simulation.
-        // It is generally best to keep the time step and iterations fixed.
-        world.Step(timeStep, velocityIterations, positionIterations);
-
-        // Now print the position and angle of the body.
-        b2Vec2 position = body->GetPosition();
-        float32 angle = body->GetAngle();
-
-        printf("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
-    }
-
-    // When the world destructor is called, all bodies and joints are freed. This can
-    // create orphaned pointers, so be careful about your world management.
-#endif
-
-    while (!glfwWindowShouldClose(window)) {
-        float ct = (float) glfwGetTime();
-        if (run) t += ct - pt;
-
-
-
-
-        pt = ct;
-
-        glfwPollEvents();
-
-        ImGui_ImplGlfwGL3_NewFrame();
-        //glfwPollEvents();
-
-        sInterface();
-
-
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
-
-
-        if (t>timeStep) {
-            world.Step(timeStep, velocityIterations, positionIterations);
-            b2Vec2 position = body->GetPosition();
-            float32 angle = body->GetAngle();
-
-            debug_log().AddLog("%4.2f %4.2f %4.2f\n", position.x, position.y, angle);
-
-            freeQuadDraw(texSh, position.x, position.y);
-
-
-        }
-        if (drawGrid)
-            drawLine(gridSh, g_camera, 0.f, 0.f, 1.f, 0.0015f);
-
-
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-        drawMap(mapSh, g_camera);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        drawBuildingOutlines(outlineSh, g_camera);
-
-        //if (selected!=std::string("none"))                 // double lines WTF??
-        //    drawLine(lineSh, g_camera,0.f,0.f,1.f);
-
-
-        for (auto b1 : city) {
-            string id1 = b1.first;
-
-            std::vector<float> unDraw = std::vector<float>();
-
-            for (auto it : city[id1].coords) {
-                unDraw.push_back(it[0]);
-                unDraw.push_back(it[1]);
-                for (int i = 2; i < it.size() - 1; i = i + 2) {
-                    unDraw.push_back(it[i]);
-                    unDraw.push_back(it[i + 1]);
-
-                    unDraw.push_back(it[i]);
-                    unDraw.push_back(it[i + 1]);
-                }
-                unDraw.push_back(it[0]);
-                unDraw.push_back(it[1]);
-            };
-
-
-            lineSh.vertexCount = round(unDraw.size() / 2);
-            lineSh.data = unDraw.data();
-            glBindBuffer(GL_ARRAY_BUFFER, lineSh.vbo);
-            glBufferData(GL_ARRAY_BUFFER, lineSh.vertexCount * 2 * sizeof(float), lineSh.data, GL_STATIC_DRAW);
-
-            if (b1.second.type == "shop") {
-                drawLine(lineSh, g_camera, 1.f, 0.f, 0.f);
-            }
-
-            if (b1.second.type == "dwelling") {
-                drawLine(lineSh, g_camera, 0.f, 1.f, 0.f);
-            }
-
-        }
-
-
-        drawPathGraph(graphSh, g_camera, 1.f, 0.f, 0.f);
-
-        if (drawPaths) {
-            //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-            drawThinLine(graphEdges, g_camera, 1.f, 0.f, 0.f);
-
-            //glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
-        }
-
-        //glBindBuffer(GL_ARRAY_BUFFER, graphSh.vbo);
-        //glBufferData(GL_ARRAY_BUFFER, graphSh.vertexCount * 2 * sizeof(float), graphSh.data, GL_STATIC_DRAW);
-
-
-
-
-        for (auto a0: agents) {
-            texQuadDraw(texSh, a0.second.x, a0.second.y);
-        };
-
-              for (std::string s1 : agents){
-
-                getAgentPos(state, s1, x, y);
-
-
-                texQuadDraw(texSh,x,y);
-              }
-
-
-        if (drawBlockedCells) {
-            for (int i = -xm; i < xp; i++) {
-                for (int j = -ym; j < yp; j++) {
-                    if (!path_map->walkable[path_map->at(i, j)]) {
-                        drawQuad(quadSh, i + 0.5f, j + 0.5f);
-                    }
-                }
-            };
-        };
-
-
-        ImGui::Render();
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
-    }
-*/
 //if (tess) tessDeleteTess(tess);
 
 
