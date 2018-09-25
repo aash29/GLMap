@@ -723,7 +723,6 @@ void sInterface() {
         ImGui::Checkbox("Camera Follow", &cameraFollow);
         ImGui::Checkbox("Draw FOV", &drawFOV);
 
-		ImGui::Text("\x43F");
         ImGui::End();
 
         ImGui::PopStyleColor();
@@ -1306,7 +1305,7 @@ int main(int argc, char *argv[])
     }
 
     printf("go...\n");
-	debug_log().AddLog(u8"ляляля");
+	//debug_log().AddLog(u8"ляляля");
 
     //loadGrid(levelPath, xp,yp);
 
@@ -1359,19 +1358,30 @@ int main(int argc, char *argv[])
 			b2Vec2* vs;
 			vs = new b2Vec2[count];
 
+            int c = 0;
 			for (int j = 0; j < count; j++) {
 				//&verts[(base + j) * vertexSize]
-				vs[j].Set(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize+1]);
+                if (j>0){
+                    b2Vec2 v0 (vertsCont[(base + c) * vertexSize], vertsCont[(base + c) * vertexSize+1]);
+                    if (b2DistanceSquared(v0, vs[c-1]) > b2_linearSlop * b2_linearSlop ){
+                        vs[c].Set(vertsCont[(base + c) * vertexSize], vertsCont[(base + c) * vertexSize+1]);
+                        c++;
+                    }
+
+                }
+
 			}
-			b2ChainShape shape;
-			shape.CreateLoop(vs, count);
-            b2FixtureDef fd;
-            fd.shape = &shape;
-            fd.filter.categoryBits = buildingsCategory;
-            fd.filter.maskBits = buildingsCategory;
 
-			ground->CreateFixture(&fd);
+            if (c>=3) {
+                b2ChainShape shape;
+                shape.CreateLoop(vs, c);
+                b2FixtureDef fd;
+                fd.shape = &shape;
+                //fd.filter.categoryBits = buildingsCategory;
+                //fd.filter.maskBits = buildingsCategory;
 
+                ground->CreateFixture(&fd);
+            }
 		}
 	}
 
@@ -1449,8 +1459,8 @@ int main(int argc, char *argv[])
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
 
-    fixtureDef.filter.categoryBits = buildingsCategory;
-    fixtureDef.filter.maskBits = buildingsCategory;
+    //fixtureDef.filter.categoryBits = buildingsCategory;
+    //fixtureDef.filter.maskBits = buildingsCategory;
 
 
 	// Add the shape to the body.
@@ -1460,7 +1470,7 @@ int main(int argc, char *argv[])
     playerAgent.body = agentBody;
     playerAgent.type = player;
 
-
+/*
 
 
 {
@@ -1476,7 +1486,7 @@ int main(int argc, char *argv[])
     agentBody->CreateFixture(&fd);
 
 }
-
+*/
 
     agentBody->SetAngularDamping(10.f);
 	agentBody->SetLinearDamping(10.f);
@@ -1645,8 +1655,8 @@ int main(int argc, char *argv[])
                     }
 					*/
 					if (POIinFOV.find(&t1.second) == POIinFOV.end()) {
-						debug_log().AddLog("%s \n", roads.nodes[t1.second.nodeId].tags["name"]);
-						debug_log().AddLog(u8"точка \n");
+						debug_log().AddLog(roads.nodes[t1.second.nodeId].tags["name"]);
+						debug_log().AddLog("\n");
 						POIinFOV.insert(&t1.second);
 					}
                     g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
