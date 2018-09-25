@@ -15,7 +15,6 @@ public:
     int id;
     int nodeId;
     b2Body* body;
-    bool descriptionArmed = false;
     entityType type;
 };
 

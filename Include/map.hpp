@@ -64,6 +64,7 @@ struct node {
     double lon;
     float x;
     float y;
+	map <string, string> tags;
 };
 
 struct pathways {
@@ -148,19 +149,23 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
             ymax = std::max(ymax, lat);
 
 
-            node node1 = {id, lat, lon, lat, lon};
+			map<string, string> tags;
+			XMLElement* tag = n1->FirstChildElement("tag");
+			while (tag) {
+				const char *key = tag->Attribute("k");
+				const char *value = tag->Attribute("v");
+				tags[key] = value;
+				tag = tag->NextSiblingElement("tag");
+			}
+			
+
+            node node1 = {id, lat, lon, lat, lon, map<string, string>(tags)};
+			
             nodes[id] = node1;
             pathGraph[id] = vector<unsigned int>();
 
 
-            map<string, string> tags;
-            XMLElement* tag = n1->FirstChildElement("tag");
-            while (tag) {
-                const char *key = tag->Attribute("k");
-                const char *value = tag->Attribute("v");
-                tags[key] = value;
-                tag = tag->NextSiblingElement("tag");
-            }
+
 
             if ((tags.count("historic")>0) || (tags.count("memorial")>0)) {
                 things.insert(std::pair<int, entity>(id,entity()));

@@ -184,7 +184,8 @@ bool ImGui_ImplGlfwGL3_CreateFontsTexture()
 {
     // Build texture atlas
     ImGuiIO& io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("DejaVuSans.ttf", 22);
+    io.Fonts->AddFontFromFileTTF("tahoma.ttf", 22, NULL, io.Fonts->GetGlyphRangesCyrillic());
+	//io.Fonts->AddFontFromFileTTF("myfontfile.ttf", size_in_pixels, NULL, io.Fonts->GetGlyphRangesJapanese());
 
     unsigned char* pixels;
     int width, height;

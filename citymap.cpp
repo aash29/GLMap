@@ -184,7 +184,7 @@ public:
     b2Vec2 m_normal;
 };
 
-
+/*
 class sensorContactListener: public b2ContactListener {
 	void BeginContact(b2Contact* contact) {
 		b2Fixture* f1 = contact->GetFixtureA();
@@ -221,19 +221,6 @@ class sensorContactListener: public b2ContactListener {
             if ((t1->type == player) && (t2->type == POI)) {
 
                 t2->descriptionArmed = true;
-
-                /*b2Vec2 agentPos = f1->GetBody()->GetPosition();
-                b2Vec2 thingPos = agentPos + 0.97f*(f2->GetBody()->GetPosition() - agentPos);
-
-                RayCastClosestCallback cb;
-
-                world.RayCast(&cb, agentPos, thingPos);
-
-                if (!cb.m_hit) {
-                    t2->descriptionArmed = true;
-                    //debug_log().AddLog("collision with POI \n");
-                }
-                 */
             }
         }
 
@@ -242,7 +229,7 @@ class sensorContactListener: public b2ContactListener {
 
 };
 
-
+*/
 
 struct navigator {
 
@@ -736,13 +723,13 @@ void sInterface() {
         ImGui::Checkbox("Camera Follow", &cameraFollow);
         ImGui::Checkbox("Draw FOV", &drawFOV);
 
-
+		ImGui::Text("\x43F");
         ImGui::End();
 
         ImGui::PopStyleColor();
 
 
-        //ImGui::ShowTestWindow();
+        ImGui::ShowTestWindow();
 
         debug_log().Draw("Log",width,height);
 
@@ -1319,7 +1306,7 @@ int main(int argc, char *argv[])
     }
 
     printf("go...\n");
-
+	debug_log().AddLog(u8"ляляля");
 
     //loadGrid(levelPath, xp,yp);
 
@@ -1519,7 +1506,7 @@ int main(int argc, char *argv[])
 
     }
 
-	world.SetContactListener(new sensorContactListener);
+	//world.SetContactListener(new sensorContactListener);
 
 
 	// Prepare for simulation. Typically we use a time step of 1/60 of a
@@ -1529,7 +1516,7 @@ int main(int argc, char *argv[])
 	int32 velocityIterations = 6;
 	int32 positionIterations = 2;
 
-
+	static std::set < entity* > POIinFOV = std::set < entity* >();
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
@@ -1625,9 +1612,6 @@ int main(int argc, char *argv[])
 
 
         for (auto &t1: things){
-
-
-
             b2Vec2 agentPos = agentBody->GetPosition();
             b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
             b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y) - agentPos);
@@ -1654,13 +1638,28 @@ int main(int argc, char *argv[])
 
                 if (!cb.m_hit) {
 
-                    if (t1.second.descriptionArmed){
+                    /*
+					if (t1.second.descriptionArmed){
                         debug_log().AddLog("collision with POI \n");
                         t1.second.descriptionArmed = false;
                     }
+					*/
+					if (POIinFOV.find(&t1.second) == POIinFOV.end()) {
+						debug_log().AddLog("%s \n", roads.nodes[t1.second.nodeId].tags["name"]);
+						debug_log().AddLog(u8"точка \n");
+						POIinFOV.insert(&t1.second);
+					}
                     g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
-                }
+				}
+				else {
+					POIinFOV.erase(&t1.second);
+					//if (POIinFOV.find(&t1.second) == POIinFOV.end()) {
+				}
             }
+			else {
+				POIinFOV.erase(&t1.second);
+			}
+
 
 
         }
