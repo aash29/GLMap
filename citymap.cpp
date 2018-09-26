@@ -137,7 +137,7 @@ entity playerAgent;
 
 int agentCollisionMarker = 0;
 int POImarker = 1;
-float sight = 10.f;
+float sight = 100.f;
 
 
 //const int16	visibilityGroup = 1;
@@ -1211,8 +1211,8 @@ int main(int argc, char *argv[])
 
 	xm = 0;
 	ym = 0;
-	xp = 100;
-	yp = 50;
+	xp = 7500;
+	yp = 5300;
 
 
     if (argc == 1) {
@@ -1358,6 +1358,7 @@ int main(int argc, char *argv[])
 			b2Vec2* vs;
 			vs = new b2Vec2[count];
 
+			/*
             int c = 0;
 			for (int j = 0; j < count; j++) {
 				//&verts[(base + j) * vertexSize]
@@ -1371,17 +1372,24 @@ int main(int argc, char *argv[])
                 }
 
 			}
+			*/
 
-            if (c>=3) {
+			for (int j = 0; j < count; j++) {
+					vs[j].Set(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize + 1]);
+			}
+
+
+
+//            if (c>=3) {
                 b2ChainShape shape;
-                shape.CreateLoop(vs, c);
+                shape.CreateLoop(vs, count);
                 b2FixtureDef fd;
                 fd.shape = &shape;
                 //fd.filter.categoryBits = buildingsCategory;
                 //fd.filter.maskBits = buildingsCategory;
 
                 ground->CreateFixture(&fd);
-            }
+  //          }
 		}
 	}
 
@@ -1424,16 +1432,16 @@ int main(int argc, char *argv[])
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(33.0f, 16.0f);
+	bodyDef.position.Set(4606.f, 2636.f);
 	agentBody = world.CreateBody(&bodyDef);
 
 	// Define another box shape for our dynamic body.
 	b2PolygonShape agentShape;
 
-    b2Vec2 x1 = b2Vec2(0.3f, 0.f);
+    b2Vec2 x1 = b2Vec2(5.f, 0.f);
 
-	b2Vec2 x11 = b2Vec2(0.2f, 0.1f);
-	b2Vec2 x12 = b2Vec2(0.2f, -0.1f);
+	b2Vec2 x11 = b2Vec2(1.5f, 1.f);
+	b2Vec2 x12 = b2Vec2(1.5f, -1.f);
 
     b2Vec2 verticesTri[4];
 
@@ -1465,10 +1473,13 @@ int main(int argc, char *argv[])
 
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
+	b2MassData massData = { 1.f, b2Vec2_zero, 1.f };
 
+	agentBody->SetMassData(&massData);
 
     playerAgent.body = agentBody;
     playerAgent.type = player;
+	
 
 /*
 
@@ -1542,7 +1553,7 @@ int main(int argc, char *argv[])
         sInterface();
 
 
-        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -1567,7 +1578,7 @@ int main(int argc, char *argv[])
 
 		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 		if (state == GLFW_PRESS) {
-			refVel = 10.f;
+			refVel = 40.f;
 		}
 
 
@@ -1587,7 +1598,7 @@ int main(int argc, char *argv[])
 			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
 			forward.Normalize();
 
-			float K = 2.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+			float K = 10.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
 			forward*=K;
 
 			agentBody->ApplyForceToCenter(forward,true);
@@ -1601,7 +1612,7 @@ int main(int argc, char *argv[])
             b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
             forward.Normalize();
 
-			float K = 2.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(),forward));
+			float K = 10.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(),forward));
 
 			forward *= K;
 
