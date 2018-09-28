@@ -865,7 +865,18 @@ void sInterface() {
     ImGui::End();
 
 
+	ImGui::Begin("Fast travel");
+		static float ftcoords[2];
+		ImGui::InputFloat2("coords", ftcoords);
 
+		if (ImGui::Button("Teleport"))
+		{
+			agentBody->SetTransform(b2Vec2(ftcoords[0], ftcoords[1]), 0.f);
+		}
+
+	ImGui::End();
+
+	/*
     ImGui::Begin("Agent");
     {
 
@@ -896,8 +907,10 @@ void sInterface() {
         }
 
     }
-    ImGui::End();
+	
 
+    ImGui::End();
+	*/
 	
 
     if (m_showOpenDialog) {
@@ -1440,17 +1453,18 @@ int main(int argc, char *argv[])
 
     b2Vec2 x1 = b2Vec2(5.f, 0.f);
 
-	b2Vec2 x11 = b2Vec2(1.5f, 1.f);
-	b2Vec2 x12 = b2Vec2(1.5f, -1.f);
+	b2Vec2 x11 = b2Vec2(0.f, 5.f);
+	b2Vec2 x12 = b2Vec2(0.f, -5.f);
 
-    b2Vec2 verticesTri[4];
+    b2Vec2 verticesTri[3];
 
-    verticesTri[0] = x11;
-	verticesTri[1] = x12;
-    verticesTri[2] =  b2Vec2(x1.y, -x1.x);
-    verticesTri[3] =  -b2Vec2(x1.y, -x1.x);
+    verticesTri[0] = x1;
+	verticesTri[1] = x11;
+	verticesTri[2] = x12;
+    //verticesTri[2] =  b2Vec2(x1.y, -x1.x);
+    //verticesTri[3] =  -b2Vec2(x1.y, -x1.x);
 
-    agentShape.Set(verticesTri,4);
+    agentShape.Set(verticesTri,3);
 
 
 
@@ -1462,7 +1476,7 @@ int main(int argc, char *argv[])
 	fixtureDef.shape = &agentShape;
 
 	// Set the box density to be non-zero, so it will be dynamic.
-	fixtureDef.density = 1.0f;
+	fixtureDef.density = 0.1f;
 
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
@@ -1473,9 +1487,9 @@ int main(int argc, char *argv[])
 
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
-	b2MassData massData = { 1.f, b2Vec2_zero, 1.f };
+	//b2MassData massData = { 1.f, b2Vec2_zero, 1.f };
 
-	agentBody->SetMassData(&massData);
+	//agentBody->SetMassData(&massData);
 
     playerAgent.body = agentBody;
     playerAgent.type = player;
