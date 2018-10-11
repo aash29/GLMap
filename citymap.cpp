@@ -147,6 +147,9 @@ const uint16 visibilityCategory = 0x0001;
 const uint16 buildingsCategory = 0x0002;
 
 
+
+float refVel = 15.f;
+
 class RayCastClosestCallback : public b2RayCastCallback {
 public:
     RayCastClosestCallback()
@@ -685,13 +688,14 @@ void sInterface() {
 
     ImGuiIO &io = ImGui::GetIO();
 
+    int menuWidth = 400;
     {
         ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
         ImGuiStyle &style = ImGui::GetStyle();
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-		ImGui::SetNextWindowPos(ImVec2(0, 0));
-        ImGui::SetNextWindowSize(ImVec2(0.f, 0.f));
+        ImGui::SetNextWindowPos(ImVec2(10, 10));
+        ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
 
         ImGui::Begin("Info");
 
@@ -722,6 +726,9 @@ void sInterface() {
 		ImGui::Checkbox("Draw Paths", &drawPaths);
         ImGui::Checkbox("Camera Follow", &cameraFollow);
         ImGui::Checkbox("Draw FOV", &drawFOV);
+
+
+        ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
 
         ImGui::End();
 
@@ -1111,8 +1118,21 @@ void planDay(agent &a0){
     a0.planFunc.push_back(goHome);
     a0.planFunc.push_back(eat);
 
-}
+};
 
+
+vector<int> findPath (pathways navGraph, int start) {
+
+    vector<int> stack = vector<int>();
+    std::priority_queue
+    stack.push_back(start);
+
+    while (stack.size()>0){
+        int n0 = stack.
+        for (int n1: navGraph.pathGraph
+    }
+
+}
 
 void* stdAlloc(void* userData, unsigned int size)
 {
@@ -1513,8 +1533,8 @@ int main(int argc, char *argv[])
 }
 */
 
-    agentBody->SetAngularDamping(10.f);
-	agentBody->SetLinearDamping(10.f);
+    agentBody->SetAngularDamping(3.f);
+	agentBody->SetLinearDamping(3.f);
 
     agentBody->SetUserData(&playerAgent);
 
@@ -1588,7 +1608,7 @@ int main(int argc, char *argv[])
 
 		int state;
 
-		float refVel = 5.f;
+		refVel = 5.f;
 
 		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 		if (state == GLFW_PRESS) {
@@ -1612,7 +1632,7 @@ int main(int argc, char *argv[])
 			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
 			forward.Normalize();
 
-			float K = 10.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+			float K = 100.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
 			forward*=K;
 
 			agentBody->ApplyForceToCenter(forward,true);
