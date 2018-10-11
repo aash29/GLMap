@@ -52,6 +52,10 @@
 
 #include "entity.h"
 
+#include <functional>
+#include <queue>
+#include <vector>
+
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
@@ -1121,17 +1125,67 @@ void planDay(agent &a0){
 };
 
 
-vector<int> findPath (pathways navGraph, int start) {
+vector<int> findPath (pathways navGraph, int start, int goal) {
 
-    vector<int> stack = vector<int>();
-    std::priority_queue
-    stack.push_back(start);
+    class searchNode {
+    public:
+        int id;
+        float g;
+        bool operator == (const searchNode& other)
+        { return id == other.id; }
+        bool operator != (const searchNode& other)
+        { return id != other.id; }
+    };
 
-    while (stack.size()>0){
-        int n0 = stack.
-        for (int n1: navGraph.pathGraph
+
+    vector<int> result = vector<int>();
+
+    //vector<searchNode> open = vector<searchNode>();
+
+    auto cmp = [&](searchNode left, searchNode right) { return (left.g + sqrt((navGraph.nodes[goal].x - navGraph.nodes[left.id].x)*(navGraph.nodes[goal].x - navGraph.nodes[left.id].x) +
+                                                                                     (navGraph.nodes[goal].y - navGraph.nodes[left.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[left.id].y)) >
+                                                               right.g + sqrt((navGraph.nodes[goal].x - navGraph.nodes[right.id].x)*(navGraph.nodes[goal].x - navGraph.nodes[right.id].x) +
+                                                                    (navGraph.nodes[goal].y - navGraph.nodes[right.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[right.id].y))); };
+    std::priority_queue<searchNode, std::vector<searchNode>, decltype(cmp)> open(cmp);
+
+    std::set<int> closed = std::set<int>();
+    std::map <int, int> cameFrom = std::map <int, int>();
+
+
+    searchNode startNode = {start, 0.f};
+
+    open.push(startNode);
+
+    searchNode goalNode = {goal, 0.f};
+
+
+
+    while (open.size()>0){
+        searchNode n0 = open.top();
+        open.pop();
+        closed.insert(n0.id);
+
+        if (n0 == goalNode) {
+            int nx = goal;
+            while (nx!=start)
+            {
+                result.push_back(nx);
+                nx = cameFrom[nx];
+            }
+            return result;
+        }
+
+        for (int n1: navGraph.pathGraph[n0.id]){
+            float dist =  sqrt((navGraph.nodes[n1].x - navGraph.nodes[n0.id].x)*(navGraph.nodes[n1].x - navGraph.nodes[n0.id].x) +
+                                     (navGraph.nodes[n1].y - navGraph.nodes[n0.id].y)*(navGraph.nodes[n1].y - navGraph.nodes[n0.id].y));
+            if (closed.find(n1)==closed.end()) {
+                searchNode s1 = {n1, n0.g + dist};
+                open.push(s1);
+                cameFrom[n1] = n0.id;
+            }
+        }
     }
-
+    return result;
 }
 
 void* stdAlloc(void* userData, unsigned int size)
