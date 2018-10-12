@@ -692,9 +692,9 @@ void sInterface() {
 
     ImGuiIO &io = ImGui::GetIO();
 
-    int menuWidth = 400;
+    int menuWidth = 600;
     {
-        ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+        ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
         ImGuiStyle &style = ImGui::GetStyle();
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
@@ -1125,11 +1125,11 @@ void planDay(agent &a0){
 };
 
 
-vector<int> findPath (pathways navGraph, int start, int goal) {
+vector<unsigned int> findPath (pathways navGraph, unsigned int start, unsigned int goal) {
 
     class searchNode {
     public:
-        int id;
+		unsigned int id;
         float g;
         bool operator == (const searchNode& other)
         { return id == other.id; }
@@ -1138,7 +1138,7 @@ vector<int> findPath (pathways navGraph, int start, int goal) {
     };
 
 
-    vector<int> result = vector<int>();
+    vector<unsigned int> result = vector<unsigned int>();
 
     //vector<searchNode> open = vector<searchNode>();
 
@@ -1148,8 +1148,8 @@ vector<int> findPath (pathways navGraph, int start, int goal) {
                                                                     (navGraph.nodes[goal].y - navGraph.nodes[right.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[right.id].y))); };
     std::priority_queue<searchNode, std::vector<searchNode>, decltype(cmp)> open(cmp);
 
-    std::set<int> closed = std::set<int>();
-    std::map <int, int> cameFrom = std::map <int, int>();
+    std::set<unsigned int> closed = std::set<unsigned int>();
+    std::map <unsigned int, unsigned int> cameFrom = std::map <unsigned int, unsigned int>();
 
 
     searchNode startNode = {start, 0.f};
@@ -1166,7 +1166,7 @@ vector<int> findPath (pathways navGraph, int start, int goal) {
         closed.insert(n0.id);
 
         if (n0 == goalNode) {
-            int nx = goal;
+			unsigned int nx = goal;
             while (nx!=start)
             {
                 result.push_back(nx);
@@ -1175,7 +1175,7 @@ vector<int> findPath (pathways navGraph, int start, int goal) {
             return result;
         }
 
-        for (int n1: navGraph.pathGraph[n0.id]){
+        for (unsigned int n1: navGraph.pathGraph[n0.id]){
             float dist =  sqrt((navGraph.nodes[n1].x - navGraph.nodes[n0.id].x)*(navGraph.nodes[n1].x - navGraph.nodes[n0.id].x) +
                                      (navGraph.nodes[n1].y - navGraph.nodes[n0.id].y)*(navGraph.nodes[n1].y - navGraph.nodes[n0.id].y));
             if (closed.find(n1)==closed.end()) {
@@ -1405,7 +1405,7 @@ int main(int argc, char *argv[])
     pathways roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
-
+	vector<unsigned int> res = findPath(roads, 306919, 793462859);
 
     tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
@@ -1798,6 +1798,20 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+		if (res.size() > 0) {
+			b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
+			b2Vec2 p2(roads.nodes[res[1]].x, roads.nodes[res[1]].y);
+
+			g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+
+			for (int i = 1; i < res.size()-1; i++) {
+				p1.Set(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
+				p2.Set(roads.nodes[res[i+1]].x, roads.nodes[res[i+1]].y);
+				g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+			}
+		}
+
 
 
 		b2Vec2 vertices[3];
