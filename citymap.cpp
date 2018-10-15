@@ -52,6 +52,10 @@
 
 #include "entity.h"
 
+#include <functional>
+#include <queue>
+#include <vector>
+
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
@@ -688,9 +692,9 @@ void sInterface() {
 
     ImGuiIO &io = ImGui::GetIO();
 
-    int menuWidth = 400;
+    int menuWidth = 600;
     {
-        ImVec4 color = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+        ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
         ImGuiStyle &style = ImGui::GetStyle();
         //style.Colors[ImGuiCol_WindowBg]=color;
         ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
@@ -1121,17 +1125,67 @@ void planDay(agent &a0){
 };
 
 
-vector<int> findPath (pathways navGraph, int start) {
+vector<unsigned int> findPath (pathways navGraph, unsigned int start, unsigned int goal) {
 
-    vector<int> stack = vector<int>();
-    std::priority_queue
-    stack.push_back(start);
+    class searchNode {
+    public:
+		unsigned int id;
+        float g;
+        bool operator == (const searchNode& other)
+        { return id == other.id; }
+        bool operator != (const searchNode& other)
+        { return id != other.id; }
+    };
 
-    while (stack.size()>0){
-        int n0 = stack.
-        for (int n1: navGraph.pathGraph
+
+    vector<unsigned int> result = vector<unsigned int>();
+
+    //vector<searchNode> open = vector<searchNode>();
+
+    auto cmp = [&](searchNode left, searchNode right) { return (left.g + sqrt((navGraph.nodes[goal].x - navGraph.nodes[left.id].x)*(navGraph.nodes[goal].x - navGraph.nodes[left.id].x) +
+                                                                                     (navGraph.nodes[goal].y - navGraph.nodes[left.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[left.id].y)) >
+                                                               right.g + sqrt((navGraph.nodes[goal].x - navGraph.nodes[right.id].x)*(navGraph.nodes[goal].x - navGraph.nodes[right.id].x) +
+                                                                    (navGraph.nodes[goal].y - navGraph.nodes[right.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[right.id].y))); };
+    std::priority_queue<searchNode, std::vector<searchNode>, decltype(cmp)> open(cmp);
+
+    std::set<unsigned int> closed = std::set<unsigned int>();
+    std::map <unsigned int, unsigned int> cameFrom = std::map <unsigned int, unsigned int>();
+
+
+    searchNode startNode = {start, 0.f};
+
+    open.push(startNode);
+
+    searchNode goalNode = {goal, 0.f};
+
+
+
+    while (open.size()>0){
+        searchNode n0 = open.top();
+        open.pop();
+        closed.insert(n0.id);
+
+        if (n0 == goalNode) {
+			unsigned int nx = goal;
+            while (nx!=start)
+            {
+                result.push_back(nx);
+                nx = cameFrom[nx];
+            }
+            return result;
+        }
+
+        for (unsigned int n1: navGraph.pathGraph[n0.id]){
+            float dist =  sqrt((navGraph.nodes[n1].x - navGraph.nodes[n0.id].x)*(navGraph.nodes[n1].x - navGraph.nodes[n0.id].x) +
+                                     (navGraph.nodes[n1].y - navGraph.nodes[n0.id].y)*(navGraph.nodes[n1].y - navGraph.nodes[n0.id].y));
+            if (closed.find(n1)==closed.end()) {
+                searchNode s1 = {n1, n0.g + dist};
+                open.push(s1);
+                cameFrom[n1] = n0.id;
+            }
+        }
     }
-
+    return result;
 }
 
 void* stdAlloc(void* userData, unsigned int size)
@@ -1351,7 +1405,7 @@ int main(int argc, char *argv[])
     pathways roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
-
+	vector<unsigned int> res = findPath(roads, 306919, 793462859);
 
     tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
@@ -1744,6 +1798,20 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+		if (res.size() > 0) {
+			b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
+			b2Vec2 p2(roads.nodes[res[1]].x, roads.nodes[res[1]].y);
+
+			g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+
+			for (int i = 1; i < res.size()-1; i++) {
+				p1.Set(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
+				p2.Set(roads.nodes[res[i+1]].x, roads.nodes[res[i+1]].y);
+				g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+			}
+		}
+
 
 
 		b2Vec2 vertices[3];
