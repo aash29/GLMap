@@ -56,6 +56,8 @@
 #include <queue>
 #include <vector>
 
+#include "kdtree.h"
+
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
@@ -1627,6 +1629,22 @@ int main(int argc, char *argv[])
 
 	static std::set < entity* > POIinFOV = std::set < entity* >();
 
+
+    vector<b2Vec2> treePoints = vector<b2Vec2>();
+    for (auto n1: roads.pathGraph){
+        for (int i1: n1.second) {
+            treePoints.push_back(b2Vec2(roads.nodes[i1].x, roads.nodes[i1].y));
+        }
+    }
+
+    vector<b2Vec2> points = vector<b2Vec2>();
+    points.push_back(b2Vec2(100.f,280.f));
+    points.push_back(b2Vec2(500.f,575.f));
+    points.push_back(b2Vec2(1000.f,390.f));
+
+    kdNode* n1 = kdTree <b2Vec2> (treePoints.begin(), treePoints.end(), 0);
+
+
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
         if (run) t += ct - pt;
@@ -1798,6 +1816,67 @@ int main(int argc, char *argv[])
                 }
             }
         }
+
+
+
+
+       std::function<void(kdNode*, int, rect)> drawTree = [&](kdNode* curNode, int depth, rect domain){
+            int d1 = depth / 2;
+            int axis = depth - d1 * 2;
+
+           rect lDom, rDom;
+
+            if (axis==0){
+
+                lDom.xmin = domain.xmin;
+                lDom.xmax = curNode->location;
+                lDom.ymin = domain.ymin;
+                lDom.ymax = domain.ymax;
+
+                rDom.xmin = curNode->location;;
+                rDom.xmax = domain.xmax;
+                rDom.ymin = domain.ymin;
+                rDom.ymax = domain.ymax;
+
+
+                g_debugDraw.DrawSegment(b2Vec2(curNode->location,domain.ymin),b2Vec2(curNode->location,domain.ymax),b2Color(1.f,0.f,0.f));
+
+
+            } else
+            if (axis==1){
+
+                lDom.xmin = domain.xmin;
+                lDom.xmax = domain.xmax;
+
+                lDom.ymin = curNode->location;
+                lDom.ymax = domain.ymax;
+
+                rDom.xmin = domain.xmin;
+                rDom.xmax = domain.xmax;
+
+                rDom.ymin = domain.ymin;
+                rDom.ymax = curNode->location;
+
+                g_debugDraw.DrawSegment(b2Vec2(domain.xmin,curNode->location),b2Vec2(domain.xmax,curNode->location),b2Color(0.f,1.f,0.f));
+
+
+            }
+
+            if (curNode->left){
+                drawTree(curNode->left,depth+1,lDom);
+            }
+            if (curNode->right){
+                drawTree(curNode->right,depth+1,rDom);
+            }
+
+        };
+
+        rect dom = {xm,xp,ym,yp};
+
+        drawTree(n1,0, dom);
+
+
+
 
 		if (res.size() > 0) {
 			b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);

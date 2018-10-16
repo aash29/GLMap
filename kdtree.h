@@ -22,8 +22,8 @@ template <typename T>
 kdNode* kdTree(typename vector<T>::iterator pointsBegin, typename vector<T>::iterator pointsEnd, int depth){
 
 	int d1 = depth / 2;
-
 	int axis = depth - d1 * 2;
+
 	if (distance(pointsBegin, pointsEnd) == 1) {
 		kdNode* result = new kdNode();
 
