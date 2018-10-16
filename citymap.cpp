@@ -1642,7 +1642,7 @@ int main(int argc, char *argv[])
     points.push_back(b2Vec2(500.f,575.f));
     points.push_back(b2Vec2(1000.f,390.f));
 
-    kdNode* n1 = kdTree <b2Vec2> (treePoints.begin(), treePoints.end(), 0);
+    kdNode* n1 = kdTree <b2Vec2> (treePoints, 0);
 
 
     while (!glfwWindowShouldClose(window)) {

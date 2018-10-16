@@ -14,7 +14,7 @@ void testKDTree(){
     points.push_back(b2Vec2(0.f,5.f));
     points.push_back(b2Vec2(-3.f,18.f));
 
-	kdNode* n1 = kdTree <b2Vec2> (points.begin(), points.end(), 0);
+	kdNode* n1 = kdTree <b2Vec2> (points, 0);
 	cout << n1->location;
     //testFun();
 }
