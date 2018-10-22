@@ -56,7 +56,8 @@
 #include <queue>
 #include <vector>
 
-#include "kdtree.h"
+
+#include "RStarTree.h"
 
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -1630,19 +1631,77 @@ int main(int argc, char *argv[])
 	static std::set < entity* > POIinFOV = std::set < entity* >();
 
 
+	typedef RStarTree<int, 2, 32, 64> 			RTree;
+	typedef RTree::BoundingBox			BoundingBox;
+	RTree tree;
+
+
+	struct Visitor {
+		int count;
+		bool ContinueVisiting;
+
+		Visitor() : count(0), ContinueVisiting(true) {};
+
+		void operator()(const RTree::Leaf * const leaf)
+		{
+			std::cout << "#" << count << ": visited " << leaf->leaf << " with bound " << leaf->bound.ToString() << std::endl;
+			count++;
+		}
+	};
+
+
+	for (int i = 0; i < roads.buildings.size(); i++) {
+		auto b1 = roads.buildings[i];
+		BoundingBox bb = BoundingBox::MaximumBounds();
+		for (auto contour1 : b1) {
+			for (auto v1 : contour1) {
+				if (roads.nodes[v1].x < bb.edges[0].first)
+					bb.edges[0].first = roads.nodes[v1].x;
+
+				if (roads.nodes[v1].x > bb.edges[0].second)
+					bb.edges[0].second = roads.nodes[v1].x;
+
+				if (roads.nodes[v1].y < bb.edges[1].first)
+					bb.edges[1].first = roads.nodes[v1].y;
+
+				if (roads.nodes[v1].y > bb.edges[1].second)
+					bb.edges[1].second = roads.nodes[v1].y;
+			}
+		}
+		tree.Insert(i, bb);
+	}
+
+	BoundingBox bound;
+	bound.edges[0].first = 4064.f;
+	bound.edges[0].second= 4140.f;
+
+	bound.edges[1].first = 2280.f;
+	bound.edges[1].second = 2353.f;
+
+	Visitor x = tree.Query(RTree::AcceptOverlapping(bound), Visitor());
+
+
+
+	/*
     vector<b2Vec2> treePoints = vector<b2Vec2>();
     for (auto n1: roads.pathGraph){
         for (int i1: n1.second) {
             treePoints.push_back(b2Vec2(roads.nodes[i1].x, roads.nodes[i1].y));
         }
     }
+	*/
 
-    vector<b2Vec2> points = vector<b2Vec2>();
+
+
+	/*
+	vector<b2Vec2> points = vector<b2Vec2>();
     points.push_back(b2Vec2(100.f,280.f));
     points.push_back(b2Vec2(500.f,575.f));
     points.push_back(b2Vec2(1000.f,390.f));
 
     kdNode* n1 = kdTree <b2Vec2> (treePoints, 0);
+	*/
+
 
 
     while (!glfwWindowShouldClose(window)) {
@@ -1818,7 +1877,7 @@ int main(int argc, char *argv[])
         }
 
 
-
+		/*
 
        std::function<void(kdNode*, int, rect)> drawTree = [&](kdNode* curNode, int depth, rect domain){
             int d1 = depth / 2;
@@ -1875,7 +1934,7 @@ int main(int argc, char *argv[])
 
         drawTree(n1,0, dom);
 
-
+		*/
 
 
 		if (res.size() > 0) {
