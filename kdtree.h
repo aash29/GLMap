@@ -20,7 +20,7 @@ public:
 };
 
 template <typename T>
-kdNode* kdTree(typename vector<T>points, int depth){
+kdNode* kdTree(vector<T> points, int depth){
 
 	int maxDepth = 50;
 

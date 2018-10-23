@@ -19,9 +19,11 @@ using namespace tinyxml2;
 
 #include "entity.h"
 
+#include <algorithm>
+
 struct rect
 {
-    double xmin,xmax,ymin,ymax;
+    double xmin =+INFINITY,xmax=-INFINITY,ymin=+INFINITY,ymax=-INFINITY;
 };
 
 struct building
@@ -31,16 +33,9 @@ struct building
     std::string addrNumber;
     std::string addrStreet;
     std::string type;
-    int firstVertexIndex;
-    int lastVertexIndex;
-    float anchorx;
-    float anchory;
 
-    std::vector<std::vector<float> > coords;
-
-    double *vertx;
-    double *verty;
-    int numVert;
+    std::vector<std::vector<unsigned int> > renderCoords;
+    std::vector<std::vector<unsigned int> > collisionCoords;
 
     rect bounds;
 
@@ -54,7 +49,6 @@ struct polygon
     double *verty;
 };
 
-typedef std::map<std::string, building> cityMap;
 
 float xmin,xmax,ymin,ymax;
 
@@ -67,10 +61,10 @@ struct node {
 	map <string, string> tags;
 };
 
-struct pathways {
+struct map_record {
     map<unsigned int, node> nodes;
     map<unsigned int, vector<unsigned int> > pathGraph;
-    vector< vector< vector<unsigned int> > > buildings;
+    map<unsigned int, building> buildings;
 };
 
 
@@ -101,7 +95,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)  {
+map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)  {
     std::string m_currentLevel = std::string(name);
 
     int di = m_currentLevel.find_last_of('.');
@@ -122,7 +116,7 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
     if (ext=="osm"){
 
         map<unsigned int, vector<unsigned int> > pathGraph;
-        vector < vector < vector <unsigned int> > > buildings;
+        map<unsigned int, building> buildings;
 
         map<unsigned int, node> nodes;
 		map<unsigned int, vector<unsigned int> > ways;
@@ -214,17 +208,17 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
             const char* id = w1->Attribute("id");
 
 
-			ways[stoi(id)] = vector<unsigned int>();
+            ways[stoi(id)] = vector<unsigned int>();
 
-			XMLElement* nd1 = w1->FirstChildElement("nd");
+            XMLElement* nd1 = w1->FirstChildElement("nd");
 
-			unsigned int ref;
+            unsigned int ref;
 
-			while (nd1) {
-				nd1->QueryAttribute("ref", &ref);
-				ways[stoi(id)].push_back(ref);
-				nd1 = nd1->NextSiblingElement("nd");
-			}
+            while (nd1) {
+                nd1->QueryAttribute("ref", &ref);
+                ways[stoi(id)].push_back(ref);
+                nd1 = nd1->NextSiblingElement("nd");
+            }
 
 
             map<string, string> tags;
@@ -259,39 +253,49 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 
             if (tags.count("building")>0) {
 
+                building b1;
 
-                buildings.push_back(vector< vector<unsigned int> >());
-                buildings.back().push_back(vector<unsigned int>());
+                b1.renderCoords.push_back(vector<unsigned int>());
                 XMLElement* nd1 = w1->FirstChildElement("nd");
 
-				vector<float> coordsx = vector<float>();
-				vector<float> coordsy = vector<float>();
+                vector<float> coordsx = vector<float>();
+                vector<float> coordsy = vector<float>();
 
-				float wind = 0.f; //determine winding
+                float wind = 0.f; //determine winding
                 while(nd1) {
                     unsigned int ref;
                     nd1->QueryAttribute("ref",&ref);
 
-                    buildings.back().back().push_back(ref);
-					coordsx.push_back(nodes[ref].x);
-					coordsy.push_back(nodes[ref].y);
-					if (coordsx.size()>1) {
-						wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
-					}
+                    b1.renderCoords.back().push_back(ref);
+                    coordsx.push_back(nodes[ref].x);
+                    coordsy.push_back(nodes[ref].y);
+                    if (coordsx.size()>1) {
+                        wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
+                    }
 
                     nd1 = nd1->NextSiblingElement("nd");
                 }
-				if (wind < 0) {
-					std::reverse(coordsx.begin(), coordsx.end());
-					std::reverse(coordsy.begin(), coordsy.end());
-				}
-				vector<float> coords = vector<float>();
-				for (int i = 0; i < coordsx.size(); i++) {
-					coords.push_back(coordsx[i]);
-					coords.push_back(coordsy[i]);
-				}
-                tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+                if (wind < 0) {
+                    std::reverse(coordsx.begin(), coordsx.end());
+                    std::reverse(coordsy.begin(), coordsy.end());
+                }
+                vector<float> coords = vector<float>();
+                for (int i = 0; i < coordsx.size(); i++) {
+                    coords.push_back(coordsx[i]);
+                    coords.push_back(coordsy[i]);
+                }
 
+
+
+                b1.bounds.xmin = *(std::min_element(coordsx.begin(),coordsx.end()));
+                b1.bounds.xmax = *(std::max_element(coordsx.begin(),coordsx.end()));
+
+                b1.bounds.ymin = *(std::min_element(coordsy.begin(),coordsy.end()));
+                b1.bounds.ymax = *(std::max_element(coordsy.begin(),coordsy.end()));
+
+
+                tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+                buildings.insert(pair<int, building>(id,b1));
 
             }
 
@@ -314,6 +318,10 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
             }
 
 			if (tags["place"]=="island") {
+
+
+
+                building b1;
 
 				XMLElement* mem1 = r1->FirstChildElement("member");
 				while (mem1) {
@@ -340,14 +348,16 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 					vector<float> coordsx = vector<float>();
 					vector<float> coordsy = vector<float>();
 
-					buildings.back().push_back(vector<unsigned int>());
+
+
+                    b1.renderCoords.push_back(vector<unsigned int>());
 
 					float wind = 0.f; //determine winding
 					while (nd1) {
 						unsigned int ref;
 						nd1->QueryAttribute("ref", &ref);
 
-						buildings.back().back().push_back(ref);
+						b1.renderCoords.back().push_back(ref);
 						coordsx.push_back(nodes[ref].x);
 						coordsy.push_back(nodes[ref].y);
 						if (coordsx.size() > 1) {
@@ -384,15 +394,30 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
 						shape.CreateChain(vs, coordsx.size());
 						ground->CreateFixture(&shape, 0.0f);
 					}
+
+
+                    b1.bounds.xmin = *(std::min_element(coordsx.begin(),coordsx.end()));
+                    b1.bounds.xmax = *(std::max_element(coordsx.begin(),coordsx.end()));
+
+                    b1.bounds.ymin = *(std::min_element(coordsy.begin(),coordsy.end()));
+                    b1.bounds.ymax = *(std::max_element(coordsy.begin(),coordsy.end()));
+
 					mem1 = mem1->NextSiblingElement("member");
 				}
+
+
+
+                buildings.insert(pair<int, building>(relId,b1));
 			}
 
 
 
 
             if (tags.count("building")>0) {
-                buildings.push_back(vector< vector<unsigned int> >());
+
+                building b1;
+
+                b1.renderCoords= vector< vector<unsigned int> >();
 
                 XMLElement* mem1 = r1->FirstChildElement("member");
                 while (mem1){
@@ -417,13 +442,13 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
                     vector<float> coordsx = vector<float>();
                     vector<float> coordsy = vector<float>();
 
-                    buildings.back().push_back(vector<unsigned int>());
+                    b1.renderCoords.push_back(vector<unsigned int>());
 
                     float wind = 0.f; //determine winding
                     for (int ni: ways[ref]) {
 
                         unsigned int ref;
-                        buildings.back().back().push_back(ref);
+                        b1.renderCoords.back().push_back(ref);
                         coordsx.push_back(nodes[ni].x);
                         coordsy.push_back(nodes[ni].y);
                         if (coordsx.size()>1){
@@ -473,8 +498,8 @@ pathways loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2W
             r1 = r1->NextSiblingElement("relation");
         }
 
-        pathways roads = {nodes, pathGraph, buildings};
-        return roads;
+        map_record mapRecord = {nodes, pathGraph, buildings};
+        return mapRecord;
     }
     /*
     else {
