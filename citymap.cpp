@@ -153,9 +153,34 @@ float sight = 100.f;
 const uint16 visibilityCategory = 0x0001;
 const uint16 buildingsCategory = 0x0002;
 
+float walkSpeed = 5.f;
+float runSpeed = 40.f;
+float linearDamping = 5.f;
+float angularDamping = 10.f;
+
+float currentTime = 0; 
 
 
-float refVel = 15.f;
+typedef RStarTree<int, 2, 32, 64> 			RTree;
+typedef RTree::BoundingBox			BoundingBox;
+RTree tree;
+
+
+struct Visitor {
+	int count;
+	int id;
+	bool ContinueVisiting;
+
+	Visitor() : count(0), ContinueVisiting(true) {};
+
+	void operator()(const RTree::Leaf * const leaf)
+	{
+		std::cout << "#" << count << ": visited " << leaf->leaf << " with bound " << leaf->bound.ToString() << std::endl;
+		count++;
+		id = leaf->leaf;
+	}
+};
+
 
 class RayCastClosestCallback : public b2RayCastCallback {
 public:
@@ -356,13 +381,14 @@ std::string selectBuilding(float testx, float testy)
             //numVert++;
         };
 */
+		/*
         rect r1 = b1.second.bounds;
         if ((testx>r1.xmin) && (testx<r1.xmax) && (testy>r1.ymin) && (testy<r1.ymax))
         if (pnpoly(b1.second.numVert, b1.second.vertx, b1.second.verty, testx, testy)>0)
         {
             return id1;
         }
-
+		*/
 
     }
     return std::string("none");
@@ -415,21 +441,28 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     if (!io.WantCaptureMouse)
     {
 
-        // Use the mouse to move things around.
 		if (button == GLFW_MOUSE_BUTTON_1) {
-
+			
+			/*
 			for (int i = 0; i < nElemsTriangSelect; i++) {
-
 				if (pnpoly(3, &vertx[i * 3], &verty[i * 3], selp.x, selp.y) > 0)
 				{
 
 					debug_log().AddLog("hit %d \n", vertNumber[i]);
 				}
-
-
 			}
+			*/
+			BoundingBox bound;
+			bound.edges[0].first = selp.x - 1.f;
+			bound.edges[0].second = selp.x + 1.f;
+
+			bound.edges[1].first = selp.y - 1.f;
+			bound.edges[1].second = selp.y + 1.f;
+
+			Visitor x = tree.Query(RTree::AcceptOverlapping(bound), Visitor());
 
 
+			debug_log().AddLog("Selected: %d \n", x.id);
 
 			/*
 			
@@ -689,13 +722,31 @@ void endTurn() {
 
 void sInterface() {
 
+
+
     if (ImGui::IsAnyWindowHovered()) {
         ImGui::CaptureMouseFromApp(true);
     }
 
     ImGuiIO &io = ImGui::GetIO();
 
-    int menuWidth = 600;
+	ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+	ImFont* font = atlas->Fonts[1];
+	ImGui::PushFont(font);
+
+	ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
+	ImGuiStyle &style = ImGui::GetStyle();
+	//style.Colors[ImGuiCol_WindowBg]=color;
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+	
+	int minutes = currentTime / 60;
+	g_debugDraw.DrawString(width/2, 0, "%dm %2.1fs",  minutes, currentTime - minutes * 60);
+
+	ImGui::PopStyleColor();
+	ImGui::PopFont();
+
+	
+	int menuWidth = 600;
     {
         ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
         ImGuiStyle &style = ImGui::GetStyle();
@@ -750,11 +801,6 @@ void sInterface() {
         ImFontAtlas* atlas = ImGui::GetIO().Fonts;
         ImFont* font = atlas->Fonts[0];
         //font->Scale = 2.f;
-
-
-
-
-
     }
 
 
@@ -889,6 +935,16 @@ void sInterface() {
 		}
 
 	ImGui::End();
+
+
+
+	ImGui::Begin("Physics");
+		ImGui::InputFloat("Walking speed", &walkSpeed);
+		ImGui::InputFloat("Running speed", &runSpeed);
+		ImGui::InputFloat("Linear damping", &linearDamping);
+		ImGui::InputFloat("Angular damping", &angularDamping);
+	ImGui::End();
+
 
 	/*
     ImGui::Begin("Agent");
@@ -1081,7 +1137,7 @@ void planDay(agent &a0){
 
 
     };
-
+	/*
     std::function<int()> goHome = [&a0]() {
 
         location_t target = location_t(static_cast<int>(city[a0.home].coords[0][0]), static_cast<int>(city[a0.home].coords[0][1]));
@@ -1119,16 +1175,16 @@ void planDay(agent &a0){
         }
         return 1;
     };
-
+	*/
 
     a0.planFunc.push_back(goToAnyShop);
-    a0.planFunc.push_back(goHome);
+    //a0.planFunc.push_back(goHome);
     a0.planFunc.push_back(eat);
 
 };
 
 
-vector<unsigned int> findPath (pathways navGraph, unsigned int start, unsigned int goal) {
+vector<unsigned int> findPath (map_record navGraph, unsigned int start, unsigned int goal) {
 
     class searchNode {
     public:
@@ -1405,7 +1461,7 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-    pathways roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
+	map_record roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
 	vector<unsigned int> res = findPath(roads, 306919, 793462859);
@@ -1590,8 +1646,7 @@ int main(int argc, char *argv[])
 }
 */
 
-    agentBody->SetAngularDamping(3.f);
-	agentBody->SetLinearDamping(3.f);
+
 
     agentBody->SetUserData(&playerAgent);
 
@@ -1631,29 +1686,12 @@ int main(int argc, char *argv[])
 	static std::set < entity* > POIinFOV = std::set < entity* >();
 
 
-	typedef RStarTree<int, 2, 32, 64> 			RTree;
-	typedef RTree::BoundingBox			BoundingBox;
-	RTree tree;
-
-
-	struct Visitor {
-		int count;
-		bool ContinueVisiting;
-
-		Visitor() : count(0), ContinueVisiting(true) {};
-
-		void operator()(const RTree::Leaf * const leaf)
-		{
-			std::cout << "#" << count << ": visited " << leaf->leaf << " with bound " << leaf->bound.ToString() << std::endl;
-			count++;
-		}
-	};
-
-
-	for (int i = 0; i < roads.buildings.size(); i++) {
-		auto b1 = roads.buildings[i];
+	//for (int i = 0; i < roads.buildings.size(); i++) {
+	for (auto b1: roads.buildings) {
+		//auto b1 = roads.buildings[i];
 		BoundingBox bb = BoundingBox::MaximumBounds();
-		for (auto contour1 : b1) {
+		auto c1 = b1.second.renderCoords;
+		for (auto contour1 : c1) {
 			for (auto v1 : contour1) {
 				if (roads.nodes[v1].x < bb.edges[0].first)
 					bb.edges[0].first = roads.nodes[v1].x;
@@ -1668,7 +1706,7 @@ int main(int argc, char *argv[])
 					bb.edges[1].second = roads.nodes[v1].y;
 			}
 		}
-		tree.Insert(i, bb);
+		tree.Insert(b1.first, bb);
 	}
 
 	BoundingBox bound;
@@ -1706,6 +1744,8 @@ int main(int argc, char *argv[])
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
+
+		currentTime = ct;
         if (run) t += ct - pt;
 
         pt = ct;
@@ -1739,26 +1779,31 @@ int main(int argc, char *argv[])
 
 		int state;
 
-		refVel = 5.f;
+
+		agentBody->SetAngularDamping(angularDamping);
+		agentBody->SetLinearDamping(linearDamping);
+
+
+		float refVel = walkSpeed;
 
 		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 		if (state == GLFW_PRESS) {
-			refVel = 40.f;
+			refVel = runSpeed;
 		}
 
 
-		state = glfwGetKey(window, GLFW_KEY_RIGHT);
+		state = glfwGetKey(window, GLFW_KEY_D);
 		if (state == GLFW_PRESS){
-			agentBody->SetAngularVelocity(-4.f);
+			agentBody->SetAngularVelocity(-2.f);
 		}
 
-		state = glfwGetKey(window, GLFW_KEY_LEFT);
+		state = glfwGetKey(window, GLFW_KEY_A);
 		if (state == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(4.f);
+			agentBody->SetAngularVelocity(2.f);
 		}
 
 
-		state = glfwGetKey(window, GLFW_KEY_UP);
+		state = glfwGetKey(window, GLFW_KEY_W);
 		if (state == GLFW_PRESS) {
 			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
 			forward.Normalize();
@@ -1772,7 +1817,7 @@ int main(int argc, char *argv[])
 		}
 
 
-        state = glfwGetKey(window, GLFW_KEY_DOWN);
+        state = glfwGetKey(window, GLFW_KEY_S);
         if (state == GLFW_PRESS) {
             b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
             forward.Normalize();
@@ -1787,6 +1832,7 @@ int main(int argc, char *argv[])
             //agentBody->SetLinearVelocity(forward);
 			
         }
+
 
 
 
@@ -1961,6 +2007,8 @@ int main(int argc, char *argv[])
 			}
 			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f, 0.f, 0.f, 1.f));
 		}
+
+
 
 
         world.DrawDebugData();

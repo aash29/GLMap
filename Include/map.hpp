@@ -295,7 +295,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
-                buildings.insert(pair<int, building>(id,b1));
+                buildings.insert(pair<int, building>(atoi(id),b1));
 
             }
 
@@ -407,7 +407,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
 
-                buildings.insert(pair<int, building>(relId,b1));
+                buildings.insert(pair<int, building>(atoi(relId),b1));
 			}
 
 
@@ -732,7 +732,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
       }
      */
 };
-
+/*
 int buildingIndex(cityMap city, int index, std::string & id)
 {
     int b1 = 0;
@@ -748,7 +748,8 @@ int buildingIndex(cityMap city, int index, std::string & id)
 
 
 };
-
+*/
+/*
 std::vector<float> getOutlines(cityMap city1)
 {
     std::vector<float> unDraw = std::vector<float>();
@@ -773,8 +774,8 @@ std::vector<float> getOutlines(cityMap city1)
         };
     };
     return unDraw;
-
 };
+*/
 
 static int pnpoly(int nvert, double *vertx, double *verty, double testx, double testy)
 {
@@ -786,6 +787,7 @@ static int pnpoly(int nvert, double *vertx, double *verty, double testx, double 
     return c;
 };
 
+/*
 std::string selectBuilding( map<string, building> city, float testx, float testy)
 {
     glm::mat4 rotN;
@@ -832,14 +834,6 @@ std::string selectBuilding( map<string, building> city, float testx, float testy
             vertx[i] = cont1[2 * i];
             verty[i] = cont1[2 * i + 1];
         }
-        /*
-        debug_log().AddLog("vertx one building:");
-        for (int i=0; i< numVert; i++){
-
-        debug_log().AddLog("%g,",vertx[i] );
-        };
-        debug_log().AddLog("\n");
-        */
         if (pnpoly(numVert, vertx, verty, testx, testy)>0)
         {
             return id1;
@@ -852,6 +846,6 @@ std::string selectBuilding( map<string, building> city, float testx, float testy
     return std::string("none");
 
 };
-
+*/
 
 #endif

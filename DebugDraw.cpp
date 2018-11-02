@@ -28,6 +28,8 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+#include "imgui.h"
+
 #include "RenderGL3.h"
 
 #define BUFFER_OFFSET(x)  ((const void*) (x))
@@ -804,10 +806,41 @@ void DebugDraw::DrawTransform(const b2Transform& xf)
 	m_lines->Vertex(p2, green);
 }
 
-void DebugDraw::DrawPoint(const b2Vec2& p, float32 size, const b2Color& color)
+
+
+
+void DebugDraw::DrawString(int x, int y, const char *string, ...)
 {
-    m_points->Vertex(p, color, size);
+
+
+
+	va_list arg;
+	va_start(arg, string);
+	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+	ImGui::SetCursorPos(ImVec2(float(x), float(y)));
+	ImGui::TextColoredV(ImColor(230, 153, 153, 255), string, arg);
+	ImGui::End();
+	va_end(arg);
+
 }
+
+//
+/*
+void DebugDraw::DrawString(const b2Vec2& pw, const char *string, ...)
+{
+	ImVec2 ps = g_camera.ConvertWorldToScreen(pw);
+
+
+	va_list arg;
+	va_start(arg, string);
+	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
+	ImGui::SetCursorPos(ps);
+	ImGui::TextColoredV(ImColor(230, 153, 153, 255), string, arg);
+	ImGui::End();
+	va_end(arg);
+}
+*/
+/*
 
 void DebugDraw::DrawString(int x, int y, const char *string, ...)
 {
@@ -837,7 +870,7 @@ void DebugDraw::DrawString(const b2Vec2& pw, const char *string, ...)
 
 	AddGfxCmdText(ps.x, h - ps.y, TEXT_ALIGN_LEFT, buffer, SetRGBA(230, 153, 153, 255));
 }
-
+*/
 void DebugDraw::DrawAABB(b2AABB* aabb, const b2Color& c)
 {
     b2Vec2 p1 = aabb->lowerBound;
