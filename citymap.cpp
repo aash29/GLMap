@@ -1483,6 +1483,40 @@ int main(int argc, char *argv[])
 	tess = tessNewTess(&ma);
 	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
+	for (auto const& n1 : roads.pathGraph)
+	{
+		for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
+			float r =  static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			r = 0;
+				b2Vec2 v1 = b2Vec2(roads.nodes[neigh1].x - roads.nodes[n1.first].x, roads.nodes[neigh1].y - roads.nodes[n1.first].y);
+				b2Vec2 normal1 = v1.Skew();
+				normal1.Normalize();
+
+				
+
+				float coords[10];
+				b2Vec2 p0 = b2Vec2(roads.nodes[n1.first].x+r, roads.nodes[n1.first].y+r);
+				b2Vec2 p1 = p0 + normal1;
+				coords[0] = p1.x;
+				coords[1] = p1.y;
+				b2Vec2 p2 = p1 + v1;
+				coords[2] = p2.x;
+				coords[3] = p2.y;
+				b2Vec2 p3 = p2 - 2 * normal1;
+				coords[4] = p3.x;
+				coords[5] = p3.y;
+				b2Vec2 p4 = p3 - v1;
+				coords[6] = p4.x;
+				coords[7] = p4.y;
+
+				coords[8] = p1.x;
+				coords[9] = p1.y;
+
+				tessAddContour(tess, 2, coords, sizeof(float)*2, 5);
+			}
+		
+	};
+
 	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
 		return -1;
 
