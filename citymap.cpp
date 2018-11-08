@@ -1486,38 +1486,40 @@ int main(int argc, char *argv[])
 	for (auto const& n1 : roads.pathGraph)
 	{
 		for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
-			float r =  static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-			r = 0;
-				b2Vec2 v1 = b2Vec2(roads.nodes[neigh1].x - roads.nodes[n1.first].x, roads.nodes[neigh1].y - roads.nodes[n1.first].y);
+			float r =  3.f * static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			r = 0.f;
+				b2Vec2 v1 = 1.05f * b2Vec2(roads.nodes[n1.second[neigh1]].x - roads.nodes[n1.first].x, roads.nodes[n1.second[neigh1]].y - roads.nodes[n1.first].y);
+
 				b2Vec2 normal1 = v1.Skew();
 				normal1.Normalize();
+				normal1 = 5.f*normal1;
 
 				
 
 				float coords[10];
 				b2Vec2 p0 = b2Vec2(roads.nodes[n1.first].x+r, roads.nodes[n1.first].y+r);
-				b2Vec2 p1 = p0 + normal1;
+				b2Vec2 p1 = p0 - normal1;
 				coords[0] = p1.x;
 				coords[1] = p1.y;
 				b2Vec2 p2 = p1 + v1;
 				coords[2] = p2.x;
 				coords[3] = p2.y;
-				b2Vec2 p3 = p2 - 2 * normal1;
+				b2Vec2 p3 = p2 + 2 * normal1;
 				coords[4] = p3.x;
 				coords[5] = p3.y;
 				b2Vec2 p4 = p3 - v1;
 				coords[6] = p4.x;
 				coords[7] = p4.y;
 
-				coords[8] = p1.x;
-				coords[9] = p1.y;
+				//coords[8] = p1.x;
+				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 5);
+				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
 
-	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
+	if (!tessTesselate(tess, TESS_WINDING_NEGATIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
 		return -1;
 
 
@@ -1553,23 +1555,33 @@ int main(int argc, char *argv[])
 
 			}
 			*/
+			int actualCount = 0;
 
-			for (int j = 0; j < count; j++) {
-					vs[j].Set(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize + 1]);
+			vs[0].Set(vertsCont[(base ) * vertexSize], vertsCont[(base) * vertexSize + 1]);
+			actualCount++;
+
+			for (int j = 1; j < count; j++) {
+					b2Vec2 v1 = b2Vec2(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize + 1]);
+					b2Vec2 v2 = b2Vec2(vertsCont[(base + j - 1) * vertexSize], vertsCont[(base + j - 1) * vertexSize + 1]);
+				
+					if (b2DistanceSquared(v1, v2) > b2_linearSlop * b2_linearSlop) {
+						vs[actualCount].Set(vertsCont[(base + j) * vertexSize], vertsCont[(base + j) * vertexSize + 1]);
+						actualCount++;
+					}
 			}
 
 
 
-//            if (c>=3) {
+            if (actualCount >=3) {
                 b2ChainShape shape;
-                shape.CreateLoop(vs, count);
+                shape.CreateLoop(vs, actualCount);
                 b2FixtureDef fd;
                 fd.shape = &shape;
                 //fd.filter.categoryBits = buildingsCategory;
                 //fd.filter.maskBits = buildingsCategory;
 
                 ground->CreateFixture(&fd);
-  //          }
+            }
 		}
 	}
 
