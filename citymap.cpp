@@ -1467,7 +1467,7 @@ int main(int argc, char *argv[])
 	vector<unsigned int> res = findPath(roads, 306919, 793462859);
 
     tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
-    if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_POLYGONS, nvp, 2, 0))
+    if (!tessTesselate(tess, TESS_WINDING_ODD, TESS_POLYGONS, nvp, 2, 0))
         return -1;
     printf("Memory used: %.1f kB\n", allocated/1024.0f);
 
@@ -1481,18 +1481,18 @@ int main(int argc, char *argv[])
     const int nelems = tessGetElementCount(tess);
 
 	tess = tessNewTess(&ma);
-	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
+	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds, true);
 
 	for (auto const& n1 : roads.pathGraph)
 	{
 		for (int neigh1 = 0; neigh1 < n1.second.size(); neigh1++) {
-			float r =  3.f * static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-			r = 0.f;
+			//float r =  3.f * static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+			float r = 0.f;
 				b2Vec2 v1 = 1.05f * b2Vec2(roads.nodes[n1.second[neigh1]].x - roads.nodes[n1.first].x, roads.nodes[n1.second[neigh1]].y - roads.nodes[n1.first].y);
 
 				b2Vec2 normal1 = v1.Skew();
 				normal1.Normalize();
-				normal1 = 5.f*normal1;
+				normal1 = 1.f*normal1;
 
 				
 
@@ -1519,7 +1519,7 @@ int main(int argc, char *argv[])
 		
 	};
 
-	if (!tessTesselate(tess, TESS_WINDING_NEGATIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
+	if (!tessTesselate(tess, TESS_WINDING_POSITIVE, TESS_BOUNDARY_CONTOURS, nvp, 2, 0))
 		return -1;
 
 

@@ -95,7 +95,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
-map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds)  {
+map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds, bool contours = false)  {
     std::string m_currentLevel = std::string(name);
 
     int di = m_currentLevel.find_last_of('.');
@@ -380,6 +380,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 						}
 					}
 					*/
+					
 					{
 						b2BodyDef bd;
 						b2Body* ground = world->CreateBody(&bd);
@@ -394,7 +395,56 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 						shape.CreateChain(vs, coordsx.size());
 						ground->CreateFixture(&shape, 0.0f);
 					}
+					
+					/*
 
+					vector<float> coordsxOuter = vector<float>();
+					vector<float> coordsyOuter = vector<float>();
+					vector<float> coordsOuter = vector<float>();
+
+
+					vector<float> coordsxInner = vector<float>();
+					vector<float> coordsyInner = vector<float>();
+					vector<float> coordsInner = vector<float>();
+
+					for (int i = 0; i < coordsx.size() - 1; i++) {
+
+						float v1x = coordsx[i + 1] - coordsx[i];
+						float v1y = coordsy[i + 1] - coordsy[i];
+
+						float n1x = -v1y;
+						float n1y = v1x;
+						float nmag = sqrt(n1x*n1x + n1y*n1y);
+
+						float nx = n1x / nmag;
+						float ny = n1y / nmag;
+
+						coordsxOuter.push_back(coordsx[i] + nx);
+						coordsyOuter.push_back(coordsy[i] + ny);
+
+						coordsxInner.push_back(coordsx[i] - nx);
+						coordsyInner.push_back(coordsy[i] - ny);
+					}
+
+					std::reverse(coordsxInner.begin(), coordsxInner.end());
+					std::reverse(coordsyInner.begin(), coordsyInner.end());
+
+					//vector<float> coords = vector<float>();
+					for (int i = 0; i < coordsx.size()-1; i++) {
+						coordsInner.push_back(coordsxInner[i]);
+						coordsInner.push_back(coordsyInner[i]);
+
+						coordsOuter.push_back(coordsxOuter[i]);
+						coordsOuter.push_back(coordsyOuter[i]);
+					}
+
+
+
+					if (contours) {
+						//tessAddContour(tess, 2, coordsInner.data(), sizeof(float) * 2, round(coordsInner.size() / 2));
+						//tessAddContour(tess, 2, coordsOuter.data(), sizeof(float) * 2, round(coordsOuter.size() / 2));
+					}
+					*/
 
                     b1.bounds.xmin = *(std::min_element(coordsx.begin(),coordsx.end()));
                     b1.bounds.xmax = *(std::max_element(coordsx.begin(),coordsx.end()));
@@ -501,236 +551,6 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
         map_record mapRecord = {nodes, pathGraph, buildings};
         return mapRecord;
     }
-    /*
-    else {
-
-          nlohmann::json jsonObj;
-
-          std::ifstream file;
-          file.open(std::string(name), std::ios::in);
-          if (file) {
-              printf("file open \n");
-              jsonObj << file;
-              file.close();
-          }
-
-
-          float aN = 0.f;
-
-
-          if (jsonObj.find("northAngle") != jsonObj.end()) {
-              auto northAngle = jsonObj.find("northAngle");
-              aN = *northAngle;
-              aN = aN * glm::pi<float>() / 180;;
-          };
-
-
-          auto f1 = jsonObj.find("features");
-
-
-          std::map<std::string, building> m3;
-
-
-          if (f1 != jsonObj.end()) {
-              //m_force = m_forceLeft;
-              //std::cout << "found features";
-              //std::cout << ((*f1)[0]).dump(4);
-
-
-              std::map<std::string, float **> m2;
-              float **a2;
-              float *a1[10];
-
-
-
-
-
-              singlePolygon.nvert = 0;
-
-
-              for (nlohmann::json::iterator it = (*f1).begin(); it != (*f1).end(); ++it) {
-                  if (((*it)["properties"]).find("building") != ((*it)["properties"]).end()) {
-                      std::cout << "id:" << (*it)["properties"]["id"] << "\n";
-                      std::cout << (*it)["geometry"]["type"];
-
-                      if ((*it)["geometry"]["type"] == "Polygon") {
-
-                          std::vector<std::vector<std::vector<float> > > c1 = (*it)["geometry"]["coordinates"];
-
-
-                          a2 = new float *[c1.size()];
-                          std::string id = (*it)["properties"]["id"];
-
-                          m3[id].coords = std::vector<std::vector<float> >();
-                          m3[id].id = id;
-
-                          if (((*it)["properties"]).find("name") != ((*it)["properties"]).end())
-                              m3[id].name = (*it)["properties"]["name"];
-                          if (((*it)["properties"]).find("addr:street") != ((*it)["properties"]).end())
-                              m3[id].addrStreet = (*it)["properties"]["addr:street"];
-                          if (((*it)["properties"]).find("addr:housenumber") != ((*it)["properties"]).end())
-                              m3[id].addrNumber = (*it)["properties"]["addr:housenumber"];
-                          if (((*it)["properties"]).find("type") != ((*it)["properties"]).end())
-                              m3[id].type = (*it)["properties"]["type"];
-
-                          m3[id].bounds = {std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max(),
-                                           std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max()};
-
-
-                          for (int j = 0; j < c1.size(); j++) {
-
-                              m3[id].coords.push_back(std::vector<float>());
-
-                              std::cout << "contour size:" << c1[j].size() << "\n";
-
-                              // zero vert
-                              singlePolygon.nvert++;
-
-
-                              for (int i = 0; i < c1[j].size(); i++) {
-
-                                  m3[id].coords[j].push_back(c1[j][i][0]);
-                                  m3[id].coords[j].push_back(c1[j][i][1]);
-
-                                  singlePolygon.nvert++;
-
-                                  m3[id].bounds.xmin = std::min(m3[id].bounds.xmin, c1[j][i][0]);
-                                  m3[id].bounds.xmax = std::max(m3[id].bounds.xmax, c1[j][i][0]);
-
-                                  xmin = std::min(xmin, c1[j][i][0]);
-                                  xmax = std::max(xmax, c1[j][i][0]);
-
-                                  m3[id].bounds.ymin = std::min(m3[id].bounds.ymin, c1[j][i][1]);
-                                  m3[id].bounds.ymax = std::max(m3[id].bounds.ymax, c1[j][i][1]);
-
-                                  ymin = std::min(ymin, c1[j][i][1]);
-                                  ymax = std::max(ymax, c1[j][i][1]);
-                              };
-
-
-                              singlePolygon.nvert++;  // zero vert
-
-                          }
-
-
-                      };
-                  }
-              }
-
-          }
-
-          if (!computeBounds) {
-              auto f0 = jsonObj.find("mapBounds");
-              std::vector<float> c1 = (*f0);
-
-              xmin = c1[0];
-              xmax = c1[1];
-              ymin = c1[2];
-              ymax = c1[3];
-          }
-
-
-
-
-
-
-
-          float frame[8] = {lowerx, lowery, lowerx, uppery, upperx, uppery, upperx, lowerx};
-
-
-          tessAddContour(tess, 2, frame, sizeof(float) * 2, 4);
-
-
-          glm::mat2 r1(cos(aN), -sin(aN), sin(aN), cos(aN));
-
-
-          singlePolygon.vertx = new double[singlePolygon.nvert];
-          singlePolygon.verty = new double[singlePolygon.nvert];
-
-          int spCounter = 0;
-          int buildingCounter = 7;
-
-
-          debug_log().AddLog("upperx: %f \n", upperx);
-
-
-          for (auto &it : m3) {
-              std::vector<float> unCol = std::vector<float>();
-              it.second.firstVertexIndex = buildingCounter;
-
-              for (int j = 0; j < it.second.coords.size(); j++) {
-
-                  singlePolygon.vertx[spCounter] = 0.f;
-                  singlePolygon.verty[spCounter] = 0.f;
-                  spCounter++;
-                  buildingCounter++;
-
-                  for (int i = 0; i < it.second.coords[j].size(); i = i + 2) {
-
-                      float x = lowerx + (it.second.coords[j][i] - xmin) / (xmax - xmin) * (upperx - lowerx);
-                      float y = lowery + (it.second.coords[j][i + 1] - ymin) / (ymax - ymin) * (uppery - lowery);
-
-                      glm::vec2 v1(x, y);
-                      glm::vec2 v2 = r1 * v1;
-
-
-                      unCol.push_back(v2[0]);
-                      unCol.push_back(v2[1]);
-
-
-                      singlePolygon.vertx[spCounter] = v2[0];
-                      singlePolygon.verty[spCounter] = v2[1];
-                      spCounter++;
-                      buildingCounter++;
-
-                      it.second.coords[j][i] = v2[0];
-                      it.second.coords[j][i + 1] = v2[1];
-
-                      if (j == 0) {
-                          it.second.anchorx += v2[0];
-                          it.second.anchory += v2[1];
-                      }
-                  }
-                  if (j == 0) {
-                      it.second.anchorx /= (it.second.coords[j].size() / 2);
-                      it.second.anchory /= (it.second.coords[j].size() / 2);
-                  }
-
-
-                  tessAddContour(tess, 2, it.second.coords[j].data(), sizeof(float) * 2,
-                                 round(it.second.coords[j].size() / 2));
-
-
-                  unCol.push_back(0.f);
-                  unCol.push_back(0.f);
-
-                  singlePolygon.vertx[spCounter] = 0.f;
-                  singlePolygon.verty[spCounter] = 0.f;
-                  spCounter++;
-              }
-
-              float *cont1 = unCol.data();
-              int numVert = round(unCol.size() / 2);
-
-              it.second.vertx = new double[numVert];
-              it.second.verty = new double[numVert];
-
-              for (int i = 0; i < numVert; i++) {
-                  it.second.vertx[i] = cont1[2 * i];
-                  it.second.verty[i] = cont1[2 * i + 1];
-              }
-
-              it.second.numVert = numVert;
-
-              it.second.lastVertexIndex = buildingCounter;
-
-
-          }
-
-
-          return m3;
-      }
-     */
 };
 /*
 int buildingIndex(cityMap city, int index, std::string & id)
