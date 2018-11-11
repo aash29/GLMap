@@ -18,6 +18,6 @@ public:
     entityType type;
 };
 
-extern std::map <int, entity> things;
+extern std::map <unsigned int, entity> things;
 
 #endif //GLMAP_ENTITY_H

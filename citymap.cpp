@@ -160,6 +160,8 @@ float angularDamping = 10.f;
 
 float currentTime = 0; 
 
+std::vector<b2Vec2> checkpoints = std::vector<b2Vec2>();
+
 
 typedef RStarTree<int, 2, 32, 64> 			RTree;
 typedef RTree::BoundingBox			BoundingBox;
@@ -1514,7 +1516,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1673,28 +1675,9 @@ int main(int argc, char *argv[])
     playerAgent.body = agentBody;
     playerAgent.type = player;
 	
-
-/*
-
-
-{
-    b2CircleShape sensor;
-    sensor.m_radius = sight;
-    b2FixtureDef fd;
-    fd.shape = &sensor;
-    fd.isSensor = true;
-	fd.userData = &playerAgent;
-    fd.filter.categoryBits = visibilityCategory;
-    fd.filter.maskBits = visibilityCategory;
-
-    agentBody->CreateFixture(&fd);
-
-}
-*/
-
-
-
     agentBody->SetUserData(&playerAgent);
+
+
 
 
     for (auto &t1: things){
@@ -1766,6 +1749,9 @@ int main(int argc, char *argv[])
 
 
 
+
+
+
 	/*
     vector<b2Vec2> treePoints = vector<b2Vec2>();
     for (auto n1: roads.pathGraph){
@@ -1787,6 +1773,21 @@ int main(int argc, char *argv[])
 	*/
 
 
+	int checkpointNum = 15;
+	for (int i = 0; i < checkpointNum; i++) {
+		auto it = things.begin();
+		std::advance(it, rand() % things.size());
+		
+		debug_log().AddLog("index %d \n", it->first);
+		debug_log().AddLog("id: %d \n", things[it->first].id);
+		b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].id].x, roads.nodes[things[it->first].id].y);
+		debug_log().AddLog("checkpoint %u: %g,%g \n", things[it->first].id, t1.x, t1.y);
+		checkpoints.push_back(t1); 
+	}
+	
+	
+	//checkpoints.push_back(b2Vec2(500.f, 575.f));
+	//checkpoints.push_back(b2Vec2(1000.f, 390.f));
 
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
@@ -1969,65 +1970,6 @@ int main(int argc, char *argv[])
         }
 
 
-		/*
-
-       std::function<void(kdNode*, int, rect)> drawTree = [&](kdNode* curNode, int depth, rect domain){
-            int d1 = depth / 2;
-            int axis = depth - d1 * 2;
-
-           rect lDom, rDom;
-
-            if (axis==0){
-
-                lDom.xmin = domain.xmin;
-                lDom.xmax = curNode->location;
-                lDom.ymin = domain.ymin;
-                lDom.ymax = domain.ymax;
-
-                rDom.xmin = curNode->location;;
-                rDom.xmax = domain.xmax;
-                rDom.ymin = domain.ymin;
-                rDom.ymax = domain.ymax;
-
-
-                g_debugDraw.DrawSegment(b2Vec2(curNode->location,domain.ymin),b2Vec2(curNode->location,domain.ymax),b2Color(1.f,0.f,0.f));
-
-
-            } else
-            if (axis==1){
-
-                lDom.xmin = domain.xmin;
-                lDom.xmax = domain.xmax;
-
-                lDom.ymin = curNode->location;
-                lDom.ymax = domain.ymax;
-
-                rDom.xmin = domain.xmin;
-                rDom.xmax = domain.xmax;
-
-                rDom.ymin = domain.ymin;
-                rDom.ymax = curNode->location;
-
-                g_debugDraw.DrawSegment(b2Vec2(domain.xmin,curNode->location),b2Vec2(domain.xmax,curNode->location),b2Color(0.f,1.f,0.f));
-
-
-            }
-
-            if (curNode->left){
-                drawTree(curNode->left,depth+1,lDom);
-            }
-            if (curNode->right){
-                drawTree(curNode->right,depth+1,rDom);
-            }
-
-        };
-
-        rect dom = {xm,xp,ym,yp};
-
-        drawTree(n1,0, dom);
-
-		*/
-
 
 		if (res.size() > 0) {
 			b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
@@ -2054,6 +1996,30 @@ int main(int argc, char *argv[])
 			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f, 0.f, 0.f, 1.f));
 		}
 
+
+
+		for (int i = 0; i < checkpoints.size(); i++) {
+
+			b2Vec2 vertices[3];
+			b2Vec2 p0 = checkpoints[i];
+
+			vertices[0] =  b2Vec2(0.f, 1.f);
+			vertices[1] =  b2Vec2(1.f, -1.f);
+			vertices[2] =  b2Vec2(-1.f, -1.f);
+
+			float theta;
+			theta = currentTime / 60 * (5 * b2_pi);
+			b2Mat22 rot1 = b2Mat22(cos(theta), -sin(theta), sin(theta), cos(theta));
+
+			for (int j = 0; j < 3; j++){
+				vertices[j] = p0 + b2Mul(rot1, 15.f * vertices[j]);
+			}
+
+			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.f, 1.f, 0.f, 1.f));
+		}
+
+		checkpoints.erase(std::remove_if(checkpoints.begin(), checkpoints.end(),
+			[&](b2Vec2 cp) { return ((cp - agentBody->GetPosition()).Length()<15.f); }), checkpoints.end());
 
 
 

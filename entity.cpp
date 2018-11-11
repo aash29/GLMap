@@ -6,4 +6,4 @@
 #include "entity.h"
 
 
-std::map <int, entity> things;
+std::map <unsigned int, entity> things;
