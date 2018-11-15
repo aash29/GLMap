@@ -469,80 +469,83 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 b1.renderCoords= vector< vector<unsigned int> >();
 
-                XMLElement* mem1 = r1->FirstChildElement("member");
+				vector<float> coordsx = vector<float>();
+				vector<float> coordsy = vector<float>();
+
+				
+				XMLElement* mem1 = r1->FirstChildElement("member");
+
+				int ref;
+				mem1->QueryAttribute("ref", &ref);
+
+				int contourStart = ways[ref][0];
+				int wayStart = ways[ref][0];
+				int wayEnd = ways[ref].back();
+
                 while (mem1){
                 //if (mem1->Attribute("role","outer")) {
                     int ref;
                     mem1->QueryAttribute("ref", &ref);
 
-                    /*
-                    XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
-                    while (w1){
+					const char *role = mem1->Attribute("role");
 
-                        int id;
-                        w1->QueryAttribute("id", &id);
-                        if (id==ref) break;
-                        w1 = w1->NextSiblingElement("way");
-                    }
-
-                    if (not w1) break;
-                    */
-
-                    //XMLElement* nd1 = w1->FirstChildElement("nd");
-                    vector<float> coordsx = vector<float>();
-                    vector<float> coordsy = vector<float>();
+					wayStart = ways[ref][0];
+					wayEnd = ways[ref].back();
 
                     b1.renderCoords.push_back(vector<unsigned int>());
 
-                    float wind = 0.f; //determine winding
                     for (int ni: ways[ref]) {
 
                         unsigned int ref;
                         b1.renderCoords.back().push_back(ref);
                         coordsx.push_back(nodes[ni].x);
                         coordsy.push_back(nodes[ni].y);
-                        if (coordsx.size()>1){
-                            wind += (coordsx.end()[-1] - coordsx.end()[-2]) * (coordsy.end()[-1] + coordsy.end()[-2]);
-                        }
                     }
-					if (mem1->Attribute("role", "outer")) {
-						if (wind < 0) {
-							std::reverse(coordsx.begin(), coordsx.end());
-							std::reverse(coordsy.begin(), coordsy.end());
-						}
-					} else {
-						if (wind > 0) {
-							std::reverse(coordsx.begin(), coordsx.end());
-							std::reverse(coordsy.begin(), coordsy.end());
-						}
-					}
-
-                    vector<float> coords = vector<float>();
-                    for (int i= 0; i < coordsx.size(); i++) {
-                        coords.push_back(coordsx[i]);
-                        coords.push_back(coordsy[i]);
-                    }
-
-                    tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
-                //}
-					/*
-					{
-						b2BodyDef bd;
-						b2Body* ground = world->CreateBody(&bd);
-
-						b2Vec2* vs;
-						vs = new b2Vec2[coordsx.size()];
-
-						for (int i = 0; i < coordsx.size() - 1; i++) {
-							vs[i].Set(coordsx[i], coordsy[i]);
-						}
-						b2ChainShape shape;
-						shape.CreateLoop(vs, coordsx.size() - 1);
-						ground->CreateFixture(&shape, 0.0f);
-					}
-					*/
 
                     mem1 = mem1->NextSiblingElement("member");
+
+					if (wayEnd == contourStart) {
+
+						float wind = 0.f; //determine winding https://en.wikipedia.org/wiki/Shoelace_formula
+						for (int i = 1; i < coordsx.size(); i++) {
+							wind += (coordsx[i] - coordsx[i-1]) * (coordsy[i] + coordsy[i-1]);
+						}
+						wind += (coordsx[0] - coordsx.back()) * (coordsy[0] + coordsy.back());
+
+						if (strcmp(role, "outer")==0) {
+							if (wind < 0) {
+								std::reverse(coordsx.begin(), coordsx.end());
+								std::reverse(coordsy.begin(), coordsy.end());
+							}
+						}
+						else if (strcmp(role, "inner") == 0) {
+							if (wind > 0) {
+								std::reverse(coordsx.begin(), coordsx.end());
+								std::reverse(coordsy.begin(), coordsy.end());
+							}
+						}
+						
+						vector<float> coords = vector<float>();
+						for (int i = 0; i < coordsx.size(); i++) {
+							coords.push_back(coordsx[i]);
+							coords.push_back(coordsy[i]);
+						}
+
+						tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+
+						coordsx.clear();
+						coordsy.clear();
+
+						if (mem1 != 0) {
+							int ref;
+							mem1->QueryAttribute("ref", &ref);
+
+							contourStart = ways[ref][0];
+						}
+
+					}
+
+
                 }
             }
             r1 = r1->NextSiblingElement("relation");

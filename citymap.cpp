@@ -1516,7 +1516,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -2008,7 +2008,7 @@ int main(int argc, char *argv[])
 			vertices[2] =  b2Vec2(-1.f, -1.f);
 
 			float theta;
-			theta = currentTime / 60 * (5 * b2_pi);
+			theta = currentTime / 60 * (15 * b2_pi);
 			b2Mat22 rot1 = b2Mat22(cos(theta), -sin(theta), sin(theta), cos(theta));
 
 			for (int j = 0; j < 3; j++){
