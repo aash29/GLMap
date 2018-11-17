@@ -58,6 +58,7 @@
 
 
 #include "RStarTree.h"
+#include "car.h"
 
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
@@ -1516,7 +1517,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1626,16 +1627,16 @@ int main(int argc, char *argv[])
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(4606.f, 2636.f);
+	bodyDef.position.Set(4616.f, 2646.f);
 	agentBody = world.CreateBody(&bodyDef);
 
 	// Define another box shape for our dynamic body.
 	b2PolygonShape agentShape;
 
-    b2Vec2 x1 = b2Vec2(5.f, 0.f);
+    b2Vec2 x1 = b2Vec2(1.f, 0.f);
 
-	b2Vec2 x11 = b2Vec2(0.f, 5.f);
-	b2Vec2 x12 = b2Vec2(0.f, -5.f);
+	b2Vec2 x11 = b2Vec2(0.f, 0.6f);
+	b2Vec2 x12 = b2Vec2(0.f, -0.6f);
 
     b2Vec2 verticesTri[3];
 
@@ -1655,9 +1656,10 @@ int main(int argc, char *argv[])
 	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
 	fixtureDef.shape = &agentShape;
+	fixtureDef.density = 5.f;
 
 	// Set the box density to be non-zero, so it will be dynamic.
-	fixtureDef.density = 0.1f;
+	//fixtureDef.density = 0.1f;
 
 	// Override the default friction.
 	fixtureDef.friction = 0.3f;
@@ -1773,18 +1775,21 @@ int main(int argc, char *argv[])
 	*/
 
 
-	int checkpointNum = 15;
+	int checkpointNum = 2;
 	for (int i = 0; i < checkpointNum; i++) {
 		auto it = things.begin();
-		std::advance(it, rand() % things.size());
+		//std::advance(it, rand() % things.size());
+		std::advance(it, i);
 		
 		debug_log().AddLog("index %d \n", it->first);
 		debug_log().AddLog("id: %d \n", things[it->first].id);
-		b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].id].x, roads.nodes[things[it->first].id].y);
-		debug_log().AddLog("checkpoint %u: %g,%g \n", things[it->first].id, t1.x, t1.y);
+		b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].nodeId].x, roads.nodes[things[it->first].nodeId].y);
+		debug_log().AddLog("checkpoint %d: %g,%g \n", things[it->first].nodeId, t1.x, t1.y);
 		checkpoints.push_back(t1); 
 	}
 	
+
+	Car crow = Car(&world, 0.f, 4606.f, 2636.f);
 	
 	//checkpoints.push_back(b2Vec2(500.f, 575.f));
 	//checkpoints.push_back(b2Vec2(1000.f, 390.f));
@@ -1815,7 +1820,8 @@ int main(int argc, char *argv[])
 
 
         if (t>timeStep) {
-            world.Step(timeStep, velocityIterations, positionIterations);
+			crow.step(timeStep);
+			world.Step(timeStep, velocityIterations, positionIterations);
             if (cameraFollow) {
                 g_camera.m_center = agentBody->GetPosition();
             }
@@ -1883,9 +1889,50 @@ int main(int argc, char *argv[])
 
 
 
+		state = glfwGetKey(window, GLFW_KEY_W);
+		if (state == GLFW_PRESS) {
+			crow.accelerate(0.8f);
+		}
+		
+		if (state == GLFW_RELEASE) {
+			crow.accelerate(0.0f);
+		}
+
+
+		state = glfwGetKey(window, GLFW_KEY_S);
+		if (state == GLFW_PRESS) {
+			crow.brake(0.8f);
+		}
+
+		if (state == GLFW_RELEASE) {
+			crow.brake(0.0f);
+		}
+
+
+		state = glfwGetKey(window, GLFW_KEY_D);
+		if (state == GLFW_PRESS) {
+			crow.steer(1.f);
+		}
+
+		if (state == GLFW_RELEASE) {
+			crow.steer(0.f);
+		}
+
+		state = glfwGetKey(window, GLFW_KEY_A);
+		if (state == GLFW_PRESS) {
+			crow.steer(-1.f);
+		}
+
+		if (state == GLFW_RELEASE) {
+			crow.steer(0.f);
+		}
+
+
+
         if (drawPaths) {
             g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
         }
+
 
 
 
@@ -1925,6 +1972,7 @@ int main(int argc, char *argv[])
 					*/
 					if (POIinFOV.find(&t1.second) == POIinFOV.end()) {
 						debug_log().AddLog(roads.nodes[t1.second.nodeId].tags["name"]);
+						debug_log().AddLog(t1.second.desc);
 						debug_log().AddLog("\n");
 						POIinFOV.insert(&t1.second);
 					}

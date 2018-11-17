@@ -160,19 +160,20 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
 
-
+			/*
             if ((tags.count("historic")>0) || (tags.count("memorial")>0)) {
                 things.insert(std::pair<int, entity>(id,entity()));
                 things[id].id = id;
                 things[id].nodeId = id;
                 things[id].type = POI;
-                //things[id].x = &nodes[id].x;
-                //things[id].y = &nodes[id].y;
+                //things[id].x = nodes[id].x;
+                //things[id].y = nodes[id].y;
             }
-
+			*/
             n1 = n1->NextSiblingElement("node");
 
         }
+
 
 
         double width = xmax - xmin;
@@ -475,29 +476,27 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				
 				XMLElement* mem1 = r1->FirstChildElement("member");
 
-				int ref;
-				mem1->QueryAttribute("ref", &ref);
+				int wayRef;
+				mem1->QueryAttribute("ref", &wayRef);
 
-				int contourStart = ways[ref][0];
-				int wayStart = ways[ref][0];
-				int wayEnd = ways[ref].back();
+				int64_t contourStart = ways[wayRef][0];
+				int64_t wayStart = ways[wayRef][0];
+				int64_t wayEnd = ways[wayRef].back();
 
                 while (mem1){
                 //if (mem1->Attribute("role","outer")) {
-                    int ref;
-                    mem1->QueryAttribute("ref", &ref);
+					int64_t wayRef;
+                    mem1->QueryAttribute("ref", &wayRef);
 
 					const char *role = mem1->Attribute("role");
 
-					wayStart = ways[ref][0];
-					wayEnd = ways[ref].back();
+					wayStart = ways[wayRef][0];
+					wayEnd = ways[wayRef].back();
 
                     b1.renderCoords.push_back(vector<unsigned int>());
 
-                    for (int ni: ways[ref]) {
-
-                        unsigned int ref;
-                        b1.renderCoords.back().push_back(ref);
+                    for (int ni: ways[wayRef]) {
+                        b1.renderCoords.back().push_back(ni);
                         coordsx.push_back(nodes[ni].x);
                         coordsy.push_back(nodes[ni].y);
                     }
@@ -518,7 +517,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 								std::reverse(coordsy.begin(), coordsy.end());
 							}
 						}
-						else if (strcmp(role, "inner") == 0) {
+						if (strcmp(role, "inner") == 0) {
 							if (wind > 0) {
 								std::reverse(coordsx.begin(), coordsx.end());
 								std::reverse(coordsy.begin(), coordsy.end());
@@ -536,19 +535,45 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 						coordsx.clear();
 						coordsy.clear();
 
-						if (mem1 != 0) {
-							int ref;
-							mem1->QueryAttribute("ref", &ref);
+						if (mem1) {
+							unsigned int wayRef;
+							mem1->QueryAttribute("ref", &wayRef);
 
-							contourStart = ways[ref][0];
+							contourStart = ways[wayRef][0];
 						}
 
 					}
 
 
                 }
+
+				int currentRelationId = atoi(relId);
+
+				buildings.insert(pair<int, building>(currentRelationId, b1));
+
+				if (tags.count("enemy") > 0) {
+					things.insert(std::pair<int, entity>(currentRelationId, entity()));
+					things[currentRelationId].id = currentRelationId;
+					
+					things[currentRelationId].type = POI;
+
+					int anchorId = b1.renderCoords[0][0];
+
+					things[currentRelationId].nodeId = anchorId;
+
+					things[currentRelationId].desc = tags["enemy:desc"];
+
+					//things[currentRelationId].x = nodes[anchorId].x;
+					//things[currentRelationId].y = nodes[anchorId].y;
+				}
+
             }
+
+
+
+
             r1 = r1->NextSiblingElement("relation");
+
         }
 
         map_record mapRecord = {nodes, pathGraph, buildings};

@@ -16,6 +16,7 @@ public:
     int nodeId;
     b2Body* body;
     entityType type;
+	std::string desc;
 };
 
 extern std::map <unsigned int, entity> things;
