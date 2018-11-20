@@ -18,7 +18,7 @@ float FRICTION_LIMIT = 1000000 * CARSIZE*CARSIZE;     // friction ~= mass ~= CAR
 float WHEEL_R = 27;
 float WHEEL_W = 14;
 float WHEELPOS[4][2] = {
-	{-80, +80}, {+80, +80}, {-80, -82}, {+80, -82}
+	{-45, +80}, {+45, +80}, {-45, -82}, {+45, -82}
 };
 
 b2Vec2 HULL_POLY1[4] = {
@@ -27,8 +27,8 @@ b2Vec2 HULL_POLY1[4] = {
 };
 
 b2Vec2 HULL_POLY2[4] = {
-	CARSIZE*b2Vec2(-15, +120), CARSIZE*b2Vec2 (+15, +120),
-	CARSIZE*b2Vec2(+20, +20), CARSIZE*b2Vec2 (-20, 20)
+	CARSIZE*b2Vec2(-35, +120), CARSIZE*b2Vec2 (+35, +120),
+	CARSIZE*b2Vec2(+40, +10), CARSIZE*b2Vec2 (-40, 10)
 };
 
 b2Vec2 HULL_POLY3[8] = {
@@ -167,7 +167,7 @@ public:
 		}
 	}
 	void accelerate(float gas) {
-		gas = (std::max)(0.f,(std::min)(gas, 1.f));
+		gas = (std::max)(-1.f,(std::min)(gas, 1.f));
 		
 		for (int i = 2; i <= 3; i ++) {
 			float diff = gas - wheels[i].gas;
@@ -199,7 +199,7 @@ public:
 
 			//# Position = > friction_limit
 			//grass = True
-			float friction_limit = FRICTION_LIMIT*0.6;  //# Grass friction if no tile
+			float friction_limit = FRICTION_LIMIT*0.8;  //# Grass friction if no tile
 														   //for tile in w.tiles:
 														   //float friction_limit = max(friction_limit, FRICTION_LIMIT*tile.road_friction)
 														   //grass = False

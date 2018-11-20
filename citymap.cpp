@@ -143,6 +143,12 @@ b2World world(b2Vec2_zero);
 b2Body* agentBody;
 entity playerAgent;
 
+b2WeldJoint* wj;
+
+b2WeldJointDef wjdef;
+
+Car crow = Car(&world, 0.f, 4606.f, 2636.f);
+
 int agentCollisionMarker = 0;
 int POImarker = 1;
 float sight = 100.f;
@@ -160,6 +166,9 @@ float linearDamping = 5.f;
 float angularDamping = 10.f;
 
 float currentTime = 0; 
+
+
+bool mounted = true;
 
 std::vector<b2Vec2> checkpoints = std::vector<b2Vec2>();
 
@@ -574,9 +583,25 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 		//TESS_NOTUSED(mods);
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 			glfwSetWindowShouldClose(window, GL_TRUE);
+		/*
 		if (key == GLFW_KEY_SPACE && ((action == GLFW_PRESS) || (action == GLFW_REPEAT))) {
 			endTurn();
 		}
+		*/
+		if (key == GLFW_KEY_ENTER && action == GLFW_PRESS) {
+
+			if (b2Distance(agentBody->GetPosition(), crow.hull->GetPosition()) < 3.f) {
+
+
+				if (mounted) {
+					world.DestroyJoint(wj);
+				}
+				else {
+					wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
+				}
+				mounted = !mounted;
+			}
+		};
 
 
 
@@ -1352,8 +1377,8 @@ int main(int argc, char *argv[])
 
     ImGui_ImplGlfwGL3_Init(window, false);
 
+	glfwSetTime(0);
 
-    glfwSetTime(0);
 
     char* levelPath = "little.geojson";
 
@@ -1440,7 +1465,7 @@ int main(int argc, char *argv[])
             ImGui::Render();
 
             glfwSwapBuffers(window);
-            glfwPollEvents();
+            //glfwPollEvents();
         }
     }
 
@@ -1656,7 +1681,7 @@ int main(int argc, char *argv[])
 	// Define the dynamic body fixture.
 	b2FixtureDef fixtureDef;
 	fixtureDef.shape = &agentShape;
-	fixtureDef.density = 5.f;
+	fixtureDef.density = 0.1f;
 
 	// Set the box density to be non-zero, so it will be dynamic.
 	//fixtureDef.density = 0.1f;
@@ -1678,6 +1703,14 @@ int main(int argc, char *argv[])
     playerAgent.type = player;
 	
     agentBody->SetUserData(&playerAgent);
+
+	wjdef.bodyA = agentBody;
+	wjdef.bodyB = crow.hull;
+	wjdef.localAnchorA = b2Vec2(0.f, 0.f);
+	wjdef.localAnchorB = b2Vec2(0.f, 0.f);
+	wjdef.referenceAngle = 0.f;
+
+	wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
 
 
 
@@ -1789,20 +1822,22 @@ int main(int argc, char *argv[])
 	}
 	
 
-	Car crow = Car(&world, 0.f, 4606.f, 2636.f);
+
 	
 	//checkpoints.push_back(b2Vec2(500.f, 575.f));
 	//checkpoints.push_back(b2Vec2(1000.f, 390.f));
 
+	float tzero = glfwGetTime();
+
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
 
-		currentTime = ct;
+		currentTime = ct - tzero;
         if (run) t += ct - pt;
 
         pt = ct;
 
-        glfwPollEvents();
+
 
         ImGui_ImplGlfwGL3_NewFrame();
 
@@ -1819,114 +1854,142 @@ int main(int argc, char *argv[])
         glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
-        if (t>timeStep) {
-			crow.step(timeStep);
-			world.Step(timeStep, velocityIterations, positionIterations);
-            if (cameraFollow) {
-                g_camera.m_center = agentBody->GetPosition();
-            }
-			t = 0;
-        }
 
 
 
 		int state;
 
 
-		agentBody->SetAngularDamping(angularDamping);
-		agentBody->SetLinearDamping(linearDamping);
+		glfwPollEvents();
+		/*
+
+		if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+			if (b2Distance(agentBody->GetPosition(), crow.hull->GetPosition()) < 3.f) {
+				if (mounted) {
+					world.DestroyJoint(wj);
+				}
+				else {
+					wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
+				}
+				mounted = !mounted;
+			}
+		};
+
+		*/
 
 
-		float refVel = walkSpeed;
+		if (!mounted) {
 
-		state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-		if (state == GLFW_PRESS) {
-			refVel = runSpeed;
+			agentBody->SetAngularDamping(angularDamping);
+			agentBody->SetLinearDamping(linearDamping);
+
+
+			float refVel = walkSpeed;
+
+			state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+			if (state == GLFW_PRESS) {
+				refVel = runSpeed;
+			}
+
+
+			state = glfwGetKey(window, GLFW_KEY_D);
+			if (state == GLFW_PRESS) {
+				agentBody->SetAngularVelocity(-2.f);
+			}
+
+			state = glfwGetKey(window, GLFW_KEY_A);
+			if (state == GLFW_PRESS) {
+				agentBody->SetAngularVelocity(2.f);
+			}
+
+
+			state = glfwGetKey(window, GLFW_KEY_W);
+			if (state == GLFW_PRESS) {
+				b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+				forward.Normalize();
+
+				float K = 1.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+				forward *= K;
+
+				agentBody->ApplyForceToCenter(forward, true);
+
+				//agentBody->SetLinearVelocity(forward);
+			}
+
+
+			state = glfwGetKey(window, GLFW_KEY_S);
+			if (state == GLFW_PRESS) {
+				b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+				forward.Normalize();
+
+				float K = 1.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+
+				forward *= K;
+
+
+				agentBody->ApplyForceToCenter(forward, true);
+
+				//agentBody->SetLinearVelocity(forward);
+
+			}
+		}
+		else {
+
+
+
+			state = glfwGetKey(window, GLFW_KEY_W);
+			if (state == GLFW_PRESS) {
+				crow.accelerate(0.8f);
+			}
+
+
+
+			state = glfwGetKey(window, GLFW_KEY_S);
+			if (state == GLFW_PRESS) {
+				//crow.brake(0.8f);
+				crow.accelerate(-0.8f);
+			}
+
+			if ((glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_S) == GLFW_RELEASE)) {
+				crow.accelerate(0.0f);
+			}
+
+			if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+				crow.brake(1.f);
+			}
+			else {
+				crow.brake(0.f);
+			}
+
+
+
+			state = glfwGetKey(window, GLFW_KEY_D);
+			if (state == GLFW_PRESS) {
+				crow.steer(-1.f);
+			}
+
+
+			state = glfwGetKey(window, GLFW_KEY_A);
+			if (state == GLFW_PRESS) {
+				crow.steer(1.f);
+			}
+
+			if ((glfwGetKey(window, GLFW_KEY_D) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_A) == GLFW_RELEASE)) {
+				crow.steer(0.f);
+			}
+
 		}
 
 
-		state = glfwGetKey(window, GLFW_KEY_D);
-		if (state == GLFW_PRESS){
-			agentBody->SetAngularVelocity(-2.f);
+
+		if (t>timeStep) {
+			crow.step(timeStep);
+			world.Step(timeStep, velocityIterations, positionIterations);
+			if (cameraFollow) {
+				g_camera.m_center = agentBody->GetPosition();
+			}
+			t = 0;
 		}
-
-		state = glfwGetKey(window, GLFW_KEY_A);
-		if (state == GLFW_PRESS) {
-			agentBody->SetAngularVelocity(2.f);
-		}
-
-
-		state = glfwGetKey(window, GLFW_KEY_W);
-		if (state == GLFW_PRESS) {
-			b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-			forward.Normalize();
-
-			float K = 100.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
-			forward*=K;
-
-			agentBody->ApplyForceToCenter(forward,true);
-
-			//agentBody->SetLinearVelocity(forward);
-		}
-
-
-        state = glfwGetKey(window, GLFW_KEY_S);
-        if (state == GLFW_PRESS) {
-            b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-            forward.Normalize();
-
-			float K = 10.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(),forward));
-
-			forward *= K;
-
-
-			agentBody->ApplyForceToCenter(forward,true);
-
-            //agentBody->SetLinearVelocity(forward);
-			
-        }
-
-
-
-
-		state = glfwGetKey(window, GLFW_KEY_W);
-		if (state == GLFW_PRESS) {
-			crow.accelerate(0.8f);
-		}
-		
-		if (state == GLFW_RELEASE) {
-			crow.accelerate(0.0f);
-		}
-
-
-		state = glfwGetKey(window, GLFW_KEY_S);
-		if (state == GLFW_PRESS) {
-			crow.brake(0.8f);
-		}
-
-		if (state == GLFW_RELEASE) {
-			crow.brake(0.0f);
-		}
-
-
-		state = glfwGetKey(window, GLFW_KEY_D);
-		if (state == GLFW_PRESS) {
-			crow.steer(1.f);
-		}
-
-		if (state == GLFW_RELEASE) {
-			crow.steer(0.f);
-		}
-
-		state = glfwGetKey(window, GLFW_KEY_A);
-		if (state == GLFW_PRESS) {
-			crow.steer(-1.f);
-		}
-
-		if (state == GLFW_RELEASE) {
-			crow.steer(0.f);
-		}
-
 
 
         if (drawPaths) {
