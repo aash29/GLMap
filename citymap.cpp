@@ -595,9 +595,15 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 				if (mounted) {
 					world.DestroyJoint(wj);
+					agentBody->ResetMassData();
 				}
 				else {
 					wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
+					b2MassData md;
+					md.mass = 0.01f; 
+					md.I = 0.01f;
+					agentBody->SetMassData(&md);
+					
 				}
 				mounted = !mounted;
 			}
@@ -715,6 +721,13 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
             io.KeysDown[key] = true;
         if (action == GLFW_RELEASE)
             io.KeysDown[key] = false;
+
+		(void)mods; // Modifiers are not reliable across systems
+		io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+		io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+		io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+		io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+
     }
 
 };
@@ -752,11 +765,12 @@ void sInterface() {
 
 
 
-    if (ImGui::IsAnyWindowHovered()) {
-        ImGui::CaptureMouseFromApp(true);
-    }
+	if (ImGui::IsAnyWindowHovered()) {
+		ImGui::CaptureMouseFromApp(true);
+		ImGui::CaptureKeyboardFromApp(true);
+	}
 
-    ImGuiIO &io = ImGui::GetIO();
+	ImGuiIO &io = ImGui::GetIO();
 
 	ImFontAtlas* atlas = ImGui::GetIO().Fonts;
 	ImFont* font = atlas->Fonts[1];
@@ -766,213 +780,294 @@ void sInterface() {
 	ImGuiStyle &style = ImGui::GetStyle();
 	//style.Colors[ImGuiCol_WindowBg]=color;
 	ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-	
+
 	int minutes = currentTime / 60;
-	g_debugDraw.DrawString(width/2, 0, "%dm %2.1fs",  minutes, currentTime - minutes * 60);
+	g_debugDraw.DrawString(width / 2, 0, "%dm %2.1fs", minutes, currentTime - minutes * 60);
 
 	ImGui::PopStyleColor();
 	ImGui::PopFont();
 
-	
+
 	int menuWidth = 600;
-    {
-        ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
-        ImGuiStyle &style = ImGui::GetStyle();
-        //style.Colors[ImGuiCol_WindowBg]=color;
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-        ImGui::SetNextWindowPos(ImVec2(10, 10));
-        ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
-
-        ImGui::Begin("Info");
-
-        //static int absoluteTurn;
-        int currentTurn = absoluteTurn % 24;
-
-        ImGui::Text("Current turn: %d", currentTurn);
-        ImGui::Text("Absolute turn: %d", absoluteTurn);
-
-        b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
-        b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
-
-        ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
-        //ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
-
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-        if (selected!=std::string("none"))
-        {
-            ImGui::Text((std::string("id:") + city[selected].id).c_str());
-        }
-
-        //ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
-        //ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
-
-        //ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
-        //ImGui::Checkbox("Draw Grid", &drawGrid);
-		ImGui::Checkbox("Draw Paths", &drawPaths);
-        ImGui::Checkbox("Camera Follow", &cameraFollow);
-        ImGui::Checkbox("Draw FOV", &drawFOV);
-
-
-        ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
-
-        ImGui::End();
-
-        ImGui::PopStyleColor();
-
-
-        ImGui::ShowTestWindow();
-
-        debug_log().Draw("Log",width,height);
-
-
-        ImFontAtlas* atlas = ImGui::GetIO().Fonts;
-        ImFont* font = atlas->Fonts[0];
-        //font->Scale = 2.f;
-    }
-
-
-
-
-
-
-    /*
-
-    ImGui::SetNextWindowPos(ImVec2(width-300, 0));
-
-    ImGui::Begin("Path");
-
-
-    static int beginPos[2] = {2,2};
-    ImGui::InputInt2("start", beginPos);
-
-    static int endPos[2];
-    ImGui::InputInt2("end", endPos);
-
-
-
-    if (ImGui::Button("Find")) {
-
-        for (auto a1:agents) {
-
-            string id = a1.first;
-
-            std::shared_ptr<navigation_path<location_t>> path;
-
-            location_t bpLoc(beginPos[0], beginPos[1]);
-
-            location_t epLoc(endPos[0], endPos[1]);
-
-            location_t apLoc(a1.second.x,a1.second.y);
-
-            path = find_path<location_t, navigator>(bpLoc, epLoc);
-
-            if (path->success) {
-                debug_log().AddLog("path found \n");
-
-                location_t curPos = apLoc;
-
-                for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
-                    if (!(curPos == *p1)) {
-                        debug_log().AddLog("%d,%d \n", p1->x, p1->y);
-
-                        int dx = p1->x;
-                        int dy = p1->y;
-                        agents[id].planFunc.push_back(
-                                [&, dx, dy, id]() {
-                                    if (path_map->walkable[path_map->at(dx, dy)]) {
-                                        agents[id].x = dx;
-                                        agents[id].y = dy;
-                                        return 0;
-                                    } else {
-                                        return 1;
-                                    };
-                                }
-                        );
-                        curPos = *p1;
-                    }
-                }
-
-            }
-        }
-
-    };
-
-
-
-    ImGui::End();
-	*/
-	/*
-
-    ImGui::Begin("State");
-
-
-    //static char* text = &state[0];
-    
-    //ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
-
-
-
-
-
-	
-    ImGui::Begin("Test actions");
-	/*
-    static char actionName[128] = "move";
-    ImGui::InputText("action", actionName, IM_ARRAYSIZE(actionName));
-
-    static char actionParameters[128] = "agent0 loc_1_1 loc_2_1";
-    ImGui::InputText("parameters", actionParameters, IM_ARRAYSIZE(actionParameters));
-
-
-    if (ImGui::Button("Move"))
-    {
-        doAction(actionName,actionParameters);
-    }
-	*/
-
-
-    ImGui::Begin("Actions");
-
-	if (ImGui::Button("Plan Day"))
 	{
-        for (map<string, agent>::iterator a0 = std::next(agents.begin()); a0!=agents.end(); a0++ )
-        {        //for (auto a0: agents){
-            planDay(agents[a0->first]);
-        }
+		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
+		ImGuiStyle &style = ImGui::GetStyle();
+		//style.Colors[ImGuiCol_WindowBg]=color;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+		ImGui::SetNextWindowPos(ImVec2(10, 10));
+		ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
+
+		ImGui::Begin("Info");
+
+		//static int absoluteTurn;
+		int currentTurn = absoluteTurn % 24;
+
+		ImGui::Text("Current turn: %d", currentTurn);
+		ImGui::Text("Absolute turn: %d", absoluteTurn);
+
+		b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
+		b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
+		ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
+		//ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		if (selected != std::string("none"))
+		{
+			ImGui::Text((std::string("id:") + city[selected].id).c_str());
+		}
+
+		//ImGui::SliderFloat("North dir", &angleNorth, -90.f, 90.f);
+		//ImGui::SliderFloat("aspect ratio", &geoRatio, 0.3f, 2.f);
+
+		//ImGui::Checkbox("Draw Blocked Cells", &drawBlockedCells);
+		//ImGui::Checkbox("Draw Grid", &drawGrid);
+		ImGui::Checkbox("Draw Paths", &drawPaths);
+		ImGui::Checkbox("Camera Follow", &cameraFollow);
+		ImGui::Checkbox("Draw FOV", &drawFOV);
+
+
+		ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
+
+		ImGui::End();
+
+		ImGui::PopStyleColor();
+
+
+		ImGui::ShowTestWindow();
+
+		debug_log().Draw("Log", width, height);
+
+
+		ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+		ImFont* font = atlas->Fonts[0];
+		//font->Scale = 2.f;
 	}
 
 
 
-    if (ImGui::Button("End Turn"))
-    {
-        endTurn();
-    }
 
 
-    ImGui::End();
 
+	/*
+
+	ImGui::SetNextWindowPos(ImVec2(width-300, 0));
+
+	ImGui::Begin("Path");
+
+
+	static int beginPos[2] = {2,2};
+	ImGui::InputInt2("start", beginPos);
+
+	static int endPos[2];
+	ImGui::InputInt2("end", endPos);
+
+
+
+	if (ImGui::Button("Find")) {
+
+		for (auto a1:agents) {
+
+			string id = a1.first;
+
+			std::shared_ptr<navigation_path<location_t>> path;
+
+			location_t bpLoc(beginPos[0], beginPos[1]);
+
+			location_t epLoc(endPos[0], endPos[1]);
+
+			location_t apLoc(a1.second.x,a1.second.y);
+
+			path = find_path<location_t, navigator>(bpLoc, epLoc);
+
+			if (path->success) {
+				debug_log().AddLog("path found \n");
+
+				location_t curPos = apLoc;
+
+				for (auto p1 = path->steps.begin(); p1 != path->steps.end(); p1++) {
+					if (!(curPos == *p1)) {
+						debug_log().AddLog("%d,%d \n", p1->x, p1->y);
+
+						int dx = p1->x;
+						int dy = p1->y;
+						agents[id].planFunc.push_back(
+								[&, dx, dy, id]() {
+									if (path_map->walkable[path_map->at(dx, dy)]) {
+										agents[id].x = dx;
+										agents[id].y = dy;
+										return 0;
+									} else {
+										return 1;
+									};
+								}
+						);
+						curPos = *p1;
+					}
+				}
+
+			}
+		}
+
+	};
+
+
+
+	ImGui::End();
+	*/
+	/*
+
+	ImGui::Begin("State");
+
+
+	//static char* text = &state[0];
+
+	//ImGui::InputTextMultiline("##source", text, stateSize*2 , ImVec2(-1.0f, ImGui::GetTextLineHeight() * 16), ImGuiInputTextFlags_AllowTabInput);
+
+
+
+
+
+
+	ImGui::Begin("Test actions");
+	/*
+	static char actionName[128] = "move";
+	ImGui::InputText("action", actionName, IM_ARRAYSIZE(actionName));
+
+	static char actionParameters[128] = "agent0 loc_1_1 loc_2_1";
+	ImGui::InputText("parameters", actionParameters, IM_ARRAYSIZE(actionParameters));
+
+
+	if (ImGui::Button("Move"))
+	{
+		doAction(actionName,actionParameters);
+	}
+	*/
+
+	/*
+		ImGui::Begin("Actions");
+
+		if (ImGui::Button("Plan Day"))
+		{
+			for (map<string, agent>::iterator a0 = std::next(agents.begin()); a0!=agents.end(); a0++ )
+			{        //for (auto a0: agents){
+				planDay(agents[a0->first]);
+			}
+		}
+
+
+
+		if (ImGui::Button("End Turn"))
+		{
+			endTurn();
+		}
+
+
+		ImGui::End();
+		*/
 
 	ImGui::Begin("Fast travel");
-		static float ftcoords[2];
-		ImGui::InputFloat2("coords", ftcoords);
+	static float ftcoords[2];
+	ImGui::InputFloat2("coords", ftcoords);
 
-		if (ImGui::Button("Teleport"))
-		{
-			agentBody->SetTransform(b2Vec2(ftcoords[0], ftcoords[1]), 0.f);
-		}
+	if (ImGui::Button("Teleport"))
+	{
+		agentBody->SetTransform(b2Vec2(ftcoords[0], ftcoords[1]), 0.f);
+	}
 
 	ImGui::End();
 
 
 
 	ImGui::Begin("Physics");
-		ImGui::InputFloat("Walking speed", &walkSpeed);
-		ImGui::InputFloat("Running speed", &runSpeed);
-		ImGui::InputFloat("Linear damping", &linearDamping);
-		ImGui::InputFloat("Angular damping", &angularDamping);
+	ImGui::InputFloat("Walking speed", &walkSpeed);
+	ImGui::InputFloat("Running speed", &runSpeed);
+	ImGui::InputFloat("Linear damping", &linearDamping);
+	ImGui::InputFloat("Angular damping", &angularDamping);
 	ImGui::End();
 
+
+	ImGui::Begin("Дела");
+	//if (ImGui::IsItemHovered())
+	//	ImGui::CaptureKeyboardFromApp(true);
+	if (ImGui::TreeNode("Подозреваемые"))
+	{
+		//ShowHelpMarker("This is a more standard looking tree with selectable nodes.\nClick to select, CTRL+Click to toggle, click on arrows or double-click to open.");
+		//static bool align_label_with_current_x_position = false;
+		//ImGui::Checkbox("Align label with current X position)", &align_label_with_current_x_position);
+		//ImGui::Text("Hello!");
+		//if (align_label_with_current_x_position)
+		ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
+
+		static int selection_mask = (1 << 2); // Dumb representation of what may be user-side selection state. You may carry selection state inside or outside your objects in whatever format you see fit.
+		int node_clicked = -1;                // Temporary storage of what node we have clicked to process selection at the end of the loop. May be a pointer to your own node type, etc.
+		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 3); // Increase spacing to differentiate leaves from expanded contents.
+
+		auto t1 = things.begin();
+		for (int i = 0; i < things.size(); i++) {
+
+			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+
+			bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t1->second.name.c_str());
+			if (ImGui::IsItemClicked())
+				node_clicked = i;
+			if (node_open)
+			{
+				ImGui::TextWrapped(t1->second.desc.c_str());
+				ImGui::TreePop();
+			}
+
+			t1++;
+		}
+	
+																					
+	    /*
+		for (int i = 0; i < 6; i++)
+		{
+			// Disable the default open on single-click behavior and pass in Selected flag according to our selection state.
+			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick | ((selection_mask & (1 << i)) ? ImGuiTreeNodeFlags_Selected : 0);
+			
+			
+			if (i < 3)
+			{
+				// Node
+				bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, "Selectable Node %d", i);
+				if (ImGui::IsItemClicked())
+					node_clicked = i;
+				if (node_open)
+				{
+					ImGui::Text("Blah blah\nBlah Blah");
+					ImGui::TreePop();
+				}
+			}
+	
+			else
+			{
+				// Leaf: The only reason we have a TreeNode at all is to allow selection of the leaf. Otherwise we can use BulletText() or TreeAdvanceToLabelPos()+Text().
+				ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen, "Selectable Leaf %d", i);
+				if (ImGui::IsItemClicked())
+					node_clicked = i;
+			}
+			*/
+		
+	/*
+		if (node_clicked != -1)
+		{
+			// Update selection state. Process outside of tree loop to avoid visual inconsistencies during the clicking-frame.
+			if (ImGui::GetIO().KeyCtrl)
+				selection_mask ^= (1 << node_clicked);          // CTRL+click to toggle
+			else //if (!(selection_mask & (1 << node_clicked))) // Depending on selection behavior you want, this commented bit preserve selection when clicking on item that is part of the selection
+				selection_mask = (1 << node_clicked);           // Click to single-select
+		}
+		*/
+		ImGui::PopStyleVar();
+		//if (align_label_with_current_x_position)
+		ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
+		ImGui::TreePop();
+	}
+
+	ImGui::End();
 
 	/*
     ImGui::Begin("Agent");
@@ -1713,7 +1808,9 @@ int main(int argc, char *argv[])
 	wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
 
 
+	loadThings("./maps/enemy.xml", things);
 
+	/*
 
     for (auto &t1: things){
         b2BodyDef bd;
@@ -1736,6 +1833,7 @@ int main(int argc, char *argv[])
 
 
     }
+	*/
 
 	//world.SetContactListener(new sensorContactListener);
 
@@ -1808,7 +1906,7 @@ int main(int argc, char *argv[])
 	*/
 
 
-	int checkpointNum = 2;
+	int checkpointNum = things.size();
 	for (int i = 0; i < checkpointNum; i++) {
 		auto it = things.begin();
 		//std::advance(it, rand() % things.size());
@@ -1816,7 +1914,8 @@ int main(int argc, char *argv[])
 		
 		debug_log().AddLog("index %d \n", it->first);
 		debug_log().AddLog("id: %d \n", things[it->first].id);
-		b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].nodeId].x, roads.nodes[things[it->first].nodeId].y);
+		//b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].nodeId].x, roads.nodes[things[it->first].nodeId].y);
+		b2Vec2 t1 = b2Vec2(things[it->first].x, things[it->first].y);
 		debug_log().AddLog("checkpoint %d: %g,%g \n", things[it->first].nodeId, t1.x, t1.y);
 		checkpoints.push_back(t1); 
 	}

@@ -17,6 +17,9 @@ public:
     b2Body* body;
     entityType type;
 	std::string desc;
+	std::string name;
+	float x;
+	float y;
 };
 
 extern std::map <unsigned int, entity> things;

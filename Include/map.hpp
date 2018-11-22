@@ -95,6 +95,38 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 
 }
 
+
+void loadThings(const char *name, std::map <unsigned int, entity> &things) {
+	XMLDocument* doc = new XMLDocument();
+
+	doc->LoadFile(name);
+	XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("enemy");
+	int i = 0;
+	while (n1) {
+
+		float x;
+		float y;
+
+		n1->QueryAttribute("x", &x);
+		n1->QueryAttribute("y", &y);
+
+		const char *desc = n1->Attribute("desc");
+		const char *name = n1->Attribute("name");
+
+
+		things.insert(std::pair<int, entity>(i, entity()));
+		things[i].id = i;
+		things[i].desc = desc;
+		things[i].name = name;
+		things[i].x = x;
+		things[i].y = y;
+		i++;
+
+		n1 = n1->NextSiblingElement("enemy");
+	}
+
+}
+
 map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b2World* world, bool computeBounds, bool contours = false)  {
     std::string m_currentLevel = std::string(name);
 
@@ -550,7 +582,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				int currentRelationId = atoi(relId);
 
 				buildings.insert(pair<int, building>(currentRelationId, b1));
-
+				/*
 				if (tags.count("enemy") > 0) {
 					things.insert(std::pair<int, entity>(currentRelationId, entity()));
 					things[currentRelationId].id = currentRelationId;
@@ -566,6 +598,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 					//things[currentRelationId].x = nodes[anchorId].x;
 					//things[currentRelationId].y = nodes[anchorId].y;
 				}
+				*/
 
             }
 
