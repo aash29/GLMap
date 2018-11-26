@@ -96,7 +96,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 }
 
 
-void loadThings(const char *name, std::map <unsigned int, entity> &things) {
+void loadThings(const char *name, std::map <unsigned int, entity> &things, vector<int64_t> patrolRoute) {
 	XMLDocument* doc = new XMLDocument();
 
 	doc->LoadFile(name);

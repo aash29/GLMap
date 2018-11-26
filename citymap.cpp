@@ -106,7 +106,7 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
-bool cameraFollow = true;
+bool cameraFollow = false;
 bool drawFOV = false;
 
 
@@ -141,6 +141,9 @@ int nElemsTriangSelect;
 b2World world(b2Vec2_zero);
 
 b2Body* agentBody;
+
+b2Body* officer;
+
 entity playerAgent;
 
 b2WeldJoint* wj;
@@ -787,6 +790,45 @@ void sInterface() {
 	ImGui::PopStyleColor();
 	ImGui::PopFont();
 
+
+	int menuWidth = 600;
+	{
+		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
+		ImGuiStyle &style = ImGui::GetStyle();
+		//style.Colors[ImGuiCol_WindowBg]=color;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+		ImGui::SetNextWindowPos(ImVec2(10, 10));
+		ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
+
+		ImGui::Begin("Info");
+
+
+		b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
+		b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
+		ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
+		//ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+
+		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+		if (selected != std::string("none"))
+		{
+			ImGui::Text((std::string("id:") + city[selected].id).c_str());
+		}
+
+		ImGui::Checkbox("Draw Paths", &drawPaths);
+		ImGui::Checkbox("Camera Follow", &cameraFollow);
+		ImGui::Checkbox("Draw FOV", &drawFOV);
+
+
+		ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
+
+		ImGui::End();
+
+		ImGui::PopStyleColor();
+	}
+
+
 	ImGui::Begin("Дела");
 
 	if (ImGui::TreeNode("Подозреваемые"))
@@ -1303,7 +1345,8 @@ int main(int argc, char *argv[])
 	map_record roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
 
-	vector<unsigned int> res = findPath(roads, 306919, 793462859);
+
+
 
     tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
     if (!tessTesselate(tess, TESS_WINDING_ODD, TESS_POLYGONS, nvp, 2, 0))
@@ -1353,7 +1396,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1526,6 +1569,43 @@ int main(int argc, char *argv[])
 
 	loadThings("./maps/enemy.xml", things);
 
+
+	//vector<unsigned int> res = findPath(roads, 306919, 793462859);
+
+	vector<unsigned int> res = findPath(roads, 1109048312, 2489256322);
+
+
+	std::vector<std::function<float(b2Body* b1, float t)> > planFunc;
+
+	for (int i = 0; i < res.size() - 1; i++) {
+		b2Vec2 vb = b2Vec2(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
+		b2Vec2 ve = b2Vec2(roads.nodes[res[i+1]].x, roads.nodes[res[i+1]].y);
+
+		auto followLine =
+			[&, vb, ve](b2Body* b1, float t) {
+			b2Vec2 n1 = (ve - vb);
+			n1.Normalize();
+			float velocity = 5.f;
+			b2Vec2 currentPos = vb + t*velocity*n1;
+			b1->SetTransform(currentPos, 0.f);
+
+			if (t*velocity>(ve - vb).Length()){
+				return -1.f;
+			} else {
+				return t + 0.01f;
+			}
+		};
+		planFunc.push_back(followLine);
+	}
+
+
+	
+
+
+	bodyDef.position.Set(0.f,0.f);
+	officer = world.CreateBody(&bodyDef);
+	officer->CreateFixture(&fixtureDef);
+
 	/*
 
     for (auto &t1: things){
@@ -1637,7 +1717,8 @@ int main(int argc, char *argv[])
 	}
 	
 
-
+	g_camera.m_center.x = 4572;
+	g_camera.m_center.y = 2047;
 	
 	//checkpoints.push_back(b2Vec2(500.f, 575.f));
 	//checkpoints.push_back(b2Vec2(1000.f, 390.f));
@@ -1811,8 +1892,16 @@ int main(int argc, char *argv[])
             g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
         }
 
+		static float tt1 = 0.f;
+		//tt1 = followLine(officer, tt1);
 
-
+		if (planFunc.size() > 0) {
+			tt1 = planFunc.front()(officer, tt1);
+			if (tt1 < 0) {
+				planFunc.erase(planFunc.begin());
+				tt1 = 0;
+			}
+		}
 
 
         for (auto &t1: things){
