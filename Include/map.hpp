@@ -96,7 +96,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 }
 
 
-void loadThings(const char *name, std::map <unsigned int, entity> &things, vector<int64_t> patrolRoute) {
+void loadThings(const char *name, std::map <unsigned int, entity> &things) {
 	XMLDocument* doc = new XMLDocument();
 
 	doc->LoadFile(name);
@@ -104,11 +104,8 @@ void loadThings(const char *name, std::map <unsigned int, entity> &things, vecto
 	int i = 0;
 	while (n1) {
 
-		float x;
-		float y;
-
-		n1->QueryAttribute("x", &x);
-		n1->QueryAttribute("y", &y);
+		int64_t id;
+		n1->QueryAttribute("id", &id);
 
 		const char *desc = n1->Attribute("desc");
 		const char *name = n1->Attribute("name");
@@ -118,8 +115,7 @@ void loadThings(const char *name, std::map <unsigned int, entity> &things, vecto
 		things[i].id = i;
 		things[i].desc = desc;
 		things[i].name = name;
-		things[i].x = x;
-		things[i].y = y;
+		things[i].node = id;
 		i++;
 
 		n1 = n1->NextSiblingElement("enemy");

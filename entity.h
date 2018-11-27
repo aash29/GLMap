@@ -13,13 +13,11 @@ enum entityType {player = 0, POI = 1};
 class entity {
 public:
     int id;
-    int nodeId;
     b2Body* body;
     entityType type;
 	std::string desc;
 	std::string name;
-	float x;
-	float y;
+	int64_t node;
 };
 
 extern std::map <unsigned int, entity> things;

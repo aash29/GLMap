@@ -1065,11 +1065,11 @@ void planDay(agent &a0){
 };
 
 
-vector<unsigned int> findPath (map_record navGraph, unsigned int start, unsigned int goal) {
+vector<int64_t> findPath (map_record navGraph, int64_t start, int64_t goal) {
 
     class searchNode {
     public:
-		unsigned int id;
+		int64_t id;
         float g;
         bool operator == (const searchNode& other)
         { return id == other.id; }
@@ -1078,7 +1078,7 @@ vector<unsigned int> findPath (map_record navGraph, unsigned int start, unsigned
     };
 
 
-    vector<unsigned int> result = vector<unsigned int>();
+    vector<int64_t> result = vector<int64_t>();
 
     //vector<searchNode> open = vector<searchNode>();
 
@@ -1088,8 +1088,8 @@ vector<unsigned int> findPath (map_record navGraph, unsigned int start, unsigned
                                                                     (navGraph.nodes[goal].y - navGraph.nodes[right.id].y)*(navGraph.nodes[goal].y - navGraph.nodes[right.id].y))); };
     std::priority_queue<searchNode, std::vector<searchNode>, decltype(cmp)> open(cmp);
 
-    std::set<unsigned int> closed = std::set<unsigned int>();
-    std::map <unsigned int, unsigned int> cameFrom = std::map <unsigned int, unsigned int>();
+    std::set<int64_t> closed = std::set<int64_t>();
+    std::map <int64_t, int64_t> cameFrom = std::map <int64_t, int64_t>();
 
 
     searchNode startNode = {start, 0.f};
@@ -1106,16 +1106,18 @@ vector<unsigned int> findPath (map_record navGraph, unsigned int start, unsigned
         closed.insert(n0.id);
 
         if (n0 == goalNode) {
-			unsigned int nx = goal;
+			int64_t nx = goal;
             while (nx!=start)
             {
                 result.push_back(nx);
                 nx = cameFrom[nx];
             }
+			result.push_back(nx);
+			std::reverse(result.begin(),result.end());
             return result;
         }
 
-        for (unsigned int n1: navGraph.pathGraph[n0.id]){
+        for (int64_t n1: navGraph.pathGraph[n0.id]){
             float dist =  sqrt((navGraph.nodes[n1].x - navGraph.nodes[n0.id].x)*(navGraph.nodes[n1].x - navGraph.nodes[n0.id].x) +
                                      (navGraph.nodes[n1].y - navGraph.nodes[n0.id].y)*(navGraph.nodes[n1].y - navGraph.nodes[n0.id].y));
             if (closed.find(n1)==closed.end()) {
@@ -1570,33 +1572,36 @@ int main(int argc, char *argv[])
 	loadThings("./maps/enemy.xml", things);
 
 
-	//vector<unsigned int> res = findPath(roads, 306919, 793462859);
-
-	vector<unsigned int> res = findPath(roads, 1109048312, 2489256322);
-
-
+	vector<int64_t> res = vector<int64_t>();
 	std::vector<std::function<float(b2Body* b1, float t)> > planFunc;
 
-	for (int i = 0; i < res.size() - 1; i++) {
-		b2Vec2 vb = b2Vec2(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
-		b2Vec2 ve = b2Vec2(roads.nodes[res[i+1]].x, roads.nodes[res[i+1]].y);
-
-		auto followLine =
-			[&, vb, ve](b2Body* b1, float t) {
-			b2Vec2 n1 = (ve - vb);
-			n1.Normalize();
-			float velocity = 5.f;
-			b2Vec2 currentPos = vb + t*velocity*n1;
-			b1->SetTransform(currentPos, 0.f);
-
-			if (t*velocity>(ve - vb).Length()){
-				return -1.f;
-			} else {
-				return t + 0.01f;
-			}
-		};
-		planFunc.push_back(followLine);
+	for (int i = 0; i < things.size()-1; i++)
+	{
+		vector<int64_t> r1 = findPath(roads, things[i].node, things[i + 1].node);
+		res.insert(res.end(), r1.begin(),r1.end());
 	}
+
+		for (int i = 0; i < res.size() - 1; i++) {
+			b2Vec2 vb = b2Vec2(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
+			b2Vec2 ve = b2Vec2(roads.nodes[res[i + 1]].x, roads.nodes[res[i + 1]].y);
+
+			auto followLine =
+				[&, vb, ve](b2Body* b1, float t) {
+				b2Vec2 n1 = (ve - vb);
+				n1.Normalize();
+				float velocity = 50.f;
+				b2Vec2 currentPos = vb + t*velocity*n1;
+				b1->SetTransform(currentPos, 0.f);
+
+				if (t*velocity > (ve - vb).Length()) {
+					return -1.f;
+				}
+				else {
+					return t + 0.01f;
+				}
+			};
+			planFunc.push_back(followLine);
+		}
 
 
 	
@@ -1711,8 +1716,8 @@ int main(int argc, char *argv[])
 		debug_log().AddLog("index %d \n", it->first);
 		debug_log().AddLog("id: %d \n", things[it->first].id);
 		//b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].nodeId].x, roads.nodes[things[it->first].nodeId].y);
-		b2Vec2 t1 = b2Vec2(things[it->first].x, things[it->first].y);
-		debug_log().AddLog("checkpoint %d: %g,%g \n", things[it->first].nodeId, t1.x, t1.y);
+		b2Vec2 t1 = b2Vec2(roads.nodes[things[it->first].node].x, roads.nodes[things[it->first].node].y);
+		debug_log().AddLog("checkpoint %d: %g,%g \n", things[it->first].node, t1.x, t1.y);
 		checkpoints.push_back(t1); 
 	}
 	
@@ -1906,8 +1911,8 @@ int main(int argc, char *argv[])
 
         for (auto &t1: things){
             b2Vec2 agentPos = agentBody->GetPosition();
-            b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y);
-            b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.nodeId].x,roads.nodes[t1.second.nodeId].y) - agentPos);
+            b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.node].x,roads.nodes[t1.second.node].y);
+            b2Vec2 thingPos = agentPos + 0.97f*(b2Vec2(roads.nodes[t1.second.node].x,roads.nodes[t1.second.node].y) - agentPos);
 
             if ((agentPos - thingPos).Length() < sight) {
                 RayCastClosestCallback cb;
@@ -1938,7 +1943,7 @@ int main(int argc, char *argv[])
                     }
 					*/
 					if (POIinFOV.find(&t1.second) == POIinFOV.end()) {
-						debug_log().AddLog(roads.nodes[t1.second.nodeId].tags["name"]);
+						debug_log().AddLog(roads.nodes[t1.second.node].tags["name"]);
 						debug_log().AddLog(t1.second.desc);
 						debug_log().AddLog("\n");
 						POIinFOV.insert(&t1.second);
