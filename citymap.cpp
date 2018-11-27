@@ -1398,7 +1398,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -2039,7 +2039,7 @@ int main(int argc, char *argv[])
 		}
 
 		checkpoints.erase(std::remove_if(checkpoints.begin(), checkpoints.end(),
-			[&](b2Vec2 cp) { return ((cp - agentBody->GetPosition()).Length()<15.f); }), checkpoints.end());
+			[&](b2Vec2 cp) { return (((cp - agentBody->GetPosition()).Length()<15.f) || ((cp - officer->GetPosition()).Length()<15.f) ); }), checkpoints.end());
 
 
 
