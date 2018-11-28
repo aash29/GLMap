@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm>
+    <player
+            velocity="5"
+            turnVelocity="5"
+            mass="1"
+            spawnPoint="306977"
+    />
+    <gpu
+            velocity="15"
+            pause="5"
+            spawnPoint="4169083660"
+    />
+</osm>

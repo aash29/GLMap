@@ -165,6 +165,17 @@ const uint16 buildingsCategory = 0x0002;
 
 float walkSpeed = 5.f;
 float runSpeed = 40.f;
+float turnSpeed = 5.f;
+float playerMass = 1.f;
+int64_t playerSpawnPoint = 306977;
+
+float gpuSpeed = 5.f;
+float gpuPause = 5.f;
+int64_t gpuSpawnPoint = 4169083660;
+
+
+
+
 float linearDamping = 5.f;
 float angularDamping = 10.f;
 
@@ -332,6 +343,25 @@ int pairingNum(int a, int b) {
 }
 
 
+
+void loadSettings(const char * name) {
+    XMLDocument* doc = new XMLDocument();
+
+    doc->LoadFile(name);
+    XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("player");
+
+    n1->QueryAttribute("velocity", &walkSpeed);
+    n1->QueryAttribute("turnVelocity", &turnSpeed);
+    n1->QueryAttribute("mass", &playerMass);
+    n1->QueryAttribute("spawnPoint", &playerSpawnPoint);
+
+    n1 = doc->FirstChildElement("osm")->FirstChildElement("gpu");
+
+    n1->QueryAttribute("velocity", &gpuSpeed);
+    n1->QueryAttribute("pause", &gpuPause);
+    n1->QueryAttribute("spawnPoint", &gpuSpawnPoint);
+
+};
 
 
 
@@ -1346,7 +1376,7 @@ int main(int argc, char *argv[])
 
 	map_record roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
-
+    loadSettings("./maps/config.xml");
 
 
 
@@ -1573,35 +1603,49 @@ int main(int argc, char *argv[])
 
 
 	vector<int64_t> res = vector<int64_t>();
-	std::vector<std::function<float(b2Body* b1, float t)> > planFunc;
+	std::vector<std::function<float(b2Body* b1, float t, float dt)> > planFunc;
 
 	for (int i = 0; i < things.size()-1; i++)
 	{
 		vector<int64_t> r1 = findPath(roads, things[i].node, things[i + 1].node);
 		res.insert(res.end(), r1.begin(),r1.end());
-	}
 
-		for (int i = 0; i < res.size() - 1; i++) {
-			b2Vec2 vb = b2Vec2(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
-			b2Vec2 ve = b2Vec2(roads.nodes[res[i + 1]].x, roads.nodes[res[i + 1]].y);
+        for (int j = 0; j < r1.size() - 1; j++) {
+            b2Vec2 vb = b2Vec2(roads.nodes[r1[j]].x, roads.nodes[r1[j]].y);
+            b2Vec2 ve = b2Vec2(roads.nodes[r1[j + 1]].x, roads.nodes[r1[j + 1]].y);
 
-			auto followLine =
-				[&, vb, ve](b2Body* b1, float t) {
-				b2Vec2 n1 = (ve - vb);
-				n1.Normalize();
-				float velocity = 50.f;
-				b2Vec2 currentPos = vb + t*velocity*n1;
-				b1->SetTransform(currentPos, 0.f);
+            auto followLine =
+                    [&, vb, ve, gpuSpeed](b2Body* b1, float t, float dt) {
+                        b2Vec2 n1 = (ve - vb);
+                        n1.Normalize();
+                        float velocity = gpuSpeed;
+                        b2Vec2 currentPos = vb + t*velocity*n1;
+                        b1->SetTransform(currentPos, 0.f);
 
-				if (t*velocity > (ve - vb).Length()) {
-					return -1.f;
-				}
-				else {
-					return t + 0.01f;
-				}
-			};
-			planFunc.push_back(followLine);
-		}
+                        if (t*velocity > (ve - vb).Length()) {
+                            return -1.f;
+                        }
+                        else {
+                            return t + dt;
+                        }
+                    };
+            planFunc.push_back(followLine);
+        }
+        auto gpuWait =
+                [&, gpuPause](b2Body* b1, float t, float dt) {
+
+                    if (t<gpuPause) {
+                        return -1.f;
+                    }
+                    else {
+                        return t + dt;
+                    }
+                };
+        planFunc.push_back(gpuWait);
+
+
+    }
+
 
 
 	
@@ -1736,7 +1780,7 @@ int main(int argc, char *argv[])
 		currentTime = ct - tzero;
         if (run) t += ct - pt;
 
-        pt = ct;
+
 
 
 
@@ -1901,7 +1945,7 @@ int main(int argc, char *argv[])
 		//tt1 = followLine(officer, tt1);
 
 		if (planFunc.size() > 0) {
-			tt1 = planFunc.front()(officer, tt1);
+			tt1 = planFunc.front()(officer, tt1, ct-pt);
 			if (tt1 < 0) {
 				planFunc.erase(planFunc.begin());
 				tt1 = 0;
@@ -2050,6 +2094,8 @@ int main(int argc, char *argv[])
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        pt = ct;
 }
 
 //if (tess) tessDeleteTess(tess);
