@@ -1615,7 +1615,7 @@ int main(int argc, char *argv[])
             b2Vec2 ve = b2Vec2(roads.nodes[r1[j + 1]].x, roads.nodes[r1[j + 1]].y);
 
             auto followLine =
-                    [&, vb, ve, gpuSpeed](b2Body* b1, float t, float dt) {
+                    [&, vb, ve](b2Body* b1, float t, float dt) {
                         b2Vec2 n1 = (ve - vb);
                         n1.Normalize();
                         float velocity = gpuSpeed;
@@ -1632,9 +1632,9 @@ int main(int argc, char *argv[])
             planFunc.push_back(followLine);
         }
         auto gpuWait =
-                [&, gpuPause](b2Body* b1, float t, float dt) {
+                [&](b2Body* b1, float t, float dt) {
 
-                    if (t<gpuPause) {
+                    if (t>gpuPause) {
                         return -1.f;
                     }
                     else {
