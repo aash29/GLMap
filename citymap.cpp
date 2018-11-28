@@ -1538,7 +1538,7 @@ int main(int argc, char *argv[])
 	// Define the dynamic body. We set its position and call the body factory.
 	b2BodyDef bodyDef;
 	bodyDef.type = b2_dynamicBody;
-	bodyDef.position.Set(4616.f, 2646.f);
+	bodyDef.position.Set(roads.nodes[playerSpawnPoint].x, roads.nodes[playerSpawnPoint].y);
 	agentBody = world.CreateBody(&bodyDef);
 
 	// Define another box shape for our dynamic body.
@@ -1605,6 +1605,44 @@ int main(int argc, char *argv[])
 	vector<int64_t> res = vector<int64_t>();
 	std::vector<std::function<float(b2Body* b1, float t, float dt)> > planFunc;
 
+	vector<int64_t> r1 = findPath(roads, gpuSpawnPoint, things[0].node);
+	res.insert(res.end(), r1.begin(), r1.end());
+
+
+	    for (int j = 0; j < r1.size() - 1; j++) {
+            b2Vec2 vb = b2Vec2(roads.nodes[r1[j]].x, roads.nodes[r1[j]].y);
+            b2Vec2 ve = b2Vec2(roads.nodes[r1[j + 1]].x, roads.nodes[r1[j + 1]].y);
+
+            auto followLine =
+                    [&, vb, ve](b2Body* b1, float t, float dt) {
+                        b2Vec2 n1 = (ve - vb);
+                        n1.Normalize();
+                        float velocity = gpuSpeed;
+                        b2Vec2 currentPos = vb + t*velocity*n1;
+                        b1->SetTransform(currentPos, 0.f);
+
+                        if (t*velocity > (ve - vb).Length()) {
+                            return -1.f;
+                        }
+                        else {
+                            return t + dt;
+                        }
+                    };
+            planFunc.push_back(followLine);
+        }
+        auto gpuWait =
+                [&](b2Body* b1, float t, float dt) {
+
+                    if (t>gpuPause) {
+                        return -1.f;
+                    }
+                    else {
+                        return t + dt;
+                    }
+                };
+        planFunc.push_back(gpuWait);
+
+
 	for (int i = 0; i < things.size()-1; i++)
 	{
 		vector<int64_t> r1 = findPath(roads, things[i].node, things[i + 1].node);
@@ -1651,7 +1689,7 @@ int main(int argc, char *argv[])
 	
 
 
-	bodyDef.position.Set(0.f,0.f);
+	bodyDef.position.Set(roads.nodes[gpuSpawnPoint].x, roads.nodes[gpuSpawnPoint].y);
 	officer = world.CreateBody(&bodyDef);
 	officer->CreateFixture(&fixtureDef);
 
