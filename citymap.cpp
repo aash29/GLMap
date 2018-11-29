@@ -182,7 +182,7 @@ float angularDamping = 10.f;
 float currentTime = 0; 
 
 
-bool mounted = true;
+bool mounted = false;
 
 std::vector<b2Vec2> checkpoints = std::vector<b2Vec2>();
 
@@ -1595,8 +1595,8 @@ int main(int argc, char *argv[])
 	wjdef.localAnchorA = b2Vec2(0.f, 0.f);
 	wjdef.localAnchorB = b2Vec2(0.f, 0.f);
 	wjdef.referenceAngle = 0.f;
-
-	wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
+	if (mounted)
+		wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
 
 
 	loadThings("./maps/enemy.xml", things);
@@ -1877,12 +1877,12 @@ int main(int argc, char *argv[])
 
 			state = glfwGetKey(window, GLFW_KEY_D);
 			if (state == GLFW_PRESS) {
-				agentBody->SetAngularVelocity(-2.f);
+				agentBody->SetAngularVelocity(-turnSpeed);
 			}
 
 			state = glfwGetKey(window, GLFW_KEY_A);
 			if (state == GLFW_PRESS) {
-				agentBody->SetAngularVelocity(2.f);
+				agentBody->SetAngularVelocity(turnSpeed);
 			}
 
 
@@ -2119,6 +2119,18 @@ int main(int argc, char *argv[])
 
 			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.f, 1.f, 0.f, 1.f));
 		}
+
+		b2Vec2 officerPolygon[3];
+
+		officerPolygon[0] = officer->GetPosition() + b2Vec2(0.f, -5.f);
+		officerPolygon[1] = officer->GetPosition() + b2Vec2(5.f, 5.f);
+		officerPolygon[2] = officer->GetPosition() + b2Vec2(-5.f, 5.f);
+
+		g_debugDraw.DrawSolidPolygon(officerPolygon, 3, b2Color(0.f, 0.7f, 1.f, 1.f));
+
+
+
+
 
 		checkpoints.erase(std::remove_if(checkpoints.begin(), checkpoints.end(),
 			[&](b2Vec2 cp) { return (((cp - agentBody->GetPosition()).Length()<15.f) || ((cp - officer->GetPosition()).Length()<15.f) ); }), checkpoints.end());
