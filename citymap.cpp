@@ -60,6 +60,8 @@
 #include "RStarTree.h"
 #include "car.h"
 
+#include "soloud/soloud.h"
+#include "soloud/soloud_wav.h"
 
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
@@ -1178,6 +1180,18 @@ void stdFree(void* userData, void* ptr)
 
 int main(int argc, char *argv[])
 {
+
+	SoLoud::Soloud gSoloud; // SoLoud engine
+	SoLoud::Wav gWave;      // One wave file
+
+	gSoloud.init(); // Initialize SoLoud
+
+	gWave.load("foot.wav"); // Load a wave
+
+	gWave.setSingleInstance(true);
+	gWave.setInaudibleBehavior(true, true);
+
+
     //GLFWwindow* window;
     const GLFWvidmode* mode;
 
@@ -1428,7 +1442,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1812,6 +1826,7 @@ int main(int argc, char *argv[])
 
 	float tzero = glfwGetTime();
 
+
     while (!glfwWindowShouldClose(window)) {
         float ct = (float) glfwGetTime();
 
@@ -1863,6 +1878,22 @@ int main(int argc, char *argv[])
 
 		if (!mounted) {
 
+			static SoLoud::handle handle = 0;
+			static bool walking = false;
+
+			if (agentBody->GetLinearVelocity().Length() > 0.2f) {
+				
+				if (!walking) {
+					handle = gSoloud.play(gWave,1.f,0.f,false); // Play the wave
+					walking = true;
+				}
+				
+			} else {
+				walking = false;
+				gSoloud.setPause(handle, true);
+			}
+
+
 			agentBody->SetAngularDamping(angularDamping);
 			agentBody->SetLinearDamping(linearDamping);
 
@@ -1878,11 +1909,14 @@ int main(int argc, char *argv[])
 			state = glfwGetKey(window, GLFW_KEY_D);
 			if (state == GLFW_PRESS) {
 				agentBody->SetAngularVelocity(-turnSpeed);
+				//gSoloud.play(gWave);
+
 			}
 
 			state = glfwGetKey(window, GLFW_KEY_A);
 			if (state == GLFW_PRESS) {
 				agentBody->SetAngularVelocity(turnSpeed);
+				//gSoloud.play(gWave);
 			}
 
 
@@ -1895,6 +1929,7 @@ int main(int argc, char *argv[])
 				forward *= K;
 
 				agentBody->ApplyForceToCenter(forward, true);
+				//gSoloud.play(gWave);
 
 				//agentBody->SetLinearVelocity(forward);
 			}
@@ -1909,12 +1944,13 @@ int main(int argc, char *argv[])
 
 				forward *= K;
 
-
 				agentBody->ApplyForceToCenter(forward, true);
+				//gSoloud.play(gWave);
 
 				//agentBody->SetLinearVelocity(forward);
 
 			}
+
 		}
 		else {
 
@@ -2155,6 +2191,7 @@ int main(int argc, char *argv[])
 //        free(vflags);
 
     glfwTerminate();
+	gSoloud.deinit(); // Clean up!
     return 0;
 }
 
