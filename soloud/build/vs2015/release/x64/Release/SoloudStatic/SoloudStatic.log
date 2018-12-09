@@ -14,15 +14,8 @@
   dr_impl.cpp
   soloud_wav.cpp
   soloud_wavstream.cpp
-  soloud_bassboostfilter.cpp
-  soloud_biquadresonantfilter.cpp
-  soloud_dcremovalfilter.cpp
-  soloud_echofilter.cpp
-  soloud_fftfilter.cpp
-  soloud_flangerfilter.cpp
-  soloud_lofifilter.cpp
-  soloud_robotizefilter.cpp
-  soloud_waveshaperfilter.cpp
+  soloud_null.cpp
+  soloud_winmm.cpp
   soloud.cpp
   soloud_audiosource.cpp
   soloud_bus.cpp
@@ -41,8 +34,15 @@
   soloud_filter.cpp
   soloud_queue.cpp
   soloud_thread.cpp
-  soloud_winmm.cpp
-  soloud_null.cpp
+  soloud_bassboostfilter.cpp
+  soloud_biquadresonantfilter.cpp
+  soloud_dcremovalfilter.cpp
+  soloud_echofilter.cpp
+  soloud_fftfilter.cpp
+  soloud_flangerfilter.cpp
+  soloud_lofifilter.cpp
+  soloud_robotizefilter.cpp
+  soloud_waveshaperfilter.cpp
   soloud_openmpt_dll.c
   stb_vorbis.c
   SoloudStatic.vcxproj -> F:\cpp\GLMap\soloud\build\vs2015\..\..\lib\soloud_static_x64.lib

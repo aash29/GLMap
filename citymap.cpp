@@ -63,6 +63,8 @@
 #include "soloud/soloud.h"
 #include "soloud/soloud_wav.h"
 
+#include "dialog.h"
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
 
@@ -186,12 +188,16 @@ float currentTime = 0;
 
 bool mounted = false;
 
+
 std::vector<b2Vec2> checkpoints = std::vector<b2Vec2>();
 
 
 typedef RStarTree<int, 2, 32, 64> 			RTree;
 typedef RTree::BoundingBox			BoundingBox;
 RTree tree;
+
+
+map <int, conversation> dialogs;
 
 
 struct Visitor {
@@ -861,6 +867,28 @@ void sInterface() {
 	}
 
 
+	ImGui::ShowTestWindow();
+
+	ImGui::Begin("Диалог");
+
+	static int currentConversation = 1;
+	static int currentReply = 1;
+
+	ImGui::Text(dialogs[currentConversation].replies[currentReply].text.c_str());
+
+	//for (int i = 0; i < dialogs[currentConversation].replies[currentReply].answers.size(); i++) {
+	for (auto a1: dialogs[currentConversation].replies[currentReply].answers){
+		ImGui::PushID(a1.second.id);
+		if (ImGui::Button(a1.second.text.c_str(),ImVec2(-1, 0))) {
+			currentReply = a1.second.id;
+		}
+		ImGui::PopID();
+	}
+
+
+	ImGui::End();
+
+
 	ImGui::Begin("Дела");
 
 	if (ImGui::TreeNode("Подозреваемые"))
@@ -1189,6 +1217,7 @@ int main(int argc, char *argv[])
 	gWave.load("foot.wav"); // Load a wave
 
 	gWave.setSingleInstance(true);
+	gWave.setLooping(true);
 	gWave.setInaudibleBehavior(true, true);
 
 
@@ -1614,6 +1643,8 @@ int main(int argc, char *argv[])
 
 
 	loadThings("./maps/enemy.xml", things);
+
+	dialogs = loadDialog("./maps/enemy.xml");
 
 
 	vector<int64_t> res = vector<int64_t>();
