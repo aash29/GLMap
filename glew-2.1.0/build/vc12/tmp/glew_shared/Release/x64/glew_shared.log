@@ -1,4 +1,0 @@
-﻿  glew.c
-     Creating library ..\..\lib\Release\x64\glew32.lib and object ..\..\lib\Release\x64\glew32.exp
-  glew_shared.vcxproj -> F:\cpp\glew-2.1.0\build\vc12\..\..\bin\Release\x64\glew32.dll
-  glew_shared.vcxproj -> ..\..\bin\Release\x64\glew32.pdb (Full PDB)
