@@ -880,7 +880,7 @@ void sInterface() {
 	for (auto a1: dialogs[currentConversation].replies[currentReply].answers){
 		ImGui::PushID(a1.second.id);
 		if (ImGui::Button(a1.second.text.c_str(),ImVec2(-1, 0))) {
-			currentReply = a1.second.id;
+			currentReply = a1.second.address;
 		}
 		ImGui::PopID();
 	}
