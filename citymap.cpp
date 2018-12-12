@@ -359,9 +359,11 @@ void loadSettings(const char * name) {
     XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("player");
 
     n1->QueryAttribute("velocity", &walkSpeed);
+	n1->QueryAttribute("runVelocity", &runSpeed);
     n1->QueryAttribute("turnVelocity", &turnSpeed);
     n1->QueryAttribute("mass", &playerMass);
     n1->QueryAttribute("spawnPoint", &playerSpawnPoint);
+	
 
     n1 = doc->FirstChildElement("osm")->FirstChildElement("gpu");
 
@@ -933,7 +935,7 @@ void sInterface() {
             static char selected[100] = "";
             ImGui::BeginChild("left pane", ImVec2(150, 0), true);
             tinydir_dir dir;
-            if (tinydir_open(&dir, "./maps/") != -1) {
+            if (tinydir_open(&dir, "./content/") != -1) {
                 tinydir_file file;
                 int i = 0;
 
@@ -962,7 +964,7 @@ void sInterface() {
             ImGui::Separator();
 
             char pathToFile[100] = "";
-            strcat(pathToFile, "./maps/");
+            strcat(pathToFile, "./content/");
             strcat(pathToFile, selected);
 
             std::ifstream t(pathToFile);
@@ -1308,7 +1310,7 @@ int main(int argc, char *argv[])
 	glfwSetTime(0);
 
 
-    char* levelPath = "./maps/map3.osm";
+    char* levelPath = "./content/map3.osm";
 
 
 	xm = 0;
@@ -1419,7 +1421,7 @@ int main(int argc, char *argv[])
 
 	map_record roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
-    loadSettings("./maps/config.xml");
+    loadSettings("./content/config.xml");
 
 
 
@@ -1624,7 +1626,7 @@ int main(int argc, char *argv[])
 
 	// Add the shape to the body.
     agentBody->CreateFixture(&fixtureDef);
-	//b2MassData massData = { 1.f, b2Vec2_zero, 1.f };
+	b2MassData massData = { playerMass, b2Vec2_zero, 1.f };
 
 	//agentBody->SetMassData(&massData);
 
@@ -1642,9 +1644,9 @@ int main(int argc, char *argv[])
 		wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
 
 
-	loadThings("./maps/enemy.xml", things);
+	loadThings("./content/checkpoints.xml", things);
 
-	dialogs = loadDialog("./maps/enemy.xml");
+	dialogs = loadDialog("./content/dialogues.xml");
 
 
 	vector<int64_t> res = vector<int64_t>();
@@ -1849,8 +1851,8 @@ int main(int argc, char *argv[])
 	}
 	
 
-	g_camera.m_center.x = 4572;
-	g_camera.m_center.y = 2047;
+	g_camera.m_center.x = agentBody->GetPosition().x;
+	g_camera.m_center.y = agentBody->GetPosition().y;
 	
 	//checkpoints.push_back(b2Vec2(500.f, 575.f));
 	//checkpoints.push_back(b2Vec2(1000.f, 390.f));
@@ -1963,6 +1965,10 @@ int main(int argc, char *argv[])
 				//gSoloud.play(gWave);
 
 				//agentBody->SetLinearVelocity(forward);
+			}
+			else
+			{
+				agentBody->SetLinearVelocity(b2Vec2(0.f,0.f));
 			}
 
 

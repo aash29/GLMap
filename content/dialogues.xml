@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<osm>
+<conversation id="1">
+  <reply id="1">
+    <text>Текст реплики 1</text>
+    <answer id="1" address="2">
+      Текст первого ответа
+    </answer>
+    <answer id="2" address="3">
+      Текст второго ответа
+    </answer>
+    <answer id="3" address="1">
+      Текст третьего ответа
+    </answer>
+  </reply>
+
+<reply id="2">
+    <text>Текст реплики 2</text>
+    <answer id="1" address="2">
+      Текст первого ответа
+    </answer>
+    <answer id="2" address="3">
+      Текст второго ответа
+    </answer>
+    <answer id="3" address="1">
+      Текст третьего ответа
+    </answer>
+  </reply>
+
+
+<reply id="3">
+    <text>Текст реплики 3</text>
+    <answer id="1" address="2">
+      Текст первого ответа
+    </answer>
+    <answer id="2" address="3">
+      Текст второго ответа
+    </answer>
+    <answer id="3" address="1">
+      Текст третьего ответа
+    </answer>
+  </reply>
+</conversation>
+</osm>
