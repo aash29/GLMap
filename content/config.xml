@@ -8,10 +8,10 @@
 
     <player
             velocity="5"
-            runVelocity = "10"
+            runVelocity = "40"
             turnVelocity="5"
             mass="1"
-            spawnPoint="1251146689"
+            spawnPoint="1814481352"
     />
     <gpu
             velocity="15"

@@ -6,4 +6,5 @@
 #include "entity.h"
 
 
-std::map <unsigned int, entity> things;
+std::map <int, entity> things;
+std::map <int, staticCharacter> staticCharacters;

@@ -96,7 +96,7 @@ void loadGrid(const char *name, int& xgrid, int& ygrid)
 }
 
 
-void loadThings(const char *name, std::map <unsigned int, entity> &things) {
+void loadThings(const char *name, std::map <int, entity> &things) {
 	XMLDocument* doc = new XMLDocument();
 
 	doc->LoadFile(name);
@@ -107,6 +107,9 @@ void loadThings(const char *name, std::map <unsigned int, entity> &things) {
 		int64_t id;
 		n1->QueryAttribute("id", &id);
 
+		int conversationId;
+		n1->QueryAttribute("dialogue", &conversationId);
+
 		const char *desc = n1->Attribute("desc");
 		const char *name = n1->Attribute("name");
 
@@ -116,10 +119,13 @@ void loadThings(const char *name, std::map <unsigned int, entity> &things) {
 		things[i].desc = desc;
 		things[i].name = name;
 		things[i].node = id;
+		things[i].conversationId = conversationId;
 		i++;
 
 		n1 = n1->NextSiblingElement("enemy");
 	}
+
+
 
 }
 

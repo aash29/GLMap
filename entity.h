@@ -18,8 +18,19 @@ public:
 	std::string desc;
 	std::string name;
 	int64_t node;
+
+	int conversationId;
+
+	bool active = true;
 };
 
-extern std::map <unsigned int, entity> things;
+struct staticCharacter {
+	int id;
+
+	int64_t node;
+};
+
+extern std::map <int, entity> things;
+extern std::map <int, staticCharacter> staticCharacters;
 
 #endif //GLMAP_ENTITY_H

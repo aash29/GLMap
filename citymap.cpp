@@ -199,6 +199,11 @@ RTree tree;
 
 map <int, conversation> dialogs;
 
+int run = 1;
+
+int currentConversation = 0;
+
+float stamina = 1;
 
 struct Visitor {
 	int count;
@@ -611,7 +616,7 @@ static void sMouseMotion(GLFWwindow *, double xd, double yd) {
 //#define USE_POOL 1
 
 
-int run = 1;
+
 
 
 
@@ -863,6 +868,9 @@ void sInterface() {
 
 		ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
 
+		ImGui::ProgressBar(0.5f, ImVec2(0.0f, 0.0f));
+		
+		
 		ImGui::End();
 
 		ImGui::PopStyleColor();
@@ -871,24 +879,35 @@ void sInterface() {
 
 	ImGui::ShowTestWindow();
 
-	ImGui::Begin("Диалог");
+	if (currentConversation != 0)
+	{
+		ImGui::SetNextWindowPos(ImVec2(500, 400));
+		ImGui::SetNextWindowSize(ImVec2(500, 440));
+		
+		ImGui::Begin("Диалог");
 
-	static int currentConversation = 1;
-	static int currentReply = 1;
+		static int currentReply = 1;
 
-	ImGui::Text(dialogs[currentConversation].replies[currentReply].text.c_str());
+		ImGui::Text(dialogs[currentConversation].replies[currentReply].text.c_str());
 
-	//for (int i = 0; i < dialogs[currentConversation].replies[currentReply].answers.size(); i++) {
-	for (auto a1: dialogs[currentConversation].replies[currentReply].answers){
-		ImGui::PushID(a1.second.id);
-		if (ImGui::Button(a1.second.text.c_str(),ImVec2(-1, 0))) {
-			currentReply = a1.second.address;
+		//for (int i = 0; i < dialogs[currentConversation].replies[currentReply].answers.size(); i++) {
+		for (auto a1 : dialogs[currentConversation].replies[currentReply].answers) {
+			ImGui::PushID(a1.second.id);
+			if (ImGui::Button(a1.second.text.c_str(), ImVec2(-1, 0))) {
+				currentReply = a1.second.address;
+			}
+			ImGui::PopID();
 		}
-		ImGui::PopID();
+
+
+		if (currentReply == 0) {
+			currentConversation = 0;
+			currentReply = 1;
+			run = 1;
+		};
+
+		ImGui::End();
 	}
-
-
-	ImGui::End();
 
 
 	ImGui::Begin("Дела");
@@ -2172,25 +2191,37 @@ int main(int argc, char *argv[])
 		}
 
 
+		for (auto & cp: things) {
+			if (cp.second.active) {
+				//for (int i = 0; i < checkpoints.size(); i++) {
 
-		for (int i = 0; i < checkpoints.size(); i++) {
+				b2Vec2 p0 = b2Vec2(roads.nodes[things[cp.first].node].x, roads.nodes[things[cp.first].node].y);
 
-			b2Vec2 vertices[3];
-			b2Vec2 p0 = checkpoints[i];
+				b2Vec2 vertices[3];
 
-			vertices[0] =  b2Vec2(0.f, 1.f);
-			vertices[1] =  b2Vec2(1.f, -1.f);
-			vertices[2] =  b2Vec2(-1.f, -1.f);
 
-			float theta;
-			theta = currentTime / 60 * (15 * b2_pi);
-			b2Mat22 rot1 = b2Mat22(cos(theta), -sin(theta), sin(theta), cos(theta));
+				vertices[0] = b2Vec2(0.f, 1.f);
+				vertices[1] = b2Vec2(1.f, -1.f);
+				vertices[2] = b2Vec2(-1.f, -1.f);
 
-			for (int j = 0; j < 3; j++){
-				vertices[j] = p0 + b2Mul(rot1, 15.f * vertices[j]);
+				float theta;
+				theta = currentTime / 60 * (15 * b2_pi);
+				b2Mat22 rot1 = b2Mat22(cos(theta), -sin(theta), sin(theta), cos(theta));
+
+				for (int j = 0; j < 3; j++) {
+					vertices[j] = p0 + b2Mul(rot1, 15.f * vertices[j]);
+				}
+
+				g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.f, 1.f, 0.f, 1.f));
+
+
+				if ((p0 - agentBody->GetPosition()).Length() < 15.f) {
+					currentConversation = cp.second.conversationId;
+					run = 0;
+					cp.second.active = false;
+				}
 			}
 
-			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.f, 1.f, 0.f, 1.f));
 		}
 
 		b2Vec2 officerPolygon[3];
