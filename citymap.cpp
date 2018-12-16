@@ -180,6 +180,7 @@ int64_t gpuSpawnPoint = 4169083660;
 
 
 
+
 float linearDamping = 5.f;
 float angularDamping = 10.f;
 
@@ -204,6 +205,9 @@ int run = 1;
 int currentConversation = 0;
 
 float stamina = 1;
+float staminaRateIncStop = 0.2;
+float staminaRateIncWalk = 0.1;
+float staminaRateDec = 0.4;
 
 struct Visitor {
 	int count;
@@ -868,8 +872,10 @@ void sInterface() {
 
 		ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
 
-		ImGui::ProgressBar(0.5f, ImVec2(0.0f, 0.0f));
+		ImGui::ProgressBar(stamina, ImVec2(0.0f, 0.0f));
 		
+
+		ImGui::Text("stamina: %f", stamina);
 		
 		ImGui::End();
 
@@ -1954,7 +1960,24 @@ int main(int argc, char *argv[])
 
 			state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 			if (state == GLFW_PRESS) {
-				refVel = runSpeed;
+				
+				if (stamina > 0) {
+					refVel = runSpeed;
+				}
+
+				stamina = stamina - staminaRateDec*(ct - pt);
+
+				stamina = max(0.f,  stamina);
+			}
+
+			else {
+				if (agentBody->GetLinearVelocity().Length() > 0.2f) {
+					stamina = stamina + staminaRateIncWalk*(ct - pt);
+				}
+				else {
+					stamina = stamina + staminaRateIncStop*(ct - pt);
+				}
+				stamina = min(1.f, stamina);
 			}
 
 
