@@ -188,6 +188,9 @@
     <ProjectReference Include="..\..\libtess2\Build\tess2.vcxproj">
       <Project>{613c2544-8efc-0f44-ab82-b2643888b2fb}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\soil\projects\VC9\SOIL.vcxproj">
+      <Project>{c32fb2b4-500c-43cd-a099-eecce079d3f1}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\soloud\build\vs2015\SoloudStatic.vcxproj">
       <Project>{83540317-6fb7-92bb-183d-cb71047f5e3e}</Project>
     </ProjectReference>

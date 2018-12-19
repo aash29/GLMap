@@ -65,6 +65,8 @@
 
 #include "dialog.h"
 
+#include "SOIL/SOIL.h"
+
 #define IM_ARRAYSIZE(_ARR)  ((int)(sizeof(_ARR)/sizeof(*_ARR)))
 #define strVec vector<string>
 
@@ -222,7 +224,25 @@ b2Color groundColor = b2Color(0.f, 0.f, 0.f, 1.f);
 
 b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
 
+GLuint textures[1];
 
+void loadTexture() {
+
+
+	glGenTextures(1, textures);
+
+	int width, height;
+	unsigned char* image;
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	image = SOIL_load_image("./content/map.png", &width, &height, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	SOIL_free_image_data(image);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+}
 
 void loadSettings(const char * name) {
 	XMLDocument* doc = new XMLDocument();
@@ -635,109 +655,6 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 
 
 
-
-/*
-        agent* agent0 = &agents.begin()->second;
-
-
-        if (key == GLFW_KEY_RIGHT && action == GLFW_PRESS) {
-
-
-            
-            dx = 1, dy = 0;
-
-            agent0->planFunc.push_back(
-                    [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
-                        {
-                            agent0->x = agent0->x + dx;
-                            agent0->y = agent0->y + dy;
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        };
-
-
-                    });
-
-            endTurn();
-             
-        }
-
-
-        if (key == GLFW_KEY_LEFT && action == GLFW_PRESS)
-        {
-
-
-            
-            dx = -1, dy = 0;
-            agent0->planFunc.push_back(
-                    [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
-                        {
-                            agent0->x = agent0->x + dx;
-                            agent0->y = agent0->y + dy;
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        };
-
-
-                    });
-
-            endTurn();
-             
-        }
-        if (key == GLFW_KEY_UP && action == GLFW_PRESS) {
-
-
-
-            
-            dx = 0, dy = 1;
-
-            agent0->planFunc.push_back(
-                    [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
-                        {
-                            agent0->x = agent0->x + dx;
-                            agent0->y = agent0->y + dy;
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        };
-
-
-                    });
-
-            endTurn();
-            
-
-        }
-        if (key == GLFW_KEY_DOWN && action == GLFW_PRESS) {
-            
-            dx = 0, dy = -1;
-
-            agent0->planFunc.push_back(
-                    [&, dx, dy]() {
-                        if (path_map->walkable[path_map->at(agent0->x + dx,agent0->y + dy)])
-                        {
-                            agent0->x = agent0->x + dx;
-                            agent0->y = agent0->y + dy;
-                            return 0;
-                        }
-                        else {
-                            return 1;
-                        };
-
-
-                    });
-            endTurn();
-            
-
-        } */
     }
     else
     {
@@ -776,6 +693,12 @@ void sInterface() {
 	}
 
 	ImGuiIO &io = ImGui::GetIO();
+
+
+	ImGui::Begin("map");
+	ImGui::Image((void*)(textures[0]), ImVec2(800, 800));
+	ImGui::End();
+
 
 	if (showTimer) {
 
@@ -963,20 +886,6 @@ void sInterface() {
             ImGui::TextWrapped(bstr);
 
 
-            /*
-              if (tinydir_open(&dir, "../") != -1) {
-              tinydir_file file;
-              while (dir.has_next)
-              {
-              if (tinydir_readfile(&dir, &file) != -1) {
-              ImGui::TextWrapped(file.name);
-              }
-              tinydir_next(&dir);
-              }
-              }
-            */
-
-
             ImGui::EndChild();
             ImGui::BeginChild("buttons");
             if (ImGui::Button("Load"))
@@ -989,124 +898,7 @@ void sInterface() {
         }
         ImGui::End();
     }
-
-
-
-
 };
-/*
-void planDay(agent &a0){
-
-	struct navShop : navigator
-	{
-		static bool is_goal(location_t &pos, location_t &goal) {
-			// return (pos==goal);
-			// std::string id1 = selectBuilding(pos.x, pos.y);
-			return 	(buildingTypes->deltaHeat[buildingTypes->at(pos.x,pos.y)] == 2);
-		}
-		static float get_distance_estimate(location_t &pos, location_t &goal) {
-			float d = 1.f;
-			return d;
-		}
-
-	};
-
-    a0.planFunc.reserve(300);
-
-    std::function<int()> goToAnyShop = [&a0]() {
-        auto shopPath = find_path<location_t, navShop>(location_t(a0.x, a0.y), location_t(0, 0));
-
-        if (shopPath->success) {
-            debug_log().AddLog("path found \n");
-
-            location_t curPos = location_t(a0.x, a0.y);
-
-            auto it = a0.planFunc.begin();
-
-            for (auto p1 = shopPath->steps.begin(); p1 != shopPath->steps.end(); p1++) {
-                if (!(curPos == *p1)) {
-                    debug_log().AddLog("%d,%d \n", p1->x, p1->y);
-                    int dx = p1->x;
-                    int dy = p1->y;
-
-                    it = a0.planFunc.insert(it+1,[dx, dy, &a0](){
-                                           if (path_map->walkable[path_map->at(dx, dy)]) {
-                                               a0.x = dx;
-                                               a0.y = dy;
-                                               a0.energy--;
-                                               return 0;
-                                           } else {
-                                               return 1;
-                                           };
-                                       }
-                    );
-                    curPos = *p1;
-                }
-            }
-        }
-      return 1;
-    };
-
-
-    std::function<int()> eat = [&a0]() {
-
-        auto it = a0.inventory.find("food");
-
-        if (it!=a0.inventory.end()) {
-            a0.fed = a0.fed + 20;
-            a0.inventory.erase(it);
-            return 0;
-        } else {
-            return 1;
-        }
-
-
-    };
-	/*
-    std::function<int()> goHome = [&a0]() {
-
-        location_t target = location_t(static_cast<int>(city[a0.home].coords[0][0]), static_cast<int>(city[a0.home].coords[0][1]));
-
-        auto homePath = find_path<location_t, navigator>(location_t(a0.x, a0.y), target);
-
-        if (homePath->success) {
-            debug_log().AddLog("path found \n");
-
-            location_t curPos = location_t(a0.x, a0.y);
-
-            auto it = a0.planFunc.begin();
-
-            for (auto p1 = homePath ->steps.begin(); p1 != homePath ->steps.end(); p1++) {
-                if (!(curPos == *p1)) {
-                    debug_log().AddLog("%d,%d \n", p1->x, p1->y);
-                    int dx = p1->x;
-                    int dy = p1->y;
-
-                    it = a0.planFunc.insert(it+1,
-                                            [ dx, dy, &a0]() {
-                                                if (path_map->walkable[path_map->at(dx, dy)]) {
-                                                    a0.x = dx;
-                                                    a0.y = dy;
-                                                    a0.energy--;
-                                                    return 0;
-                                                } else {
-                                                    return 1;
-                                                };
-                                            }
-                    );
-                    curPos = *p1;
-                }
-            }
-        }
-        return 1;
-    };
-	*/
-
-    //a0.planFunc.push_back(goToAnyShop);
-    //a0.planFunc.push_back(goHome);
-    //a0.planFunc.push_back(eat);
-
-
 
 vector<int64_t> findPath (map_record navGraph, int64_t start, int64_t goal) {
 
@@ -1290,7 +1082,7 @@ int main(int argc, char *argv[])
 
 	glfwSetTime(0);
 
-
+	loadTexture();
 
 	xm = 0;
 	ym = 0;
@@ -1301,81 +1093,6 @@ int main(int argc, char *argv[])
     if (argc == 1) {
         //m_showOpenDialog = true;
 
-        while (m_showOpenDialog)
-        {
-
-            glfwPollEvents();
-
-            ImGui_ImplGlfwGL3_NewFrame();
-
-
-            glClearColor(groundColor.r, groundColor.g, groundColor.b, groundColor.a);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-
-            ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_Always);
-
-            if (ImGui::Begin("Open level", &m_showOpenDialog)) {
-
-                // left
-                static char selected[100] = "";
-                ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-                tinydir_dir dir;
-                if (tinydir_open(&dir, "./maps/") != -1) {
-                    tinydir_file file;
-                    int i = 0;
-
-                    while (dir.has_next) {
-                        if (tinydir_readfile(&dir, &file) != -1) {
-                            //ImGui::TextWrapped(file.name);
-                            //coinsLog.AddLog(file.extension, "\n");
-                            //if (!strcmp(file.extension, "txt")) {
-                                if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
-                                    strcpy(selected, file.name);
-                            //}
-                        }
-                        tinydir_next(&dir);
-                        i++;
-                    }
-                    tinydir_close(&dir);
-                }
-
-                ImGui::EndChild();
-                ImGui::SameLine();
-
-                // right
-                ImGui::BeginGroup();
-                ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
-                ImGui::Checkbox("Compute bounds", &computeBounds);
-                ImGui::Text("Selected level: %s", selected);
-                ImGui::Separator();
-
-                char pathToFile[100] = "";
-                strcat(pathToFile, "./maps/");
-                strcat(pathToFile, selected);
-                ImGui::EndChild();
-                ImGui::BeginChild("buttons");
-                if (ImGui::Button("Load"))
-                {
-                    printf(selected);
-                    //city = loadLevel(pathToFile, tess, boundingBox, singlePolygon);
-                    //city = loadLevel(pathToFile, tess2, boundingBox, singlePolygon);
-                    levelPath = pathToFile;
-
-                    m_showOpenDialog = false;
-
-                };
-                ImGui::SameLine();
-                ImGui::EndChild();
-                ImGui::EndGroup();
-            }
-            ImGui::End();
-
-            ImGui::Render();
-
-            glfwSwapBuffers(window);
-            //glfwPollEvents();
-        }
     }
 
     else {
