@@ -225,19 +225,20 @@ b2Color groundColor = b2Color(0.f, 0.f, 0.f, 1.f);
 b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
 
 GLuint textures[1];
+int mapWidth, mapHeight;
 
 void loadTexture() {
 
 
 	glGenTextures(1, textures);
 
-	int width, height;
+	//int width, height;
 	unsigned char* image;
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	image = SOIL_load_image("./content/map.png", &width, &height, 0, SOIL_LOAD_RGBA);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	image = SOIL_load_image("./content/map.png", &mapWidth, &mapHeight, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mapWidth, mapHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 	SOIL_free_image_data(image);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -696,7 +697,7 @@ void sInterface() {
 
 
 	ImGui::Begin("map");
-	ImGui::Image((void*)(textures[0]), ImVec2(800, 800));
+	ImGui::Image((void*)(textures[0]), ImVec2(mapWidth, mapHeight));
 	ImGui::End();
 
 
