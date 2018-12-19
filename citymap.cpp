@@ -207,7 +207,7 @@ int currentConversation = 0;
 float stamina = 1;
 float staminaRateIncStop = 0.2;
 float staminaRateIncWalk = 0.1;
-float staminaRateDec = 0.4;
+float staminaRateDec = 0.01;
 
 struct Visitor {
 	int count;
@@ -1885,29 +1885,32 @@ int main(int argc, char *argv[])
 	float tzero = glfwGetTime();
 
 
-    while (!glfwWindowShouldClose(window)) {
-        float ct = (float) glfwGetTime();
-
-		currentTime = ct - tzero;
-        if (run) t += ct - pt;
+	while (!glfwWindowShouldClose(window)) {
+		float ct = (float)glfwGetTime();
 
 
+		if (run) {
+			t += ct - pt;
+			currentTime += t;
+		}
 
 
 
-        ImGui_ImplGlfwGL3_NewFrame();
 
 
-        sInterface();
+		ImGui_ImplGlfwGL3_NewFrame();
 
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+		sInterface();
 
 
-        glEnable(GL_BLEND);
-        glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
-        glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+
+		glEnable(GL_BLEND);
+		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
+		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
 
 
@@ -1940,13 +1943,14 @@ int main(int argc, char *argv[])
 			static bool walking = false;
 
 			if (agentBody->GetLinearVelocity().Length() > 0.2f) {
-				
+
 				if (!walking) {
-					handle = gSoloud.play(gWave,1.f,0.f,false); // Play the wave
+					handle = gSoloud.play(gWave, 1.f, 0.f, false); // Play the wave
 					walking = true;
 				}
-				
-			} else {
+
+			}
+			else {
 				walking = false;
 				gSoloud.setPause(handle, true);
 			}
@@ -1960,14 +1964,14 @@ int main(int argc, char *argv[])
 
 			state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
 			if (state == GLFW_PRESS) {
-				
+
 				if (stamina > 0) {
 					refVel = runSpeed;
 				}
 
 				stamina = stamina - staminaRateDec*(ct - pt);
 
-				stamina = max(0.f,  stamina);
+				stamina = max(0.f, stamina);
 			}
 
 			else {
@@ -2010,7 +2014,7 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				agentBody->SetLinearVelocity(b2Vec2(0.f,0.f));
+				agentBody->SetLinearVelocity(b2Vec2(0.f, 0.f));
 			}
 
 
@@ -2080,7 +2084,7 @@ int main(int argc, char *argv[])
 
 
 
-		if (t>timeStep) {
+		if (t > timeStep) {
 			crow.step(timeStep);
 			world.Step(timeStep, velocityIterations, positionIterations);
 			if (cameraFollow) {
@@ -2090,21 +2094,21 @@ int main(int argc, char *argv[])
 		}
 
 
-        if (drawPaths) {
-            g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
-        }
+		if (drawPaths) {
+			g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
+		}
 
 		static float tt1 = 0.f;
 		//tt1 = followLine(officer, tt1);
-
-		if (planFunc.size() > 0) {
-			tt1 = planFunc.front()(officer, tt1, ct-pt);
-			if (tt1 < 0) {
-				planFunc.erase(planFunc.begin());
-				tt1 = 0;
+		if (run) {
+			if (planFunc.size() > 0) {
+				tt1 = planFunc.front()(officer, tt1, ct - pt);
+				if (tt1 < 0) {
+					planFunc.erase(planFunc.begin());
+					tt1 = 0;
+				}
 			}
 		}
-
 
         for (auto &t1: things){
             b2Vec2 agentPos = agentBody->GetPosition();
@@ -2238,9 +2242,14 @@ int main(int argc, char *argv[])
 				g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.f, 1.f, 0.f, 1.f));
 
 
-				if ((p0 - agentBody->GetPosition()).Length() < 15.f) {
+				if (((p0 - agentBody->GetPosition()).Length() < 15.f) && cp.second.active) {
 					currentConversation = cp.second.conversationId;
 					run = 0;
+					cp.second.active = false;
+				}
+
+
+				if ((p0 - officer->GetPosition()).Length() < 15.f) {
 					cp.second.active = false;
 				}
 			}
