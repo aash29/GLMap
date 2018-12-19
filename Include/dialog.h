@@ -15,6 +15,7 @@ struct reply {
 
 struct conversation {
 	int id;
+	int freeze = 0;
 	map <int, reply> replies;
 };
 
@@ -36,6 +37,11 @@ map <int, conversation> loadDialog(const char *name) {
 		int id;
 		c1->QueryAttribute("id", &id);
 		conv1.id = id;
+
+		int freeze;
+		c1->QueryAttribute("freeze", &freeze);
+		conv1.freeze = freeze;
+
 
 		XMLElement* r1 = c1->FirstChildElement("reply");
 		while (r1) {

@@ -4,7 +4,17 @@
     <level
         map="./content/map3.osm"
         arcs="0"
-        />
+    />
+    <windows
+        info = "1"
+        cases = "1"
+        timer = "1"
+    />
+    <camera
+        follow = "0"
+        scroll = "0"
+        zoom = "1.5f"
+    />
 
     <player
             velocity="5"
@@ -12,10 +22,21 @@
             turnVelocity="5"
             mass="1"
             spawnPoint="1814481352"
+            staminaRateIncStop = "0.3"
+            staminaRateIncWalk = "0.2"
+            staminaRateDec = "0.1"
     />
     <gpu
             velocity="15"
             pause="5"
             spawnPoint="4169083660"
+    />
+
+    <appearance
+        drawPaths="1"
+        drawGpuPath="1"
+        groundColor = "0.2,0.2,0.2,1.0"
+        buildingColor = "0.5,0.5,0.5,1.0"
+
     />
 </osm>

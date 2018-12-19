@@ -110,6 +110,7 @@ map_t* path_map;
 bool drawGrid = true;
 bool drawBlockedCells = true;
 bool drawPaths = true;
+bool drawGpuPath = true;
 bool cameraFollow = false;
 bool drawFOV = false;
 
@@ -209,6 +210,79 @@ float staminaRateIncStop = 0.2;
 float staminaRateIncWalk = 0.1;
 float staminaRateDec = 0.01;
 
+char* levelPath = "./content/map3.osm";
+
+int showInfo = 1;
+int showCases = 1;
+int showTimer = 1;
+
+bool cameraScroll = true;
+
+b2Color groundColor = b2Color(0.f, 0.f, 0.f, 1.f);
+
+b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
+
+
+
+void loadSettings(const char * name) {
+	XMLDocument* doc = new XMLDocument();
+
+	doc->LoadFile(name);
+
+	XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("level");
+
+	n1->Attribute("map", levelPath);
+
+	n1 = doc->FirstChildElement("osm")->FirstChildElement("player");
+
+	n1->QueryAttribute("velocity", &walkSpeed);
+	n1->QueryAttribute("runVelocity", &runSpeed);
+	n1->QueryAttribute("turnVelocity", &turnSpeed);
+	n1->QueryAttribute("mass", &playerMass);
+	n1->QueryAttribute("spawnPoint", &playerSpawnPoint);
+
+	n1->QueryAttribute("staminaRateIncStop", &staminaRateIncStop);
+	n1->QueryAttribute("staminaRateIncWalk", &staminaRateIncWalk);
+	n1->QueryAttribute("staminaRateDec", &staminaRateDec);
+
+
+	n1 = doc->FirstChildElement("osm")->FirstChildElement("gpu");
+
+	n1->QueryAttribute("velocity", &gpuSpeed);
+	n1->QueryAttribute("pause", &gpuPause);
+	n1->QueryAttribute("spawnPoint", &gpuSpawnPoint);
+
+	n1 = doc->FirstChildElement("osm")->FirstChildElement("windows");
+
+	n1->QueryAttribute("info", &showInfo);
+	n1->QueryAttribute("cases", &showCases);
+	n1->QueryAttribute("timer", &showTimer);
+
+	n1 = doc->FirstChildElement("osm")->FirstChildElement("camera");
+
+	n1->QueryAttribute("follow", &cameraFollow);
+	n1->QueryAttribute("scroll", &cameraScroll);
+	n1->QueryAttribute("zoom", &g_camera.m_zoom);
+
+
+	n1 = doc->FirstChildElement("osm")->FirstChildElement("appearance");
+
+	const char * grColor = n1->Attribute("groundColor");
+	sscanf(grColor, "%f,%f,%f,%f", &groundColor.r, &groundColor.g, &groundColor.b, &groundColor.a);
+
+
+	const char * bColor = n1->Attribute("buildingColor");
+	sscanf(bColor, "%f,%f,%f,%f", &buildingColor.r, &buildingColor.g, &buildingColor.b, &buildingColor.a);
+
+	n1->QueryAttribute("drawPaths", &drawPaths);
+
+	n1->QueryAttribute("drawGpuPath", &drawGpuPath);
+
+};
+
+
+
+
 struct Visitor {
 	int count;
 	int id;
@@ -262,92 +336,9 @@ public:
     b2Vec2 m_normal;
 };
 
-/*
-class sensorContactListener: public b2ContactListener {
-	void BeginContact(b2Contact* contact) {
-		b2Fixture* f1 = contact->GetFixtureA();
-
-		void* userData = f1->GetUserData();
-        entity* t1 = NULL;
-
-		if (userData)
-		{
-			t1 = (entity*)userData;
-			//debug_log().AddLog("collision with id: %d \n", index);
-		}
 
 
-		b2Fixture* f2 = contact->GetFixtureB();
-		userData = f2->GetUserData();
-        //int32 ud2 = -1;
-        entity* t2 = NULL;
-		if (userData)
-		{
-            t2 = (entity*)userData;
-			//debug_log().AddLog("collision with id: %d \n", index);
-		}
 
-        if ((f1->GetFilterData().categoryBits==visibilityCategory) && (f2->GetFilterData().categoryBits==visibilityCategory)) {
-
-
-            if ((t1->type == POI) && (t2->type == player)) {
-                std::swap(t1, t2);
-                std::swap(f1, f2);
-
-            }
-
-            if ((t1->type == player) && (t2->type == POI)) {
-
-                t2->descriptionArmed = true;
-            }
-        }
-
-	}
-
-
-};
-
-*/
-
-struct navigator {
-
-    static float get_distance_estimate(location_t &pos, location_t &goal) {
-        float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
-        return d;
-    }
-
-    static bool is_goal(location_t &pos, location_t &goal) {
-        return pos == goal;
-        //return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-        //return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-    }
-
-    static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-        //std::cout << pos.x << "/" << pos.y << "\n";
-
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x, pos.y - 1)]) successors.push_back(location_t(pos.x, pos.y - 1));
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y - 1)]) successors.push_back(location_t(pos.x + 1, pos.y - 1));
-
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y)]) successors.push_back(location_t(pos.x - 1, pos.y));
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y)]) successors.push_back(location_t(pos.x + 1, pos.y));
-
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y + 1)]) successors.push_back(location_t(pos.x - 1, pos.y + 1));
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x, pos.y + 1)]) successors.push_back(location_t(pos.x, pos.y + 1));
-        if (pathfinding_map->walkable[pathfinding_map->at(pos.x + 1, pos.y + 1)]) successors.push_back(location_t(pos.x + 1, pos.y + 1));
-        return true;
-    }
-
-    static float get_cost(location_t &position, location_t &successor) {
-        return 1.0f;
-    }
-    static bool is_same_state(location_t &lhs, location_t &rhs) {
-        return lhs == rhs;
-    }
-};
-
-void endTurn();
-void planDay(agent &a0);
 
 int pairingNum(int a, int b) {
     if (a>b){
@@ -361,27 +352,6 @@ int pairingNum(int a, int b) {
 
 
 
-void loadSettings(const char * name) {
-    XMLDocument* doc = new XMLDocument();
-
-    doc->LoadFile(name);
-    XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("player");
-
-    n1->QueryAttribute("velocity", &walkSpeed);
-	n1->QueryAttribute("runVelocity", &runSpeed);
-    n1->QueryAttribute("turnVelocity", &turnSpeed);
-    n1->QueryAttribute("mass", &playerMass);
-    n1->QueryAttribute("spawnPoint", &playerSpawnPoint);
-	
-
-    n1 = doc->FirstChildElement("osm")->FirstChildElement("gpu");
-
-    n1->QueryAttribute("velocity", &gpuSpeed);
-    n1->QueryAttribute("pause", &gpuPause);
-    n1->QueryAttribute("spawnPoint", &gpuSpawnPoint);
-
-};
-
 
 
 static void sScrollCallback(GLFWwindow *, double, double dy) {
@@ -391,12 +361,14 @@ static void sScrollCallback(GLFWwindow *, double, double dy) {
     //std::cout<<"pressed" << "\n";
 
     if (!io.WantCaptureMouse) {
-        if (dy > 0) {
-            g_camera.m_zoom /= 1.1f;
-        }
-        else {
-            g_camera.m_zoom *= 1.1f;
-        }
+		if (cameraScroll) {
+			if (dy > 0) {
+				g_camera.m_zoom /= 1.1f;
+			}
+			else {
+				g_camera.m_zoom *= 1.1f;
+			}
+		}
         //printf ("scroll");
     }
     else
@@ -793,25 +765,6 @@ void charCallback(GLFWwindow*, unsigned int c)
 
 
 
-void endTurn() {
-
-
-    for (auto a1:agents) {
-        string id = a1.first;
-        agents[id].update();
-        if (agents[id].planFunc.size() > 0) {
-            agents[id].planFunc.front()();
-            agents[id].planFunc.erase(agents[id].planFunc.begin());
-        } else
-        {
-        }
-        if (absoluteTurn%24 ==0){
-            if (id != agents.begin()->first)
-                planDay(agents[id]);
-        }
-    }
-    absoluteTurn++;
-}
 
 void sInterface() {
 
@@ -824,66 +777,70 @@ void sInterface() {
 
 	ImGuiIO &io = ImGui::GetIO();
 
-	ImFontAtlas* atlas = ImGui::GetIO().Fonts;
-	ImFont* font = atlas->Fonts[1];
-	ImGui::PushFont(font);
+	if (showTimer) {
 
-	ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
-	ImGuiStyle &style = ImGui::GetStyle();
-	//style.Colors[ImGuiCol_WindowBg]=color;
-	ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+		ImFontAtlas* atlas = ImGui::GetIO().Fonts;
+		ImFont* font = atlas->Fonts[1];
+		ImGui::PushFont(font);
 
-	int minutes = currentTime / 60;
-	g_debugDraw.DrawString(width / 2, 0, "%dm %2.1fs", minutes, currentTime - minutes * 60);
-
-	ImGui::PopStyleColor();
-	ImGui::PopFont();
-
-
-	int menuWidth = 600;
-	{
-		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
+		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
 		ImGuiStyle &style = ImGui::GetStyle();
 		//style.Colors[ImGuiCol_WindowBg]=color;
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
-		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
 
-		ImGui::Begin("Info");
-
-
-		b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
-		b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
-
-		ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
-		//ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
-
-		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-
-		if (selected != std::string("none"))
-		{
-			ImGui::Text((std::string("id:") + city[selected].id).c_str());
-		}
-
-		ImGui::Checkbox("Draw Paths", &drawPaths);
-		ImGui::Checkbox("Camera Follow", &cameraFollow);
-		ImGui::Checkbox("Draw FOV", &drawFOV);
-
-
-		ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
-
-		ImGui::ProgressBar(stamina, ImVec2(0.0f, 0.0f));
-		
-
-		ImGui::Text("stamina: %f", stamina);
-		
-		ImGui::End();
+		int minutes = currentTime / 60;
+		g_debugDraw.DrawString(width / 2, 0, "%dm %2.1fs", minutes, currentTime - minutes * 60);
 
 		ImGui::PopStyleColor();
+		ImGui::PopFont();
+	}
+
+	int menuWidth = 600;
+	{
+		if (showInfo) {
+			ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.3f);
+			ImGuiStyle &style = ImGui::GetStyle();
+			//style.Colors[ImGuiCol_WindowBg]=color;
+			ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+			ImGui::SetNextWindowPos(ImVec2(10, 10));
+			ImGui::SetNextWindowSize(ImVec2((float)menuWidth, (float)g_camera.m_height - 20));
+
+			ImGui::Begin("Info");
+
+
+			b2Vec2 ps = b2Vec2(io.MousePos.x, io.MousePos.y);
+			b2Vec2 pw = g_camera.ConvertScreenToWorld(ps);
+
+			ImGui::Text("Mouse pos: (%f, %f)", pw.x, pw.y);
+			//ImGui::Text("Current cell: (%f, %f)", floor(pw.x / g_camera.gridSize), floor(pw.y / g_camera.gridSize));
+
+			ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+
+			if (selected != std::string("none"))
+			{
+				ImGui::Text((std::string("id:") + city[selected].id).c_str());
+			}
+
+			ImGui::Checkbox("Draw Paths", &drawPaths);
+			ImGui::Checkbox("Camera Follow", &cameraFollow);
+			ImGui::Checkbox("Draw FOV", &drawFOV);
+
+
+			ImGui::Text("currentVelocity: %f", agentBody->GetLinearVelocity().Length());
+
+			ImGui::ProgressBar(stamina, ImVec2(0.0f, 0.0f));
+
+
+			ImGui::Text("stamina: %f", stamina);
+
+			ImGui::End();
+
+			ImGui::PopStyleColor();
+		}
 	}
 
 
-	ImGui::ShowTestWindow();
+	//ImGui::ShowTestWindow();
 
 	if (currentConversation != 0)
 	{
@@ -894,7 +851,7 @@ void sInterface() {
 
 		static int currentReply = 1;
 
-		ImGui::Text(dialogs[currentConversation].replies[currentReply].text.c_str());
+		ImGui::TextWrapped(dialogs[currentConversation].replies[currentReply].text.c_str());
 
 		//for (int i = 0; i < dialogs[currentConversation].replies[currentReply].answers.size(); i++) {
 		for (auto a1 : dialogs[currentConversation].replies[currentReply].answers) {
@@ -915,40 +872,40 @@ void sInterface() {
 		ImGui::End();
 	}
 
+	if (showCases) {
+		ImGui::Begin("Дела");
 
-	ImGui::Begin("Дела");
+		if (ImGui::TreeNode("Подозреваемые"))
+		{
+			ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
 
-	if (ImGui::TreeNode("Подозреваемые"))
-	{
-		ImGui::Unindent(ImGui::GetTreeNodeToLabelSpacing());
+			static int selection_mask = (1 << 2); // Dumb representation of what may be user-side selection state. You may carry selection state inside or outside your objects in whatever format you see fit.
+			int node_clicked = -1;                // Temporary storage of what node we have clicked to process selection at the end of the loop. May be a pointer to your own node type, etc.
+			ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 3); // Increase spacing to differentiate leaves from expanded contents.
 
-		static int selection_mask = (1 << 2); // Dumb representation of what may be user-side selection state. You may carry selection state inside or outside your objects in whatever format you see fit.
-		int node_clicked = -1;                // Temporary storage of what node we have clicked to process selection at the end of the loop. May be a pointer to your own node type, etc.
-		ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, ImGui::GetFontSize() * 3); // Increase spacing to differentiate leaves from expanded contents.
+			auto t1 = things.begin();
+			for (int i = 0; i < things.size(); i++) {
 
-		auto t1 = things.begin();
-		for (int i = 0; i < things.size(); i++) {
+				ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
 
-			ImGuiTreeNodeFlags node_flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
+				bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t1->second.name.c_str());
+				if (ImGui::IsItemClicked())
+					node_clicked = i;
+				if (node_open)
+				{
+					ImGui::TextWrapped(t1->second.desc.c_str());
+					ImGui::TreePop();
+				}
 
-			bool node_open = ImGui::TreeNodeEx((void*)(intptr_t)i, node_flags, t1->second.name.c_str());
-			if (ImGui::IsItemClicked())
-				node_clicked = i;
-			if (node_open)
-			{
-				ImGui::TextWrapped(t1->second.desc.c_str());
-				ImGui::TreePop();
+				t1++;
 			}
-
-			t1++;
+			ImGui::PopStyleVar();
+			ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
+			ImGui::TreePop();
 		}
-		ImGui::PopStyleVar();
-		ImGui::Indent(ImGui::GetTreeNodeToLabelSpacing());
-		ImGui::TreePop();
+
+		ImGui::End();
 	}
-
-	ImGui::End();
-
 	
 
     if (m_showOpenDialog) {
@@ -1037,7 +994,7 @@ void sInterface() {
 
 
 };
-
+/*
 void planDay(agent &a0){
 
 	struct navShop : navigator
@@ -1145,11 +1102,10 @@ void planDay(agent &a0){
     };
 	*/
 
-    a0.planFunc.push_back(goToAnyShop);
+    //a0.planFunc.push_back(goToAnyShop);
     //a0.planFunc.push_back(goHome);
-    a0.planFunc.push_back(eat);
+    //a0.planFunc.push_back(eat);
 
-};
 
 
 vector<int64_t> findPath (map_record navGraph, int64_t start, int64_t goal) {
@@ -1335,8 +1291,6 @@ int main(int argc, char *argv[])
 	glfwSetTime(0);
 
 
-    char* levelPath = "./content/map3.osm";
-
 
 	xm = 0;
 	ym = 0;
@@ -1355,7 +1309,7 @@ int main(int argc, char *argv[])
             ImGui_ImplGlfwGL3_NewFrame();
 
 
-            glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+            glClearColor(groundColor.r, groundColor.g, groundColor.b, groundColor.a);
             glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -1903,8 +1857,7 @@ int main(int argc, char *argv[])
 
 		sInterface();
 
-
-		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+		glClearColor(groundColor.r, groundColor.g, groundColor.b, groundColor.a);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 
@@ -2191,20 +2144,20 @@ int main(int argc, char *argv[])
         }
 
 
+		if (drawGpuPath) {
+			if (res.size() > 0) {
+				b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
+				b2Vec2 p2(roads.nodes[res[1]].x, roads.nodes[res[1]].y);
 
-		if (res.size() > 0) {
-			b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
-			b2Vec2 p2(roads.nodes[res[1]].x, roads.nodes[res[1]].y);
-
-			g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
-
-			for (int i = 1; i < res.size()-1; i++) {
-				p1.Set(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
-				p2.Set(roads.nodes[res[i+1]].x, roads.nodes[res[i+1]].y);
 				g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+
+				for (int i = 1; i < res.size() - 1; i++) {
+					p1.Set(roads.nodes[res[i]].x, roads.nodes[res[i]].y);
+					p2.Set(roads.nodes[res[i + 1]].x, roads.nodes[res[i + 1]].y);
+					g_debugDraw.DrawSegment(p1, p2, b2Color(0.0f, 1.f, 0.0f, 1.0f));
+				}
 			}
 		}
-
 
 
 		b2Vec2 vertices[3];
@@ -2214,7 +2167,7 @@ int main(int argc, char *argv[])
 				if (poly[j] == TESS_UNDEF) break;
 				vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
 			}
-			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(1.f, 0.f, 0.f, 1.f));
+			g_debugDraw.DrawSolidPolygon(vertices, 3, buildingColor);
 		}
 
 
@@ -2244,7 +2197,10 @@ int main(int argc, char *argv[])
 
 				if (((p0 - agentBody->GetPosition()).Length() < 15.f) && cp.second.active) {
 					currentConversation = cp.second.conversationId;
-					run = 0;
+
+					if (dialogs[currentConversation].freeze) {
+						run = 0;
+					}		
 					cp.second.active = false;
 				}
 
