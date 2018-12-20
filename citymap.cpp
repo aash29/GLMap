@@ -227,6 +227,9 @@ b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
 GLuint textures[1];
 int mapWidth, mapHeight;
 
+
+bool blockInput = false;
+
 void loadTexture() {
 
 
@@ -791,6 +794,7 @@ void sInterface() {
 			currentConversation = 0;
 			currentReply = 1;
 			run = 1;
+			blockInput = false;
 		};
 
 		ImGui::End();
@@ -832,73 +836,6 @@ void sInterface() {
 	}
 	
 
-    if (m_showOpenDialog) {
-        ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiSetCond_FirstUseEver);
-
-        if (ImGui::Begin("Open level", &m_showOpenDialog)) {
-
-            // left
-            static char selected[100] = "";
-            ImGui::BeginChild("left pane", ImVec2(150, 0), true);
-            tinydir_dir dir;
-            if (tinydir_open(&dir, "./content/") != -1) {
-                tinydir_file file;
-                int i = 0;
-
-                while (dir.has_next) {
-                    if (tinydir_readfile(&dir, &file) != -1) {
-                        //ImGui::TextWrapped(file.name);
-                        //coinsLog.AddLog(file.extension, "\n");
-                        if (!strcmp(file.extension, "txt")) {
-                            if (ImGui::Selectable(file.name, !strcmp(selected, file.name)))
-                                strcpy(selected, file.name);
-                        }
-                    }
-                    tinydir_next(&dir);
-                    i++;
-                }
-                tinydir_close(&dir);
-            }
-
-            ImGui::EndChild();
-            ImGui::SameLine();
-
-            // right
-            ImGui::BeginGroup();
-            ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetItemsLineHeightWithSpacing())); // Leave room for 1 line below us
-            ImGui::Text("Selected level: %s", selected);
-            ImGui::Separator();
-
-            char pathToFile[100] = "";
-            strcat(pathToFile, "./content/");
-            strcat(pathToFile, selected);
-
-            std::ifstream t(pathToFile);
-            std::stringstream buffer;
-            buffer << t.rdbuf();
-
-            static char bstr[5000];
-
-
-
-            strcpy(bstr,buffer.str().c_str());
-
-            //coinsLog.AddLog(buffer.str().c_str());
-            ImGui::TextWrapped(bstr);
-
-
-            ImGui::EndChild();
-            ImGui::BeginChild("buttons");
-            if (ImGui::Button("Load"))
-            {
-                //city = loadLevel(selected, tess, boundingBox, singlePolygon);
-            };
-            ImGui::SameLine();
-            ImGui::EndChild();
-            ImGui::EndGroup();
-        }
-        ImGui::End();
-    }
 };
 
 vector<int64_t> findPath (map_record navGraph, int64_t start, int64_t goal) {
@@ -1607,153 +1544,155 @@ int main(int argc, char *argv[])
 
 		*/
 
+		if (!blockInput) {
+			if (!mounted) {
 
-		if (!mounted) {
+				static SoLoud::handle handle = 0;
+				static bool walking = false;
 
-			static SoLoud::handle handle = 0;
-			static bool walking = false;
-
-			if (agentBody->GetLinearVelocity().Length() > 0.2f) {
-
-				if (!walking) {
-					handle = gSoloud.play(gWave, 1.f, 0.f, false); // Play the wave
-					walking = true;
-				}
-
-			}
-			else {
-				walking = false;
-				gSoloud.setPause(handle, true);
-			}
-
-
-			agentBody->SetAngularDamping(angularDamping);
-			agentBody->SetLinearDamping(linearDamping);
-
-
-			float refVel = walkSpeed;
-
-			state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-			if (state == GLFW_PRESS) {
-
-				if (stamina > 0) {
-					refVel = runSpeed;
-				}
-
-				stamina = stamina - staminaRateDec*(ct - pt);
-
-				stamina = max(0.f, stamina);
-			}
-
-			else {
 				if (agentBody->GetLinearVelocity().Length() > 0.2f) {
-					stamina = stamina + staminaRateIncWalk*(ct - pt);
+
+					if (!walking) {
+						handle = gSoloud.play(gWave, 1.f, 0.f, false); // Play the wave
+						walking = true;
+					}
+
 				}
 				else {
-					stamina = stamina + staminaRateIncStop*(ct - pt);
+					walking = false;
+					gSoloud.setPause(handle, true);
 				}
-				stamina = min(1.f, stamina);
-			}
 
 
-			state = glfwGetKey(window, GLFW_KEY_D);
-			if (state == GLFW_PRESS) {
-				agentBody->SetAngularVelocity(-turnSpeed);
-				//gSoloud.play(gWave);
-
-			}
-
-			state = glfwGetKey(window, GLFW_KEY_A);
-			if (state == GLFW_PRESS) {
-				agentBody->SetAngularVelocity(turnSpeed);
-				//gSoloud.play(gWave);
-			}
+				agentBody->SetAngularDamping(angularDamping);
+				agentBody->SetLinearDamping(linearDamping);
 
 
-			state = glfwGetKey(window, GLFW_KEY_W);
-			if (state == GLFW_PRESS) {
-				b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-				forward.Normalize();
-
-				float K = 1.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
-				forward *= K;
-
-				agentBody->ApplyForceToCenter(forward, true);
-				//gSoloud.play(gWave);
-
-				//agentBody->SetLinearVelocity(forward);
-			}
-			else
-			{
-				agentBody->SetLinearVelocity(b2Vec2(0.f, 0.f));
-			}
-
-
-			state = glfwGetKey(window, GLFW_KEY_S);
-			if (state == GLFW_PRESS) {
-				b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
-				forward.Normalize();
-
-				float K = 1.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
-
-				forward *= K;
-
-				agentBody->ApplyForceToCenter(forward, true);
-				//gSoloud.play(gWave);
-
-				//agentBody->SetLinearVelocity(forward);
-
-			}
-
-		}
-		else {
+				float refVel = walkSpeed;
 
 
 
-			state = glfwGetKey(window, GLFW_KEY_W);
-			if (state == GLFW_PRESS) {
-				crow.accelerate(0.8f);
-			}
+				state = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+				if (state == GLFW_PRESS) {
+
+					if (stamina > 0) {
+						refVel = runSpeed;
+					}
+
+					stamina = stamina - staminaRateDec*(ct - pt);
+
+					stamina = max(0.f, stamina);
+				}
+
+				else {
+					if (agentBody->GetLinearVelocity().Length() > 0.2f) {
+						stamina = stamina + staminaRateIncWalk*(ct - pt);
+					}
+					else {
+						stamina = stamina + staminaRateIncStop*(ct - pt);
+					}
+					stamina = min(1.f, stamina);
+				}
 
 
+				state = glfwGetKey(window, GLFW_KEY_D);
+				if (state == GLFW_PRESS) {
+					agentBody->SetAngularVelocity(-turnSpeed);
+					//gSoloud.play(gWave);
 
-			state = glfwGetKey(window, GLFW_KEY_S);
-			if (state == GLFW_PRESS) {
-				//crow.brake(0.8f);
-				crow.accelerate(-0.8f);
-			}
+				}
 
-			if ((glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_S) == GLFW_RELEASE)) {
-				crow.accelerate(0.0f);
-			}
+				state = glfwGetKey(window, GLFW_KEY_A);
+				if (state == GLFW_PRESS) {
+					agentBody->SetAngularVelocity(turnSpeed);
+					//gSoloud.play(gWave);
+				}
 
-			if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-				crow.brake(1.f);
+
+				state = glfwGetKey(window, GLFW_KEY_W);
+				if (state == GLFW_PRESS) {
+					b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+					forward.Normalize();
+
+					float K = 1.f * (refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+					forward *= K;
+
+					agentBody->ApplyForceToCenter(forward, true);
+					//gSoloud.play(gWave);
+
+					//agentBody->SetLinearVelocity(forward);
+				}
+				else
+				{
+					agentBody->SetLinearVelocity(b2Vec2(0.f, 0.f));
+				}
+
+
+				state = glfwGetKey(window, GLFW_KEY_S);
+				if (state == GLFW_PRESS) {
+					b2Vec2 forward = agentBody->GetWorldVector(b2Vec2(1.f, 0.f));
+					forward.Normalize();
+
+					float K = 1.f * (-refVel - b2Dot(agentBody->GetLinearVelocity(), forward));
+
+					forward *= K;
+
+					agentBody->ApplyForceToCenter(forward, true);
+					//gSoloud.play(gWave);
+
+					//agentBody->SetLinearVelocity(forward);
+
+				}
+
 			}
 			else {
-				crow.brake(0.f);
-			}
 
 
 
-			state = glfwGetKey(window, GLFW_KEY_D);
-			if (state == GLFW_PRESS) {
-				crow.steer(-1.f);
-			}
+				state = glfwGetKey(window, GLFW_KEY_W);
+				if (state == GLFW_PRESS) {
+					crow.accelerate(0.8f);
+				}
 
 
-			state = glfwGetKey(window, GLFW_KEY_A);
-			if (state == GLFW_PRESS) {
-				crow.steer(1.f);
-			}
 
-			if ((glfwGetKey(window, GLFW_KEY_D) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_A) == GLFW_RELEASE)) {
-				crow.steer(0.f);
+				state = glfwGetKey(window, GLFW_KEY_S);
+				if (state == GLFW_PRESS) {
+					//crow.brake(0.8f);
+					crow.accelerate(-0.8f);
+				}
+
+				if ((glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_S) == GLFW_RELEASE)) {
+					crow.accelerate(0.0f);
+				}
+
+				if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+					crow.brake(1.f);
+				}
+				else {
+					crow.brake(0.f);
+				}
+
+
+
+				state = glfwGetKey(window, GLFW_KEY_D);
+				if (state == GLFW_PRESS) {
+					crow.steer(-1.f);
+				}
+
+
+				state = glfwGetKey(window, GLFW_KEY_A);
+				if (state == GLFW_PRESS) {
+					crow.steer(1.f);
+				}
+
+				if ((glfwGetKey(window, GLFW_KEY_D) == GLFW_RELEASE) && (glfwGetKey(window, GLFW_KEY_A) == GLFW_RELEASE)) {
+					crow.steer(0.f);
+				}
+
 			}
 
 		}
-
-
 
 		if (t > timeStep) {
 			crow.step(timeStep);
@@ -1918,7 +1857,11 @@ int main(int argc, char *argv[])
 
 					if (dialogs[currentConversation].freeze) {
 						run = 0;
-					}		
+					}
+					else {
+						blockInput = true;
+					}
+
 					cp.second.active = false;
 				}
 

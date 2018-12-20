@@ -12,7 +12,7 @@
     />
     <camera
         follow = "0"
-        scroll = "0"
+        scroll = "1"
         zoom = "1.5f"
     />
 
