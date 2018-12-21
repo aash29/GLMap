@@ -32,10 +32,11 @@ struct building
     std::string name;
     std::string addrNumber;
     std::string addrStreet;
+	std::string addrLetter;
     std::string type;
 
-    std::vector<std::vector<unsigned int> > renderCoords;
-    std::vector<std::vector<unsigned int> > collisionCoords;
+    std::vector<std::vector<int64_t> > renderCoords;
+    std::vector<std::vector<int64_t> > collisionCoords;
 
     rect bounds;
 
@@ -53,7 +54,7 @@ struct polygon
 float xmin,xmax,ymin,ymax;
 
 struct node {
-    unsigned int id;
+	int64_t id;
     double lat;
     double lon;
     float x;
@@ -62,38 +63,13 @@ struct node {
 };
 
 struct map_record {
-    map<unsigned int, node> nodes;
-    map<unsigned int, vector<unsigned int> > pathGraph;
-    map<unsigned int, building> buildings;
+    map< int64_t, node> nodes;
+    map< int64_t, vector<int64_t> > pathGraph;
+    map< int64_t, building> buildings;
 };
 
 
 
-void loadGrid(const char *name, int& xgrid, int& ygrid)
-{
-    std::string m_currentLevel = std::string(name);
-
-
-    nlohmann::json jsonObj;
-
-    std::ifstream file;
-    file.open(std::string(name), std::ios::in);
-    if (file) {
-        printf("file open \n");
-        jsonObj << file;
-        file.close();
-    }
-
-
-
-    auto fg = jsonObj.find("grid");
-    std::vector<int> c1 =  (*fg);
-
-    xgrid = c1[0];
-    ygrid = c1[1];
-
-
-}
 
 
 void loadThings(const char *name, std::map <int, entity> &things) {
@@ -149,11 +125,11 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
     double ymax = -INFINITY;
     if (ext=="osm"){
 
-        map<unsigned int, vector<unsigned int> > pathGraph;
-        map<unsigned int, building> buildings;
+        map<int64_t, vector<int64_t> > pathGraph;
+        map<int64_t, building> buildings;
 
-        map<unsigned int, node> nodes;
-		map<unsigned int, vector<unsigned int> > ways;
+        map<int64_t, node> nodes;
+		map<int64_t, vector<int64_t> > ways;
 
         XMLDocument* doc = new XMLDocument();
 
@@ -162,7 +138,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
         XMLElement* n1 = doc->FirstChildElement("osm")->FirstChildElement("node");
         while (n1) {
 
-            unsigned int id;
+			int64_t id;
             double lat;
             double lon;
             n1->QueryAttribute("id", &id);
@@ -190,7 +166,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
             node node1 = {id, lat, lon, lat, lon, map<string, string>(tags)};
 			
             nodes[id] = node1;
-            pathGraph[id] = vector<unsigned int>();
+            pathGraph[id] = vector<int64_t>();
 
 
 
@@ -243,11 +219,11 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
             const char* id = w1->Attribute("id");
 
 
-            ways[stoi(id)] = vector<unsigned int>();
+            ways[stoi(id)] = vector<int64_t>();
 
             XMLElement* nd1 = w1->FirstChildElement("nd");
 
-            unsigned int ref;
+			int64_t ref;
 
             while (nd1) {
                 nd1->QueryAttribute("ref", &ref);
@@ -267,12 +243,12 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
             if ((tags.count("highway")>0) || (tags.count("area:highway"))){
                 XMLElement* nd1 = w1->FirstChildElement("nd");
 
-                unsigned int ref;
+				int64_t ref;
                 nd1->QueryAttribute("ref",&ref);
 
                 //pathGraph[ref] = vector<unsigned int>();
                 nd1->NextSiblingElement("nd");
-                unsigned int previd = ref;
+				int64_t previd = ref;
 
                 while(nd1) {
                     //unsigned int id;
@@ -290,7 +266,11 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 building b1;
 
-                b1.renderCoords.push_back(vector<unsigned int>());
+				b1.addrStreet = tags["addr:street"];
+				b1.addrNumber = tags["addr:housenumber"];
+				b1.addrLetter = tags["addr:letter"];
+
+                b1.renderCoords.push_back(vector<int64_t>());
                 XMLElement* nd1 = w1->FirstChildElement("nd");
 
                 vector<float> coordsx = vector<float>();
@@ -298,7 +278,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 float wind = 0.f; //determine winding
                 while(nd1) {
-                    unsigned int ref;
+					int64_t ref;
                     nd1->QueryAttribute("ref",&ref);
 
                     b1.renderCoords.back().push_back(ref);
@@ -330,7 +310,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
                 tessAddContour(tess, 2,coords.data(), sizeof(float) * 2, round(coords.size() / 2));
-                buildings.insert(pair<int, building>(atoi(id),b1));
+                buildings.insert(pair<int64_t, building>(atoi(id),b1));
 
             }
 
@@ -361,13 +341,13 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				XMLElement* mem1 = r1->FirstChildElement("member");
 				while (mem1) {
 					//if (mem1->Attribute("role","outer")) {
-					int ref;
+					int64_t ref;
 					mem1->QueryAttribute("ref", &ref);
 
 					XMLElement* w1 = doc->FirstChildElement("osm")->FirstChildElement("way");
 					while (w1) {
 
-						int id;
+						int64_t id;
 						w1->QueryAttribute("id", &id);
 						if (id == ref) break;
 						w1 = w1->NextSiblingElement("way");
@@ -385,11 +365,11 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
 
-                    b1.renderCoords.push_back(vector<unsigned int>());
+                    b1.renderCoords.push_back(vector<int64_t>());
 
 					float wind = 0.f; //determine winding
 					while (nd1) {
-						unsigned int ref;
+						int64_t ref;
 						nd1->QueryAttribute("ref", &ref);
 
 						b1.renderCoords.back().push_back(ref);
@@ -492,7 +472,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
 
-                buildings.insert(pair<int, building>(atoi(relId),b1));
+                buildings.insert(pair<int64_t, building>(atoi(relId),b1));
 			}
 
 
@@ -502,7 +482,11 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 building b1;
 
-                b1.renderCoords= vector< vector<unsigned int> >();
+				b1.addrStreet = tags["addr:street"];
+				b1.addrNumber = tags["addr:housenumber"];
+				b1.addrLetter = tags["addr:letter"];
+
+                b1.renderCoords = vector< vector<int64_t> >();
 
 				vector<float> coordsx = vector<float>();
 				vector<float> coordsy = vector<float>();
@@ -510,7 +494,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				
 				XMLElement* mem1 = r1->FirstChildElement("member");
 
-				int wayRef;
+				int64_t wayRef;
 				mem1->QueryAttribute("ref", &wayRef);
 
 				int64_t contourStart = ways[wayRef][0];
@@ -527,9 +511,9 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 					wayStart = ways[wayRef][0];
 					wayEnd = ways[wayRef].back();
 
-                    b1.renderCoords.push_back(vector<unsigned int>());
+                    b1.renderCoords.push_back(vector<int64_t>());
 
-                    for (int ni: ways[wayRef]) {
+                    for (int64_t ni: ways[wayRef]) {
                         b1.renderCoords.back().push_back(ni);
                         coordsx.push_back(nodes[ni].x);
                         coordsy.push_back(nodes[ni].y);
@@ -570,7 +554,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 						coordsy.clear();
 
 						if (mem1) {
-							unsigned int wayRef;
+							int64_t wayRef;
 							mem1->QueryAttribute("ref", &wayRef);
 
 							contourStart = ways[wayRef][0];
@@ -581,9 +565,9 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 }
 
-				int currentRelationId = atoi(relId);
+				int64_t currentRelationId = atoi(relId);
 
-				buildings.insert(pair<int, building>(currentRelationId, b1));
+				buildings.insert(pair<int64_t, building>(currentRelationId, b1));
 				/*
 				if (tags.count("enemy") > 0) {
 					things.insert(std::pair<int, entity>(currentRelationId, entity()));

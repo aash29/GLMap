@@ -227,8 +227,16 @@ b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
 GLuint textures[1];
 int mapWidth, mapHeight;
 
-
 bool blockInput = false;
+
+bool showMap = false;
+
+map_record roads;
+
+string getHouseInfo (int64_t id) { 
+
+	return (roads.buildings[id].addrStreet+ "," + roads.buildings[id].addrNumber + roads.buildings[id].addrLetter);
+};
 
 void loadTexture() {
 
@@ -310,6 +318,7 @@ void loadSettings(const char * name) {
 struct Visitor {
 	int count;
 	int id;
+	std::vector<int> visited = std::vector<int>();
 	bool ContinueVisiting;
 
 	Visitor() : count(0), ContinueVisiting(true) {};
@@ -319,6 +328,7 @@ struct Visitor {
 		std::cout << "#" << count << ": visited " << leaf->leaf << " with bound " << leaf->bound.ToString() << std::endl;
 		count++;
 		id = leaf->leaf;
+		visited.push_back(id);
 	}
 };
 
@@ -467,36 +477,7 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
     //std::cout<<"pressed" << "\n";
 
 
-	struct navigator_graph {
-
-		static float get_distance_estimate(pathNode &pos, pathNode &goal) {
-			float d = distance2d_squared(pos.x, pos.y, goal.x, goal.y);
-			return d;
-		}
-
-		static bool is_goal(location_t &pos, location_t &goal) {
-			return pos == goal;
-			//return (std::max(abs(pos.x-goal.x),abs(pos.y-goal.y))<=1.1f);
-			//return ((abs(pos.x - goal.x)<=1)&&(abs(pos.y - goal.y)<=1));
-		}
-
-		static bool get_successors(location_t pos, std::vector<location_t> &successors) {
-			//std::cout << pos.x << "/" << pos.y << "\n";
-
-			if (pathfinding_map->walkable[pathfinding_map->at(pos.x - 1, pos.y - 1)]) successors.push_back(location_t(pos.x - 1, pos.y - 1));
-
-			return true;
-		}
-
-		static float get_cost(location_t &position, location_t &successor) {
-			return 1.0f;
-		}
-		static bool is_same_state(location_t &lhs, location_t &rhs) {
-			return lhs == rhs;
-		}
-	};
-
-
+	
 
     if (!io.WantCaptureMouse)
     {
@@ -512,18 +493,44 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 				}
 			}
 			*/
-			BoundingBox bound;
-			bound.edges[0].first = selp.x - 1.f;
-			bound.edges[0].second = selp.x + 1.f;
 
-			bound.edges[1].first = selp.y - 1.f;
-			bound.edges[1].second = selp.y + 1.f;
+			if (action == GLFW_PRESS) {
+				BoundingBox bound;
+				bound.edges[0].first = selp.x - 0.1f;
+				bound.edges[0].second = selp.x + 0.1f;
 
-			Visitor x = tree.Query(RTree::AcceptOverlapping(bound), Visitor());
+				bound.edges[1].first = selp.y - 0.1f;
+				bound.edges[1].second = selp.y + 0.1f;
+
+				Visitor x = tree.Query(RTree::AcceptOverlapping(bound), Visitor());
+				x.visited.erase(std::remove(x.visited.begin(), x.visited.end(), 1576083), x.visited.end());
+				x.visited.erase(std::remove(x.visited.begin(), x.visited.end(), 1576085), x.visited.end());
+				for (auto it = x.visited.begin(); it != x.visited.end(); it++) {
+					
+					double* xv;
+					double* yv;
+					xv = new double[roads.buildings[*it].renderCoords.size()*50];
+					yv = new double[roads.buildings[*it].renderCoords.size()*50];
+					int i = 0;
+					for (auto с1 : roads.buildings[*it].renderCoords) {
+						for (auto v1 : с1) {
+							xv[i] = roads.nodes[v1].x;
+							yv[i] = roads.nodes[v1].y;
+							i++;
+						}
+					}
+					
+					if (pnpoly(i, xv, yv, selp.x, selp.y)>0)
+					{
+						debug_log().AddLog("%s, id: %d \n",getHouseInfo(*it).c_str(), *it);
+					}
 
 
-			debug_log().AddLog("Selected: %d \n", x.id);
+				}
 
+
+
+			}
 			/*
 			
 			std::string id1 = selectBuilding(selp.x,selp.y);
@@ -698,12 +705,13 @@ void sInterface() {
 
 	ImGuiIO &io = ImGui::GetIO();
 
-
-	ImGui::Begin("map");
-	ImGui::Image((void*)(textures[0]), ImVec2(mapWidth, mapHeight));
-	ImGui::End();
-
-
+	if (showMap) {
+		ImGui::SetNextWindowPos(ImVec2(0, 0));
+		ImGui::SetNextWindowSize(ImVec2((float)g_camera.m_width, (float)g_camera.m_height));
+		ImGui::Begin("map");
+		ImGui::Image((void*)(textures[0]), ImVec2(mapWidth, mapHeight));
+		ImGui::End();
+	}
 	if (showTimer) {
 
 		ImFontAtlas* atlas = ImGui::GetIO().Fonts;
@@ -760,7 +768,11 @@ void sInterface() {
 
 			ImGui::Text("stamina: %f", stamina);
 
+
+			debug_log().Draw("log",ImGui::GetWindowWidth(), ImGui::GetWindowHeight());
+
 			ImGui::End();
+
 
 			ImGui::PopStyleColor();
 		}
@@ -1053,7 +1065,7 @@ int main(int argc, char *argv[])
     boundingBox.ymax=yp;
 
 
-	map_record roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
+	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds);
 
     loadSettings("./content/config.xml");
 
@@ -1642,6 +1654,14 @@ int main(int argc, char *argv[])
 
 					//agentBody->SetLinearVelocity(forward);
 
+				}
+
+				state = glfwGetKey(window, GLFW_KEY_TAB);
+				if (state == GLFW_PRESS) {
+					showMap = true;
+				}
+				else {
+					showMap = false;
 				}
 
 			}
