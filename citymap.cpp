@@ -525,6 +525,9 @@ static void sMouseButton(GLFWwindow *, int button, int action, int mods) {
 						debug_log().AddLog("%s, id: %d \n",getHouseInfo(*it).c_str(), *it);
 					}
 
+					delete xv;
+					delete yv;
+
 
 				}
 
@@ -1219,9 +1222,44 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	//int i = 0;
+	for (auto b1 : roads.buildings) {
+		for (auto с1 : b1.second.renderCoords) {
+			for (int i = 0; i < с1.size() - 2; i++) {
+
+				int64_t v1 = с1[i];
+
+				linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+				linesColorStore[vertexCount] = b2Color(1.f, 0.f, 0.f, 1.f);
+				vertexCount++;
+
+				v1 = с1[i + 1];
+
+				linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+				linesColorStore[vertexCount] = b2Color(1.f, 0.f, 0.f, 1.f);
+				vertexCount++;
+			}
+			
+			
+			int64_t v1 = с1[с1.size() - 1];
+
+			linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+			linesColorStore[vertexCount] = b2Color(0.f, 1.f, 0.f, 1.f);
+			vertexCount++;
+
+			v1 = с1[0];
+			linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+			linesColorStore[vertexCount] = b2Color(0.f, 1.f, 0.f, 1.f);
+			vertexCount++;
+			
+		}
+	}
+
+
+
 	g_debugDraw.Create();
 
-	g_debugDraw.SetFlags(b2Draw::e_shapeBit);
+	//g_debugDraw.SetFlags(b2Draw::e_shapeBit);
 
     world.SetDebugDraw(&g_debugDraw);
 
@@ -1447,6 +1485,7 @@ int main(int argc, char *argv[])
 		tree.Insert(b1.first, bb);
 	}
 
+	/*
 	BoundingBox bound;
 	bound.edges[0].first = 4064.f;
 	bound.edges[0].second= 4140.f;
@@ -1457,7 +1496,7 @@ int main(int argc, char *argv[])
 	Visitor x = tree.Query(RTree::AcceptOverlapping(bound), Visitor());
 
 
-
+	*/
 
 
 

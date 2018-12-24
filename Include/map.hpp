@@ -491,6 +491,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				vector<float> coordsx = vector<float>();
 				vector<float> coordsy = vector<float>();
 
+				b1.renderCoords.push_back(vector<int64_t>());
 				
 				XMLElement* mem1 = r1->FirstChildElement("member");
 
@@ -498,6 +499,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				mem1->QueryAttribute("ref", &wayRef);
 
 				int64_t contourStart = ways[wayRef][0];
+				int64_t prevWayEnd = -1;
 				int64_t wayStart = ways[wayRef][0];
 				int64_t wayEnd = ways[wayRef].back();
 
@@ -508,18 +510,36 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 					const char *role = mem1->Attribute("role");
 
+					vector<float> coordsxWay = vector<float>();
+					vector<float> coordsyWay = vector<float>();
+					vector<int64_t> renderCoordsWay = vector<int64_t>();
+
 					wayStart = ways[wayRef][0];
 					wayEnd = ways[wayRef].back();
 
-                    b1.renderCoords.push_back(vector<int64_t>());
+                    
 
                     for (int64_t ni: ways[wayRef]) {
-                        b1.renderCoords.back().push_back(ni);
-                        coordsx.push_back(nodes[ni].x);
-                        coordsy.push_back(nodes[ni].y);
+						renderCoordsWay.push_back(ni);
+						coordsxWay.push_back(nodes[ni].x);
+						coordsyWay.push_back(nodes[ni].y);
                     }
+					
+					/*
+					if (prevWayEnd == wayEnd) {
+						std::reverse(renderCoordsWay.begin(), renderCoordsWay.end());
+						std::reverse(coordsxWay.begin(), coordsxWay.end());
+						std::reverse(coordsyWay.begin(), coordsyWay.end());
+						int buf1 = wayStart;
+						wayStart = wayEnd;
+						wayEnd = buf1;
+					}
+					*/
+					b1.renderCoords.back().insert(b1.renderCoords.back().end(), renderCoordsWay.begin(), renderCoordsWay.end());
+					coordsx.insert(coordsx.end(), coordsxWay.begin(), coordsxWay.end());
+					coordsy.insert(coordsy.end(), coordsyWay.begin(), coordsyWay.end());
 
-                    mem1 = mem1->NextSiblingElement("member");
+					mem1 = mem1->NextSiblingElement("member");
 
 					if (wayEnd == contourStart) {
 
@@ -558,9 +578,14 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 							mem1->QueryAttribute("ref", &wayRef);
 
 							contourStart = ways[wayRef][0];
+			
+
+							b1.renderCoords.push_back(vector<int64_t>());
 						}
 
 					}
+
+					prevWayEnd = wayEnd;
 
 
                 }
@@ -568,23 +593,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 				int64_t currentRelationId = atoi(relId);
 
 				buildings.insert(pair<int64_t, building>(currentRelationId, b1));
-				/*
-				if (tags.count("enemy") > 0) {
-					things.insert(std::pair<int, entity>(currentRelationId, entity()));
-					things[currentRelationId].id = currentRelationId;
-					
-					things[currentRelationId].type = POI;
 
-					int anchorId = b1.renderCoords[0][0];
-
-					things[currentRelationId].nodeId = anchorId;
-
-					things[currentRelationId].desc = tags["enemy:desc"];
-
-					//things[currentRelationId].x = nodes[anchorId].x;
-					//things[currentRelationId].y = nodes[anchorId].y;
-				}
-				*/
 
             }
 
