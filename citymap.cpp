@@ -1225,30 +1225,30 @@ int main(int argc, char *argv[])
 	//int i = 0;
 	for (auto b1 : roads.buildings) {
 		for (auto с1 : b1.second.renderCoords) {
-			for (int i = 0; i < с1.size() - 2; i++) {
+			for (int i = 0; i <= с1.size() - 2; i++) {
 
-				int64_t v1 = с1[i];
+				int64_t vb = с1[i];
 
-				linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+				linesDataStore[vertexCount] = b2Vec2(roads.nodes[vb].x, roads.nodes[vb].y);
 				linesColorStore[vertexCount] = b2Color(1.f, 0.f, 0.f, 1.f);
 				vertexCount++;
 
-				v1 = с1[i + 1];
+				int64_t ve = с1[i + 1];
 
-				linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+				linesDataStore[vertexCount] = b2Vec2(roads.nodes[ve].x, roads.nodes[ve].y);
 				linesColorStore[vertexCount] = b2Color(1.f, 0.f, 0.f, 1.f);
 				vertexCount++;
 			}
 			
 			
-			int64_t v1 = с1[с1.size() - 1];
+			int64_t vb = с1.back();
 
-			linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+			linesDataStore[vertexCount] = b2Vec2(roads.nodes[vb].x, roads.nodes[vb].y);
 			linesColorStore[vertexCount] = b2Color(0.f, 1.f, 0.f, 1.f);
 			vertexCount++;
 
-			v1 = с1[0];
-			linesDataStore[vertexCount] = b2Vec2(roads.nodes[v1].x, roads.nodes[v1].y);
+			int64_t ve = с1[0];
+			linesDataStore[vertexCount] = b2Vec2(roads.nodes[ve].x, roads.nodes[ve].y);
 			linesColorStore[vertexCount] = b2Color(0.f, 1.f, 0.f, 1.f);
 			vertexCount++;
 			

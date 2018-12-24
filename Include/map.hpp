@@ -322,7 +322,8 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
         XMLElement* r1 = doc->FirstChildElement("osm")->FirstChildElement("relation");
         while (r1) {
-			const char* relId = r1->Attribute("id");
+			int64_t relId;
+			r1->QueryAttribute("id", &relId);
             map<string, string> tags;
             XMLElement *tag = r1->FirstChildElement("tag");
             while (tag) {
@@ -472,7 +473,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 
 
-                buildings.insert(pair<int64_t, building>(atoi(relId),b1));
+                buildings.insert(pair<int64_t, building>(relId,b1));
 			}
 
 
@@ -497,7 +498,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
 				int64_t wayRef;
 				mem1->QueryAttribute("ref", &wayRef);
-
+				//первый отрезок задает направление обхода
 				int64_t contourStart = ways[wayRef][0];
 				int64_t prevWayEnd = -1;
 				int64_t wayStart = ways[wayRef][0];
@@ -525,16 +526,14 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 						coordsyWay.push_back(nodes[ni].y);
                     }
 					
-					/*
+					
 					if (prevWayEnd == wayEnd) {
 						std::reverse(renderCoordsWay.begin(), renderCoordsWay.end());
 						std::reverse(coordsxWay.begin(), coordsxWay.end());
 						std::reverse(coordsyWay.begin(), coordsyWay.end());
-						int buf1 = wayStart;
-						wayStart = wayEnd;
-						wayEnd = buf1;
+						std::swap(wayStart, wayEnd);
 					}
-					*/
+					
 					b1.renderCoords.back().insert(b1.renderCoords.back().end(), renderCoordsWay.begin(), renderCoordsWay.end());
 					coordsx.insert(coordsx.end(), coordsxWay.begin(), coordsxWay.end());
 					coordsy.insert(coordsy.end(), coordsyWay.begin(), coordsyWay.end());
@@ -590,9 +589,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
                 }
 
-				int64_t currentRelationId = atoi(relId);
-
-				buildings.insert(pair<int64_t, building>(currentRelationId, b1));
+				buildings.insert(pair<int64_t, building>(relId, b1));
 
 
             }
