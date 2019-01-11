@@ -20,11 +20,30 @@
 #define DEBUGDRAW_H
 
 #include <Box2D/Box2D.h>
+#include <GL/glew.h>
+
+
+
+struct sprite {
+	float top;
+	float left;
+	float bottom;
+	float right;
+
+
+	float texTop;
+	float texLeft;
+	float texBottom;
+	float texRight;
+
+};
+
 
 struct b2AABB;
 struct GLRenderPoints;
 struct GLRenderLines;
 struct GLRenderTriangles;
+struct GLRenderSprites;
 
 //
 struct Camera
@@ -55,6 +74,10 @@ struct Camera
 class DebugDraw : public b2Draw
 {
 public:
+
+
+
+
 	DebugDraw();
 	~DebugDraw();
 
@@ -86,13 +109,18 @@ public:
 
     void Flush();
 
+	void DrawTexQuad(b2Vec2 pos, const b2Color& color, sprite curSprite, float angle);
+
+
 	//int linesStartingIndex;
+	GLuint textures[2];
 
 	
 private:
 	GLRenderPoints* m_points;
 	GLRenderLines* m_lines;
     GLRenderTriangles* m_triangles;
+	GLRenderSprites* m_sprites;
 };
 
 extern DebugDraw g_debugDraw;

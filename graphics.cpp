@@ -703,7 +703,7 @@ shaderData texQuadInit()
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, textures[0]);
-  image = SOIL_load_image("proggy2.png", &width, &height, 0, SOIL_LOAD_RGBA);
+  image = SOIL_load_image(".png", &width, &height, 0, SOIL_LOAD_RGBA);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
   SOIL_free_image_data(image);
   glUniform1i(glGetUniformLocation(shaderProgram, "texKitten"), 0);

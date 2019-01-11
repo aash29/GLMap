@@ -339,6 +339,161 @@ struct GLRenderPoints
 	GLint m_sizeAttribute;
 };
 
+
+struct GLRenderSprites {
+	void Create()
+	{
+		const char* vs = \
+			"#version 150 core \n"
+			"in vec2 position;\n"
+			"in vec3 color;\n"
+			"in vec2 texcoord;\n"
+			"out vec3 Color;\n"
+			"out vec2 Texcoord;\n"
+			"uniform mat4 projectionMatrix;\n"
+			"void main()\n"
+			"{\n"
+			"Color = color;\n"
+			"Texcoord = texcoord;\n"
+			"gl_Position = projectionMatrix * vec4(position, -1.0, 1.0);\n"
+			"}\n";
+
+		const char* fs = \
+			"#version 150 core \n"
+			"in vec3 Color; \n"
+			"in vec2 Texcoord; \n"
+			"out vec4 outColor; \n"
+			"uniform sampler2D texKitten; \n"
+			"void main() \n"
+			"{ \n"
+			"outColor = texture(texKitten, Texcoord); \n"
+			"} \n";
+
+
+		m_programId = sCreateShaderProgram(vs, fs);
+		m_projectionUniform = glGetUniformLocation(m_programId, "projectionMatrix");
+		m_vertexAttribute = 0;
+		m_colorAttribute = 1;
+		m_texAttribute = 2;
+
+		// Generate
+		glGenVertexArrays(1, &m_vaoId);
+		glGenBuffers(2, m_vboIds);
+
+		glBindVertexArray(m_vaoId);
+		glEnableVertexAttribArray(m_vertexAttribute);
+		glEnableVertexAttribArray(m_colorAttribute);
+		glEnableVertexAttribArray(m_texAttribute);
+
+		// Vertex buffer
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
+		glVertexAttribPointer(m_vertexAttribute, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+		glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertices), m_vertices, GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
+		glVertexAttribPointer(m_colorAttribute, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[2]);
+		glVertexAttribPointer(m_texAttribute, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+		glBufferData(GL_ARRAY_BUFFER, sizeof(m_texCoords), m_texCoords, GL_DYNAMIC_DRAW);
+
+
+		sCheckGLError();
+
+		// Cleanup
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+
+		m_count = 0;
+	}
+
+
+	void Vertex(const b2Vec2& v, const b2Color& c, const b2Vec2& t)
+	{
+		if (m_count == e_maxVertices)
+			Flush();
+
+		m_vertices[m_count] = v;
+		m_colors[m_count] = c;
+		m_texCoords[m_count] = t;
+		++m_count;
+	}
+
+	void Flush() {
+
+		if (m_count == 0)
+			return;
+
+		glUseProgram(m_programId);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, g_debugDraw.textures[1]);
+
+		glUniform1i(glGetUniformLocation(m_programId, "texKitten"), 1);
+
+		float32 proj[16] = { 0.0f };
+		g_camera.BuildProjectionMatrix(proj, 0.1f);
+
+		glUniformMatrix4fv(m_projectionUniform, 1, GL_FALSE, proj);
+
+		glBindVertexArray(m_vaoId);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Vec2), m_vertices);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Color), m_colors);
+
+		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[2]);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Vec2), m_texCoords);
+
+
+		glDrawArrays(GL_TRIANGLES, 0, m_count);
+
+		sCheckGLError();
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		m_count = 0;
+	}
+
+
+	void Destroy()
+	{
+		if (m_vaoId)
+		{
+			glDeleteVertexArrays(1, &m_vaoId);
+			glDeleteBuffers(2, m_vboIds);
+			m_vaoId = 0;
+		}
+
+		if (m_programId)
+		{
+			glDeleteProgram(m_programId);
+			m_programId = 0;
+		}
+	}
+
+	enum { e_maxVertices = 3 * 512 };
+	b2Vec2 m_vertices[e_maxVertices];
+	b2Color m_colors[e_maxVertices];
+	b2Vec2 m_texCoords[e_maxVertices];
+
+	int32 m_count;
+
+	GLuint m_vaoId;
+	GLuint m_vboIds[2];
+	GLuint m_programId;
+	GLint m_projectionUniform;
+	GLint m_vertexAttribute;
+	GLint m_texAttribute;
+	GLint m_colorAttribute;
+
+};
+
 //
 struct GLRenderLines
 {
@@ -388,6 +543,8 @@ struct GLRenderLines
 		glVertexAttribPointer(m_colorAttribute, 4, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_colors), m_colors, GL_DYNAMIC_DRAW);
 		
+
+
 		sCheckGLError();
 
 		// Cleanup
@@ -485,7 +642,7 @@ struct GLRenderLines
     int32 m_starting_index = 0;
 
 	GLuint m_vaoId;
-	GLuint m_vboIds[2];
+	GLuint m_vboIds[3];
 	GLuint m_programId;
 	GLint m_projectionUniform;
 	GLint m_vertexAttribute;
@@ -652,6 +809,9 @@ void DebugDraw::Create()
 	m_lines->Create();
 	m_triangles = new GLRenderTriangles;
 	m_triangles->Create();
+	m_sprites = new GLRenderSprites;
+	m_sprites->Create();
+
 }
 
 //
@@ -676,6 +836,35 @@ void DebugDraw::DrawLines(b2Vec2* data, int vertexCount, b2Color* color)
 	m_lines->VertexArray(data, vertexCount, color);
 	
 }
+
+void DebugDraw::DrawTexQuad(b2Vec2 pos, const b2Color& color, sprite curSprite, float angle)
+{
+	b2Vec2 lt = b2Mul(b2Rot(angle),b2Vec2(curSprite.left, curSprite.top));
+	b2Vec2 lb = b2Mul(b2Rot(angle), b2Vec2(curSprite.left, curSprite.bottom));
+	b2Vec2 rt = b2Mul(b2Rot(angle), b2Vec2(curSprite.right, curSprite.top));
+	b2Vec2 rb = b2Mul(b2Rot(angle), b2Vec2(curSprite.right, curSprite.bottom));
+
+
+
+	b2Vec2 p1 = pos + lt;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texLeft, curSprite.texTop));
+
+	p1 = pos + rt;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texRight, curSprite.texTop));
+
+	p1 = pos + lb;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texLeft, curSprite.texBottom));
+
+	p1 = pos + rb;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texRight, curSprite.texBottom));
+
+	p1 = pos + lb;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texLeft, curSprite.texBottom));
+
+	p1 = pos + rt;
+	m_sprites->Vertex(p1, color, b2Vec2(curSprite.texRight, curSprite.texTop));
+}
+
 
 //
 void DebugDraw::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color)
@@ -901,4 +1090,5 @@ void DebugDraw::Flush()
     m_triangles->Flush();
     m_lines->Flush();
     m_points->Flush();
+	m_sprites->Flush();
 }

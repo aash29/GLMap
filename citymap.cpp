@@ -157,7 +157,10 @@ b2WeldJoint* wj;
 
 b2WeldJointDef wjdef;
 
-Car crow = Car(&world, 0.f, 4606.f, 2636.f);
+Car crow = Car(&world, 0.f, 4912.f, 3020.f);
+
+sprite carSprite = {3.f,-2.f,-3.f,2.f, 
+					0.f,0.f,1.f,1.f};
 
 int agentCollisionMarker = 0;
 int POImarker = 1;
@@ -224,7 +227,7 @@ b2Color groundColor = b2Color(0.f, 0.f, 0.f, 1.f);
 
 b2Color buildingColor = b2Color(1.f, 0.f, 0.f, 1.f);
 
-GLuint textures[1];
+
 int mapWidth, mapHeight;
 
 bool blockInput = false;
@@ -241,19 +244,40 @@ string getHouseInfo (int64_t id) {
 void loadTexture() {
 
 
-	glGenTextures(1, textures);
+	glGenTextures(2, g_debugDraw.textures);
 
 	//int width, height;
 	unsigned char* image;
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
+	glBindTexture(GL_TEXTURE_2D, g_debugDraw.textures[0]);
 	image = SOIL_load_image("./content/map.png", &mapWidth, &mapHeight, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mapWidth, mapHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 	SOIL_free_image_data(image);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+
+	
+	//glGenTextures(1, textures);
+
+	//int width, height;
+	unsigned char* carSprite;
+
+	int spriteWidth;
+	int spriteHeight;
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, g_debugDraw.textures[1]);
+	carSprite = SOIL_load_image("./content/car.png", &spriteWidth, &spriteHeight, 0, SOIL_LOAD_RGBA);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spriteWidth, spriteHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, carSprite);
+	SOIL_free_image_data(carSprite);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	
+
 }
 
 void loadSettings(const char * name) {
@@ -654,6 +678,11 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 				if (mounted) {
 					world.DestroyJoint(wj);
 					agentBody->ResetMassData();
+
+					b2Filter f1;
+					f1.maskBits = 0x0001;
+					agentBody->GetFixtureList()[0].SetFilterData(f1);
+
 				}
 				else {
 					wj = (b2WeldJoint*)world.CreateJoint(&wjdef);
@@ -661,6 +690,10 @@ static void key(GLFWwindow* window, int key, int scancode, int action, int mods)
 					md.mass = 0.01f; 
 					md.I = 0.01f;
 					agentBody->SetMassData(&md);
+					
+					b2Filter f1;
+					f1.maskBits = 0x0000;
+					agentBody->GetFixtureList()[0].SetFilterData(f1);
 					
 				}
 				mounted = !mounted;
@@ -712,7 +745,7 @@ void sInterface() {
 		ImGui::SetNextWindowPos(ImVec2(0, 0));
 		ImGui::SetNextWindowSize(ImVec2((float)g_camera.m_width, (float)g_camera.m_height));
 		ImGui::Begin("map");
-		ImGui::Image((void*)(textures[0]), ImVec2(mapWidth, mapHeight));
+		ImGui::Image((void*)(g_debugDraw.textures[0]), ImVec2(mapWidth, mapHeight));
 		ImGui::End();
 	}
 	if (showTimer) {
@@ -1122,7 +1155,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1240,7 +1273,7 @@ int main(int argc, char *argv[])
 				vertexCount++;
 			}
 			
-			
+			/*
 			int64_t vb = с1.back();
 
 			linesDataStore[vertexCount] = b2Vec2(roads.nodes[vb].x, roads.nodes[vb].y);
@@ -1251,7 +1284,7 @@ int main(int argc, char *argv[])
 			linesDataStore[vertexCount] = b2Vec2(roads.nodes[ve].x, roads.nodes[ve].y);
 			linesColorStore[vertexCount] = b2Color(0.f, 1.f, 0.f, 1.f);
 			vertexCount++;
-			
+			*/
 		}
 	}
 
@@ -1259,7 +1292,9 @@ int main(int argc, char *argv[])
 
 	g_debugDraw.Create();
 
-	//g_debugDraw.SetFlags(b2Draw::e_shapeBit);
+
+	g_debugDraw.SetFlags(b2Draw::e_shapeBit);
+	//g_debugDraw.SetFlags(b2Draw::e_centerOfMassBit);
 
     world.SetDebugDraw(&g_debugDraw);
 
@@ -1332,7 +1367,7 @@ int main(int argc, char *argv[])
 
 	dialogs = loadDialog("./content/dialogues.xml");
 
-
+	/*
 	vector<int64_t> res = vector<int64_t>();
 	std::vector<std::function<float(b2Body* b1, float t, float dt)> > planFunc;
 
@@ -1417,7 +1452,7 @@ int main(int argc, char *argv[])
 
 
 
-	
+	*/
 
 
 	bodyDef.position.Set(roads.nodes[gpuSpawnPoint].x, roads.nodes[gpuSpawnPoint].y);
@@ -1766,7 +1801,7 @@ int main(int argc, char *argv[])
 		if (drawPaths) {
 			g_debugDraw.DrawLines(linesDataStore, vertexCount, linesColorStore);
 		}
-
+		/*
 		static float tt1 = 0.f;
 		//tt1 = followLine(officer, tt1);
 		if (run) {
@@ -1778,7 +1813,7 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-
+		*/
         for (auto &t1: things){
             b2Vec2 agentPos = agentBody->GetPosition();
             b2Vec2 origPos = b2Vec2(roads.nodes[t1.second.node].x,roads.nodes[t1.second.node].y);
@@ -1859,7 +1894,7 @@ int main(int argc, char *argv[])
             }
         }
 
-
+		/*
 		if (drawGpuPath) {
 			if (res.size() > 0) {
 				b2Vec2 p1(roads.nodes[res[0]].x, roads.nodes[res[0]].y);
@@ -1874,7 +1909,10 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
+		*/
 
+		
+		g_debugDraw.DrawTexQuad(crow.hull->GetPosition(), b2Color(1.f, 1.f, 1.f, 1.f), carSprite, crow.hull->GetAngle());
 
 		b2Vec2 vertices[3];
 		for (int i = 0; i < nelems; i++) {
