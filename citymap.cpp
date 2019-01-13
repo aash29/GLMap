@@ -159,8 +159,13 @@ b2WeldJointDef wjdef;
 
 Car crow = Car(&world, 0.f, 4912.f, 3020.f);
 
-sprite carSprite = {3.f,-2.f,-3.f,2.f, 
-					0.f,0.f,1.f,1.f};
+sprite carSprite = {3.f,-1.5f,-3.f,1.5f, 
+					0.f,0.02f,0.7f,0.98f};
+
+
+sprite gpuSprite = { 0.5f,-0.5f,-0.5f,0.5f,
+0.85f,0.33f,1.f,0.6f };
+
 
 int agentCollisionMarker = 0;
 int POImarker = 1;
@@ -209,6 +214,7 @@ map <int, conversation> dialogs;
 int run = 1;
 
 int currentConversation = 0;
+int currentSuspect = -1;
 
 float stamina = 1;
 float staminaRateIncStop = 0.2;
@@ -220,6 +226,8 @@ char* levelPath = "./content/map3.osm";
 int showInfo = 1;
 int showCases = 1;
 int showTimer = 1;
+
+float infoDelay = 5.f;
 
 bool cameraScroll = true;
 
@@ -270,7 +278,7 @@ void loadTexture() {
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, g_debugDraw.textures[1]);
-	carSprite = SOIL_load_image("./content/car.png", &spriteWidth, &spriteHeight, 0, SOIL_LOAD_RGBA);
+	carSprite = SOIL_load_image("./content/m1.png", &spriteWidth, &spriteHeight, 0, SOIL_LOAD_RGBA);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, spriteWidth, spriteHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, carSprite);
 	SOIL_free_image_data(carSprite);
 
@@ -816,18 +824,44 @@ void sInterface() {
 
 
 	//ImGui::ShowTestWindow();
-
-	if (currentConversation != 0)
+	static float infoTimer = 0.f;
+	if (currentSuspect != -1)
 	{
+		if (infoTimer>infoDelay) { 
+			currentSuspect = -1;
+			infoTimer = 0.f;
+		}
+		else
+		{
+			infoTimer += 0.05f;
+		}
 		ImGui::SetNextWindowPos(ImVec2(500, 400));
-		ImGui::SetNextWindowSize(ImVec2(500, 440));
+		ImGui::SetNextWindowSize(ImVec2(500, -1));
+
+		ImGuiWindowFlags window_flags = 0;
+		window_flags |= ImGuiWindowFlags_NoTitleBar;
 		
-		ImGui::Begin("Диалог");
+		window_flags |= ImGuiWindowFlags_NoResize;
+		window_flags |= ImGuiWindowFlags_NoMove;
+		window_flags |= ImGuiWindowFlags_NoScrollbar;
+		window_flags |= ImGuiWindowFlags_NoCollapse;
+		
+	
+		
+		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
+		ImGuiStyle &style = ImGui::GetStyle();
+		//style.Colors[ImGuiCol_WindowBg]=color;
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
 
-		static int currentReply = 1;
+		static bool b1 = true;
 
-		ImGui::TextWrapped(dialogs[currentConversation].replies[currentReply].text.c_str());
+		ImGui::Begin("",&b1, window_flags);
 
+		//static int currentReply = 1;
+
+		ImGui::TextWrapped(things[currentSuspect].desc.c_str());
+
+		/*
 		//for (int i = 0; i < dialogs[currentConversation].replies[currentReply].answers.size(); i++) {
 		for (auto a1 : dialogs[currentConversation].replies[currentReply].answers) {
 			ImGui::PushID(a1.second.id);
@@ -844,9 +878,14 @@ void sInterface() {
 			run = 1;
 			blockInput = false;
 		};
+		*/
 
 		ImGui::End();
+
+		ImGui::PopStyleColor();
 	}
+
+	
 
 	if (showCases) {
 		ImGui::Begin("Дела");
@@ -1121,6 +1160,10 @@ int main(int argc, char *argv[])
     const int nverts = tessGetVertexCount(tess);
     const int nelems = tessGetElementCount(tess);
 
+
+	//b2Color* buildingColors = new b2Color[]
+
+
 	tess = tessNewTess(&ma);
 	roads = loadLevel(levelPath, tess, boundingBox, &world, computeBounds, true);
 
@@ -1155,7 +1198,7 @@ int main(int argc, char *argv[])
 				//coords[8] = p1.x;
 				//coords[9] = p1.y;
 
-				tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
+				//tessAddContour(tess, 2, coords, sizeof(float)*2, 4);
 			}
 		
 	};
@@ -1296,7 +1339,7 @@ int main(int argc, char *argv[])
 	g_debugDraw.SetFlags(b2Draw::e_shapeBit);
 	//g_debugDraw.SetFlags(b2Draw::e_centerOfMassBit);
 
-    world.SetDebugDraw(&g_debugDraw);
+    //world.SetDebugDraw(&g_debugDraw);
 
 
 	// Define the dynamic body. We set its position and call the body factory.
@@ -1308,20 +1351,18 @@ int main(int argc, char *argv[])
 	// Define another box shape for our dynamic body.
 	b2PolygonShape agentShape;
 
-    b2Vec2 x1 = b2Vec2(1.f, 0.f);
+    b2Vec2 verticesQuad[4];
 
-	b2Vec2 x11 = b2Vec2(0.f, 0.6f);
-	b2Vec2 x12 = b2Vec2(0.f, -0.6f);
-
-    b2Vec2 verticesTri[3];
-
-    verticesTri[0] = x1;
-	verticesTri[1] = x11;
-	verticesTri[2] = x12;
+	verticesQuad[0] = b2Vec2(-0.3f, 0.3f);
+	verticesQuad[1] = b2Vec2(0.3f, 0.3f);
+	verticesQuad[2] = b2Vec2(0.3f, -0.3f);
+	verticesQuad[3] = b2Vec2(-0.3f, -0.3f);
     //verticesTri[2] =  b2Vec2(x1.y, -x1.x);
     //verticesTri[3] =  -b2Vec2(x1.y, -x1.x);
 
-    agentShape.Set(verticesTri,3);
+	
+
+    agentShape.Set(verticesQuad,4);
 
 
 
@@ -1554,7 +1595,7 @@ int main(int argc, char *argv[])
 
     kdNode* n1 = kdTree <b2Vec2> (treePoints, 0);
 	*/
-
+/*
 
 	int checkpointNum = things.size();
 	for (int i = 0; i < checkpointNum; i++) {
@@ -1569,7 +1610,7 @@ int main(int argc, char *argv[])
 		debug_log().AddLog("checkpoint %d: %g,%g \n", things[it->first].node, t1.x, t1.y);
 		checkpoints.push_back(t1); 
 	}
-	
+	*/
 
 	g_camera.m_center.x = agentBody->GetPosition().x;
 	g_camera.m_center.y = agentBody->GetPosition().y;
@@ -1629,6 +1670,14 @@ int main(int argc, char *argv[])
 		};
 
 		*/
+
+		state = glfwGetKey(window, GLFW_KEY_TAB);
+		if (state == GLFW_PRESS) {
+			showMap = true;
+		}
+		else {
+			showMap = false;
+		}
 
 		if (!blockInput) {
 			if (!mounted) {
@@ -1730,13 +1779,7 @@ int main(int argc, char *argv[])
 
 				}
 
-				state = glfwGetKey(window, GLFW_KEY_TAB);
-				if (state == GLFW_PRESS) {
-					showMap = true;
-				}
-				else {
-					showMap = false;
-				}
+
 
 			}
 			else {
@@ -1853,7 +1896,7 @@ int main(int argc, char *argv[])
 						debug_log().AddLog("\n");
 						POIinFOV.insert(&t1.second);
 					}
-                    g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
+                    //g_debugDraw.DrawSolidCircle(origPos, 1.f, b2Vec2(0.f, 0.f), b2Color(1.f, 1.f, 1.f, 1.f));
 				}
 				else {
 					POIinFOV.erase(&t1.second);
@@ -1913,6 +1956,11 @@ int main(int argc, char *argv[])
 
 		
 		g_debugDraw.DrawTexQuad(crow.hull->GetPosition(), b2Color(1.f, 1.f, 1.f, 1.f), carSprite, crow.hull->GetAngle());
+		
+		if (!mounted) {
+			g_debugDraw.DrawTexQuad(agentBody->GetPosition(), b2Color(1.f, 1.f, 1.f, 1.f), gpuSprite, agentBody->GetAngle());
+		}
+
 
 		b2Vec2 vertices[3];
 		for (int i = 0; i < nelems; i++) {
@@ -1934,9 +1982,9 @@ int main(int argc, char *argv[])
 				b2Vec2 vertices[3];
 
 
-				vertices[0] = b2Vec2(0.f, 1.f);
-				vertices[1] = b2Vec2(1.f, -1.f);
-				vertices[2] = b2Vec2(-1.f, -1.f);
+				vertices[0] = b2Vec2(cos(0.f), sin(0.f));
+				vertices[1] = b2Vec2(cos(2*b2_pi/3.f), sin(2 * b2_pi / 3.f));
+				vertices[2] = b2Vec2(cos(4 * b2_pi / 3.f), sin(4 * b2_pi / 3.f));
 
 				float theta;
 				theta = currentTime / 60 * (15 * b2_pi);
@@ -1950,15 +1998,15 @@ int main(int argc, char *argv[])
 
 
 				if (((p0 - agentBody->GetPosition()).Length() < 15.f) && cp.second.active) {
-					currentConversation = cp.second.conversationId;
-
+					currentSuspect = cp.first;
+					/*
 					if (dialogs[currentConversation].freeze) {
 						run = 0;
 					}
 					else {
 						blockInput = true;
 					}
-
+					*/
 					cp.second.active = false;
 				}
 
@@ -1969,7 +2017,7 @@ int main(int argc, char *argv[])
 			}
 
 		}
-
+		/*
 		b2Vec2 officerPolygon[3];
 
 		officerPolygon[0] = officer->GetPosition() + b2Vec2(0.f, -5.f);
@@ -1977,14 +2025,14 @@ int main(int argc, char *argv[])
 		officerPolygon[2] = officer->GetPosition() + b2Vec2(-5.f, 5.f);
 
 		g_debugDraw.DrawSolidPolygon(officerPolygon, 3, b2Color(0.f, 0.7f, 1.f, 1.f));
+		*/
 
 
 
-
-
+		/*
 		checkpoints.erase(std::remove_if(checkpoints.begin(), checkpoints.end(),
 			[&](b2Vec2 cp) { return (((cp - agentBody->GetPosition()).Length()<15.f) || ((cp - officer->GetPosition()).Length()<15.f) ); }), checkpoints.end());
-
+			*/
 
 
         world.DrawDebugData();
