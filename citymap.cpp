@@ -1161,6 +1161,8 @@ int main(int argc, char *argv[])
     const int nelems = tessGetElementCount(tess);
 
 
+	debug_log().AddLog("%d,%d,%d", vinds[0], vinds[1], vinds[2]);
+
 	//b2Color* buildingColors = new b2Color[]
 
 
@@ -1331,6 +1333,34 @@ int main(int argc, char *argv[])
 		}
 	}
 
+
+
+
+
+
+	tess = tessNewTess(&ma);
+
+	for (auto i1 : roads.background) {
+		for (auto j1 = i1.second.begin(); j1 != i1.second.end(); j1++) {
+			vector<float> coords = vector<float>();
+			for (auto k1 = j1->begin(); k1 != j1->end(); k1++) {
+				coords.push_back(roads.nodes[*k1].x);
+				coords.push_back(roads.nodes[*k1].y);
+			}
+			tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+		}
+	}
+
+	tessSetOption(tess, TESS_CONSTRAINED_DELAUNAY_TRIANGULATION, 1);
+	if (!tessTesselate(tess, TESS_WINDING_ODD, TESS_POLYGONS, nvp, 2, 0))
+		return -1;
+	printf("Memory used: %.1f kB\n", allocated / 1024.0f);
+
+	const float* vertsBack = tessGetVertices(tess);
+	const int* vindsBack = tessGetVertexIndices(tess);
+	const int* elemsBack = tessGetElements(tess);
+	const int nvertsBack = tessGetVertexCount(tess);
+	const int nelemsBack = tessGetElementCount(tess);
 
 
 	g_debugDraw.Create();
@@ -1644,6 +1674,8 @@ int main(int argc, char *argv[])
 
 
 		glEnable(GL_BLEND);
+		//glEnable(GL_DEPTH_TEST);
+
 		glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
 		glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 
@@ -1963,14 +1995,28 @@ int main(int argc, char *argv[])
 
 
 		b2Vec2 vertices[3];
+		for (int i = 0; i < nelemsBack; i++) {
+			const TESSindex *poly = &elemsBack[i * 3];
+			for (int j = 0; j < 3; j++) {
+				if (poly[j] == TESS_UNDEF) break;
+				vertices[j] = b2Vec2(vertsBack[poly[j] * 2], vertsBack[poly[j] * 2 + 1]);
+			}
+			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.1f, 0.3f, 0.1f), -1.f);
+		}
+
+
+
 		for (int i = 0; i < nelems; i++) {
 			const TESSindex *poly = &elems[i * 3];
 			for (int j = 0; j < 3; j++) {
 				if (poly[j] == TESS_UNDEF) break;
 				vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
 			}
-			g_debugDraw.DrawSolidPolygon(vertices, 3, buildingColor);
+			g_debugDraw.DrawSolidPolygon(vertices, 3, buildingColor, 0.f );
 		}
+
+
+
 
 
 		for (auto & cp: things) {
@@ -2034,9 +2080,7 @@ int main(int argc, char *argv[])
 			[&](b2Vec2 cp) { return (((cp - agentBody->GetPosition()).Length()<15.f) || ((cp - officer->GetPosition()).Length()<15.f) ); }), checkpoints.end());
 			*/
 
-
         world.DrawDebugData();
-
 	    g_debugDraw.Flush();
         ImGui::Render();
 

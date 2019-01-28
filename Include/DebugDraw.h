@@ -87,7 +87,7 @@ public:
 
 	void DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color);
 
-	void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color);
+	void DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color, float layer = 0.f);
 
 	void DrawCircle(const b2Vec2& center, float32 radius, const b2Color& color);
 

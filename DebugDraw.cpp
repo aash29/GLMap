@@ -295,7 +295,7 @@ struct GLRenderPoints
 		glUseProgram(m_programId);
 
 		float32 proj[16] = { 0.0f };
-		g_camera.BuildProjectionMatrix(proj, 0.0f);
+		g_camera.BuildProjectionMatrix(proj, 0.1f);
 
 		glUniformMatrix4fv(m_projectionUniform, 1, GL_FALSE, proj);
 
@@ -657,13 +657,13 @@ struct GLRenderTriangles
 		const char* vs = \
 			"#version 400\n"
 			"uniform mat4 projectionMatrix;\n"
-			"layout(location = 0) in vec2 v_position;\n"
+			"layout(location = 0) in vec3 v_position;\n"
 			"layout(location = 1) in vec4 v_color;\n"
 			"out vec4 f_color;\n"
 			"void main(void)\n"
 			"{\n"
 			"	f_color = v_color;\n"
-			"	gl_Position = projectionMatrix * vec4(v_position, 0.0f, 1.0f);\n"
+			"	gl_Position = projectionMatrix * vec4(v_position, 1.0f);\n"
 			"}\n";
 
 		const char* fs = \
@@ -690,7 +690,7 @@ struct GLRenderTriangles
 
 		// Vertex buffer
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-		glVertexAttribPointer(m_vertexAttribute, 2, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
+		glVertexAttribPointer(m_vertexAttribute, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 		glBufferData(GL_ARRAY_BUFFER, sizeof(m_vertices), m_vertices, GL_DYNAMIC_DRAW);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
@@ -725,12 +725,12 @@ struct GLRenderTriangles
 		}
 	}
 
-	void Vertex(const b2Vec2& v, const b2Color& c)
+	void Vertex(const b2Vec2& v, const b2Color& c, float layer = 0.f)
 	{
 		if (m_count == e_maxVertices)
 			Flush();
 
-		m_vertices[m_count] = v;
+		m_vertices[m_count] = b2Vec3(v.x,v.y,layer);
 		m_colors[m_count] = c;
 		++m_count;
 	}
@@ -743,14 +743,14 @@ struct GLRenderTriangles
 		glUseProgram(m_programId);
 
 		float32 proj[16] = { 0.0f };
-		g_camera.BuildProjectionMatrix(proj, 0.2f);
+		g_camera.BuildProjectionMatrix(proj, 0.1f);
 
 		glUniformMatrix4fv(m_projectionUniform, 1, GL_FALSE, proj);
 
 		glBindVertexArray(m_vaoId);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[0]);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Vec2), m_vertices);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Vec3), m_vertices);
 
 		glBindBuffer(GL_ARRAY_BUFFER, m_vboIds[1]);
 		glBufferSubData(GL_ARRAY_BUFFER, 0, m_count * sizeof(b2Color), m_colors);
@@ -771,7 +771,7 @@ struct GLRenderTriangles
 	}
 
 	enum { e_maxVertices = 3 * 512 };
-	b2Vec2 m_vertices[e_maxVertices];
+	b2Vec3 m_vertices[e_maxVertices];
 	b2Color m_colors[e_maxVertices];
 
 	int32 m_count;
@@ -880,16 +880,16 @@ void DebugDraw::DrawPolygon(const b2Vec2* vertices, int32 vertexCount, const b2C
 }
 
 //
-void DebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color)
+ void DebugDraw::DrawSolidPolygon(const b2Vec2* vertices, int32 vertexCount, const b2Color& color, float layer)
 {
 	//b2Color fillColor(0.5f * color.r, 0.5f * color.g, 0.5f * color.b, 0.5f);
 	b2Color fillColor(color.r,color.g,color.b, color.a);
 
     for (int32 i = 1; i < vertexCount - 1; ++i)
     {
-        m_triangles->Vertex(vertices[0], fillColor);
-        m_triangles->Vertex(vertices[i], fillColor);
-        m_triangles->Vertex(vertices[i+1], fillColor);
+        m_triangles->Vertex(vertices[0], fillColor, layer);
+        m_triangles->Vertex(vertices[i], fillColor, layer);
+        m_triangles->Vertex(vertices[i+1], fillColor, layer);
     }
 /*
     b2Vec2 p1 = vertices[vertexCount - 1];

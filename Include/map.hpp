@@ -66,6 +66,7 @@ struct map_record {
     map< int64_t, node> nodes;
     map< int64_t, vector<int64_t> > pathGraph;
     map< int64_t, building> buildings;
+	map< int64_t, std::vector<std::vector<int64_t> > > background;
 };
 
 
@@ -126,7 +127,8 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
     if (ext=="osm"){
 
         map<int64_t, vector<int64_t> > pathGraph;
-        map<int64_t, building> buildings;
+        map<int64_t, building> buildings; 
+		map< int64_t, std::vector<std::vector<int64_t> > > background;
 
         map<int64_t, node> nodes;
 		map<int64_t, vector<int64_t> > ways;
@@ -332,6 +334,120 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
                 tags[key] = value;
                 tag = tag->NextSiblingElement("tag");
             }
+
+			if (tags["place"] == "background") {
+
+
+				vector< vector<int64_t> > patchCoords = vector< vector<int64_t> >();
+
+				vector<float> coordsx = vector<float>();
+				vector<float> coordsy = vector<float>();
+
+				patchCoords.push_back(vector<int64_t>());
+
+				XMLElement* mem1 = r1->FirstChildElement("member");
+
+				int64_t wayRef;
+				mem1->QueryAttribute("ref", &wayRef);
+				//первый отрезок задает направление обхода
+				int64_t contourStart = ways[wayRef][0];
+				int64_t prevWayEnd = -1;
+				int64_t wayStart = ways[wayRef][0];
+				int64_t wayEnd = ways[wayRef].back();
+
+				while (mem1) {
+					//if (mem1->Attribute("role","outer")) {
+					int64_t wayRef;
+					mem1->QueryAttribute("ref", &wayRef);
+
+					const char *role = mem1->Attribute("role");
+
+					vector<float> coordsxWay = vector<float>();
+					vector<float> coordsyWay = vector<float>();
+					vector<int64_t> renderCoordsWay = vector<int64_t>();
+
+					wayStart = ways[wayRef][0];
+					wayEnd = ways[wayRef].back();
+
+
+
+					for (int64_t ni : ways[wayRef]) {
+						renderCoordsWay.push_back(ni);
+						coordsxWay.push_back(nodes[ni].x);
+						coordsyWay.push_back(nodes[ni].y);
+					}
+
+
+					if (prevWayEnd == wayEnd) {
+						std::reverse(renderCoordsWay.begin(), renderCoordsWay.end());
+						std::reverse(coordsxWay.begin(), coordsxWay.end());
+						std::reverse(coordsyWay.begin(), coordsyWay.end());
+						std::swap(wayStart, wayEnd);
+					}
+
+					patchCoords.back().insert(patchCoords.back().end(), renderCoordsWay.begin(), renderCoordsWay.end());
+					coordsx.insert(coordsx.end(), coordsxWay.begin(), coordsxWay.end());
+					coordsy.insert(coordsy.end(), coordsyWay.begin(), coordsyWay.end());
+
+					mem1 = mem1->NextSiblingElement("member");
+
+					if (wayEnd == contourStart) {
+
+						float wind = 0.f; //determine winding https://en.wikipedia.org/wiki/Shoelace_formula
+						for (int i = 1; i < coordsx.size(); i++) {
+							wind += (coordsx[i] - coordsx[i - 1]) * (coordsy[i] + coordsy[i - 1]);
+						}
+						wind += (coordsx[0] - coordsx.back()) * (coordsy[0] + coordsy.back());
+
+						if (strcmp(role, "outer") == 0) {
+							if (wind < 0) {
+								std::reverse(coordsx.begin(), coordsx.end());
+								std::reverse(coordsy.begin(), coordsy.end());
+							}
+						}
+						if (strcmp(role, "inner") == 0) {
+							if (wind > 0) {
+								std::reverse(coordsx.begin(), coordsx.end());
+								std::reverse(coordsy.begin(), coordsy.end());
+							}
+						}
+
+						vector<float> coords = vector<float>();
+						for (int i = 0; i < coordsx.size(); i++) {
+							coords.push_back(coordsx[i]);
+							coords.push_back(coordsy[i]);
+						}
+
+						//tessAddContour(tess, 2, coords.data(), sizeof(float) * 2, round(coords.size() / 2));
+
+						coordsx.clear();
+						coordsy.clear();
+
+						if (mem1) {
+							int64_t wayRef;
+							mem1->QueryAttribute("ref", &wayRef);
+
+							contourStart = ways[wayRef][0];
+
+
+							patchCoords.push_back(vector<int64_t>());
+						}
+
+					}
+
+					prevWayEnd = wayEnd;
+
+
+				}
+	
+				background.insert(pair<int64_t, std::vector<std::vector<int64_t> > >(relId, patchCoords));
+
+
+			}
+
+
+
+
 
 			if (tags["place"]=="island") {
 
@@ -601,7 +717,7 @@ map_record loadLevel(const char *name, TESStesselator* tess, rect &gameCoords, b
 
         }
 
-        map_record mapRecord = {nodes, pathGraph, buildings};
+        map_record mapRecord = {nodes, pathGraph, buildings,background};
         return mapRecord;
     }
 };
