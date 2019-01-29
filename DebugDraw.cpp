@@ -1007,7 +1007,7 @@ void DebugDraw::DrawString(int x, int y, const char *string, ...)
 	va_start(arg, string);
 	ImGui::Begin("Overlay", NULL, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoScrollbar);
 	ImGui::SetCursorPos(ImVec2(float(x), float(y)));
-	ImGui::TextColoredV(ImColor(230, 153, 153, 255), string, arg);
+	ImGui::TextColoredV(ImColor(230, 10, 10, 255), string, arg);
 	ImGui::End();
 	va_end(arg);
 
@@ -1087,8 +1087,8 @@ void DebugDraw::DrawAABB(b2AABB* aabb, const b2Color& c)
 //
 void DebugDraw::Flush()
 {
-    m_triangles->Flush();
-    m_lines->Flush();
+	m_lines->Flush();
+	m_triangles->Flush();
     m_points->Flush();
 	m_sprites->Flush();
 }

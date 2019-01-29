@@ -227,7 +227,7 @@ int showInfo = 1;
 int showCases = 1;
 int showTimer = 1;
 
-float infoDelay = 5.f;
+float infoDelay = 10.f;
 
 bool cameraScroll = true;
 
@@ -763,9 +763,12 @@ void sInterface() {
 		ImGui::PushFont(font);
 
 		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
+
 		ImGuiStyle &style = ImGui::GetStyle();
 		//style.Colors[ImGuiCol_WindowBg]=color;
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+		//ImGui::PushStyleColor(ImGuiCol_Text, textColor);
+
 
 		int minutes = currentTime / 60;
 		g_debugDraw.DrawString(width / 2, 0, "%dm %2.1fs", minutes, currentTime - minutes * 60);
@@ -836,7 +839,7 @@ void sInterface() {
 			infoTimer += 0.05f;
 		}
 		ImGui::SetNextWindowPos(ImVec2(500, 400));
-		ImGui::SetNextWindowSize(ImVec2(500, -1));
+		ImGui::SetNextWindowSize(ImVec2(700, -1));
 
 		ImGuiWindowFlags window_flags = 0;
 		window_flags |= ImGuiWindowFlags_NoTitleBar;
@@ -849,9 +852,11 @@ void sInterface() {
 	
 		
 		ImVec4 color = ImVec4(0.f, 0.f, 0.f, 0.0f);
+		ImVec4 textColor = ImVec4(1.0f, 0.0f, 0.0f, 1.0f);
 		ImGuiStyle &style = ImGui::GetStyle();
 		//style.Colors[ImGuiCol_WindowBg]=color;
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, color);
+		ImGui::PushStyleColor(ImGuiCol_Text, textColor);
 
 		static bool b1 = true;
 
@@ -882,6 +887,7 @@ void sInterface() {
 
 		ImGui::End();
 
+		ImGui::PopStyleColor();
 		ImGui::PopStyleColor();
 	}
 
@@ -1287,14 +1293,14 @@ int main(int argc, char *argv[])
 			float x0 = roads.nodes[n1.first].x;
 			float y0 = roads.nodes[n1.first].y;
             linesDataStore[vertexCount] = b2Vec2(x0,y0);
-            linesColorStore[vertexCount] = b2Color (1.f,1.f,1.f,1.f);
+            linesColorStore[vertexCount] = b2Color (0.f,0.f,0.f,1.f);
 			vertexCount++;
 
 
 			float x1 = roads.nodes[n1.second[neigh1]].x;
 			float y1 = roads.nodes[n1.second[neigh1]].y;
             linesDataStore[vertexCount] = b2Vec2(x1,y1);
-            linesColorStore[vertexCount] = b2Color (1.f,1.f,1.f,1.f);
+            linesColorStore[vertexCount] = b2Color (0.f,0.f,0.f,1.f);
 
 			vertexCount++;
 		}
@@ -2001,7 +2007,7 @@ int main(int argc, char *argv[])
 				if (poly[j] == TESS_UNDEF) break;
 				vertices[j] = b2Vec2(vertsBack[poly[j] * 2], vertsBack[poly[j] * 2 + 1]);
 			}
-			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.1f, 0.3f, 0.1f), -1.f);
+			g_debugDraw.DrawSolidPolygon(vertices, 3, b2Color(0.9f, 0.9f, 0.9f));
 		}
 
 
@@ -2012,7 +2018,7 @@ int main(int argc, char *argv[])
 				if (poly[j] == TESS_UNDEF) break;
 				vertices[j] = b2Vec2(verts[poly[j] * 2], verts[poly[j] * 2 + 1]);
 			}
-			g_debugDraw.DrawSolidPolygon(vertices, 3, buildingColor, 0.f );
+			g_debugDraw.DrawSolidPolygon(vertices, 3, buildingColor);
 		}
 
 
